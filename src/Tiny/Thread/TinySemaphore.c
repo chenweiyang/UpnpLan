@@ -38,16 +38,16 @@ bool ctx_gen_ipc_name(const char *name, char *full_name, uint32_t len)
 
     if (name == NULL)
     {
-        uint64_t usec = ct_getusec();
+        uint64_t usec = tiny_getusec();
     #ifdef __MAC_OSX__
-        ct_snprintf(full_name, len, "%s%s%llu", dir, slash, usec);
+        tiny_snprintf(full_name, len, "%s%s%llu", dir, slash, usec);
     #else
-        ct_snprintf(full_name, len, "%s%s%lu", dir, slash, usec);
+        tiny_snprintf(full_name, len, "%s%s%lu", dir, slash, usec);
     #endif
     }
     else
     {
-        ct_snprintf(full_name, len, "%s%s%s", dir, slash, name);
+        tiny_snprintf(full_name, len, "%s%s%s", dir, slash, name);
     }
 
     return true;

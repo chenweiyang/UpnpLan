@@ -219,9 +219,9 @@ static void timer_loop(void *param)
             uint64_t usec_before = 0;
             uint64_t usec_after = 0;
 
-            usec_before = ct_getusec();
+            usec_before = tiny_getusec();
             ret = timer_loop_once(thiz);
-            usec_after = ct_getusec();
+            usec_after = tiny_getusec();
             if (ret == TIMER_LOOP_RET_BREAK)
             {
                 break;
@@ -253,9 +253,9 @@ static void timer_loop(void *param)
 
             thiz->running_interval = thiz->interval - (delta < max_select_delta ? delta : max_select_delta);
 
-            usec_before = ct_getusec();
+            usec_before = tiny_getusec();
             listener_ret = thiz->listener(thiz, thiz->listener_ctx);
-            usec_after = ct_getusec();
+            usec_after = tiny_getusec();
             if (!listener_ret)
             {
                 break;

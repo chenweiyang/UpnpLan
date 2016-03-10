@@ -316,7 +316,7 @@ TinyRet HttpMessage_ToBytes(HttpMessage *thiz, char **bytes, uint32_t *len)
         memset(line, 0, HTTP_LINE_LEN);
         if (thiz->type == HTTP_REQUEST)
         {
-            ct_snprintf(line,
+            tiny_snprintf(line,
                 HTTP_LINE_LEN,
                 "%s %s %s/%d.%d\r\n",
                 thiz->request_line.method,
@@ -328,7 +328,7 @@ TinyRet HttpMessage_ToBytes(HttpMessage *thiz, char **bytes, uint32_t *len)
         else
         {
             // RESPONSE
-            ct_snprintf(line,
+            tiny_snprintf(line,
                 HTTP_LINE_LEN,
                 "%s/%d.%d %d %s\r\n",
                 thiz->protocol_identifier,
@@ -349,7 +349,7 @@ TinyRet HttpMessage_ToBytes(HttpMessage *thiz, char **bytes, uint32_t *len)
             const char * value = HttpHeader_GetValueAt(&thiz->header, i);
 
             memset(line, 0, HTTP_LINE_LEN);
-            ct_snprintf(line, HTTP_LINE_LEN, "%s: %s\r\n", name, value);
+            tiny_snprintf(line, HTTP_LINE_LEN, "%s: %s\r\n", name, value);
             line[HTTP_LINE_LEN - 1] = 0;
 
             strncpy(p, line, HTTP_LINE_LEN);
@@ -358,7 +358,7 @@ TinyRet HttpMessage_ToBytes(HttpMessage *thiz, char **bytes, uint32_t *len)
 
         // \r\n
         memset(line, 0, HTTP_LINE_LEN);
-        ct_snprintf(line, HTTP_LINE_LEN, "\r\n");
+        tiny_snprintf(line, HTTP_LINE_LEN, "\r\n");
         line[HTTP_LINE_LEN - 1] = 0;
 
         strncpy(p, line, HTTP_LINE_LEN);
@@ -820,11 +820,11 @@ TinyRet HttpMessage_SetRequest(HttpMessage *thiz, const char * method, const cha
 
         if (port == 80)
         {
-            ct_snprintf(host, 128, "%s", ip);
+            tiny_snprintf(host, 128, "%s", ip);
         }
         else
         {
-            ct_snprintf(host, 128, "%s:%d", ip, port);
+            tiny_snprintf(host, 128, "%s:%d", ip, port);
         }
 
         HttpMessage_SetIp(thiz, ip);

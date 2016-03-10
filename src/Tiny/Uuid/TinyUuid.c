@@ -39,14 +39,14 @@ typedef struct _uuid_time {
     uint8_t     node[6];
 } uuid_time;
 
-static TinyRet ct_uuid_generate(uuid_u * uuid);
-static TinyRet ct_uuid_generate_from_string(uuid_u * uuid, const char *str, uint32_t len);
+static TinyRet tiny_uuid_generate(uuid_u * uuid);
+static TinyRet tiny_uuid_generate_from_string(uuid_u * uuid, const char *str, uint32_t len);
 
-static void ct_uuid_pack(uuid_time *u_time, uuid_u *uuid);
-static void ct_uuid_unpack(uuid_u *uuid, uuid_time *u_time);
+static void tiny_uuid_pack(uuid_time *u_time, uuid_u *uuid);
+static void tiny_uuid_unpack(uuid_u *uuid, uuid_time *u_time);
 static const char *fmt_lower = "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x";
 static const char *fmt_upper = "%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X";
-static int ct_uuid_to_string(uuid_u *uuid, char *out, size_t len, const char *fmt);
+static int tiny_uuid_to_string(uuid_u *uuid, char *out, size_t len, const char *fmt);
 
 // for Linux or Android
 #if (defined __LINUX__) || (defined __ANDROID__)
@@ -135,7 +135,7 @@ TinyRet TinyUuid_GenerateRandom(TinyUuid *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return ct_uuid_generate(&thiz->uuid);
+    return tiny_uuid_generate(&thiz->uuid);
 }
 
 TinyRet TinyUuid_ParseFromString(TinyUuid *thiz, const char *string)
@@ -145,7 +145,7 @@ TinyRet TinyUuid_ParseFromString(TinyUuid *thiz, const char *string)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(string, TINY_RET_E_ARG_NULL);
 
-    ret = ct_uuid_generate_from_string(&thiz->uuid, string, strlen(string));
+    ret = tiny_uuid_generate_from_string(&thiz->uuid, string, strlen(string));
     if (RET_FAILED(ret))
     {
         LOG_D(TAG, "[%s] %s", string, tiny_ret_to_str(ret));
@@ -159,7 +159,7 @@ TinyRet TinyUuid_ParseFromBuffer(TinyUuid *thiz, const char *buffer, uint32_t le
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(buffer, TINY_RET_E_ARG_NULL);
 
-    return ct_uuid_generate_from_string(&thiz->uuid, buffer, len);
+    return tiny_uuid_generate_from_string(&thiz->uuid, buffer, len);
 }
 
 const char * TinyUuid_ToString(TinyUuid * thiz, bool upper)
@@ -167,7 +167,7 @@ const char * TinyUuid_ToString(TinyUuid * thiz, bool upper)
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     memset(thiz->string, 0, TINY_UUID_LEN);
-    ct_uuid_to_string(&thiz->uuid, thiz->string, TINY_UUID_LEN, upper ? fmt_upper : fmt_lower);
+    tiny_uuid_to_string(&thiz->uuid, thiz->string, TINY_UUID_LEN, upper ? fmt_upper : fmt_lower);
 
     return thiz->string;
 }
@@ -187,8 +187,8 @@ bool TinyUuid_Equal(TinyUuid *thiz, TinyUuid *other)
     RETURN_VAL_IF_FAIL(thiz, false);
     RETURN_VAL_IF_FAIL(other, false);
 
-    ct_uuid_unpack(&thiz->uuid, &u1);
-    ct_uuid_unpack(&other->uuid, &u2);
+    tiny_uuid_unpack(&thiz->uuid, &u1);
+    tiny_uuid_unpack(&other->uuid, &u2);
 
     if (u1.time_low == u2.time_low
             && u1.time_mid == u2.time_mid
@@ -242,7 +242,7 @@ bool TinyUuid_IsNull(TinyUuid *thiz)
  * Private API
  *
  *-----------------------------------------------------------------------------*/
-static TinyRet ct_uuid_generate(uuid_u * uuid)
+static TinyRet tiny_uuid_generate(uuid_u * uuid)
 {
 #ifdef _WIN32
     RPC_STATUS status = UuidCreate(&uuid->u);
@@ -265,7 +265,7 @@ static TinyRet ct_uuid_generate(uuid_u * uuid)
 #endif /* __MAC_OSX__ */
 }
 
-static TinyRet ct_uuid_generate_from_string(uuid_u * uuid, const char *str, uint32_t len)
+static TinyRet tiny_uuid_generate_from_string(uuid_u * uuid, const char *str, uint32_t len)
 {
     int i = 0;
     char buf[3];
@@ -319,11 +319,11 @@ static TinyRet ct_uuid_generate_from_string(uuid_u * uuid, const char *str, uint
         u_time.node[i] = (uint8_t) strtoul(buf, NULL, 16);
     }
 
-    ct_uuid_pack(&u_time, uuid);
+    tiny_uuid_pack(&u_time, uuid);
     return TINY_RET_OK;
 }
 
-static void ct_uuid_pack(uuid_time *u_time, uuid_u *uuid)
+static void tiny_uuid_pack(uuid_time *u_time, uuid_u *uuid)
 {
     uint32_t tmp = 0;
     unsigned char * out = uuid->byte;
@@ -355,7 +355,7 @@ static void ct_uuid_pack(uuid_time *u_time, uuid_u *uuid)
     memcpy(out+10, u_time->node, 6);
 }
 
-static void ct_uuid_unpack(uuid_u *uuid, uuid_time *u_time)
+static void tiny_uuid_unpack(uuid_u *uuid, uuid_time *u_time)
 {
     uint32_t tmp = 0;
     const uint8_t * ptr = uuid->byte;
@@ -381,13 +381,13 @@ static void ct_uuid_unpack(uuid_u *uuid, uuid_time *u_time)
     memcpy(u_time->node, ptr, 6);
 }
 
-static int ct_uuid_to_string(uuid_u *uuid, char *out, size_t len, const char *fmt)
+static int tiny_uuid_to_string(uuid_u *uuid, char *out, size_t len, const char *fmt)
 {
     uuid_time u_time;
 
-    ct_uuid_unpack(uuid, &u_time);
+    tiny_uuid_unpack(uuid, &u_time);
 
-    return ct_snprintf(out,
+    return tiny_snprintf(out,
               len,
               fmt,
               u_time.time_low,
@@ -465,11 +465,11 @@ static void linux_uuid_generate_random_ex(uuid_u * uuid)
     uuid_time u_time;
 
     linux_get_random_bytes(&u, sizeof(uuid_u));
-    ct_uuid_unpack(&u, &u_time);
+    tiny_uuid_unpack(&u, &u_time);
 
     u_time.clock_seq = (u_time.clock_seq & 0x3FFF) | 0x8000;
     u_time.time_hi_and_version = (u_time.time_hi_and_version & 0x0FFF) | 0x4000;
-    ct_uuid_pack(&u_time, uuid);
+    tiny_uuid_pack(&u_time, uuid);
 }
 
 /*
@@ -545,7 +545,7 @@ static void linux_uuid_generate_time_ex(uuid_u *uuid, int *num)
     u_time.time_mid = (uint16_t) clock_mid;
     u_time.time_hi_and_version = ((clock_mid >> 16) & 0x0FFF) | 0x1000;
     memcpy(u_time.node, node_id, 6);
-    ct_uuid_pack(&u_time, uuid);
+    tiny_uuid_pack(&u_time, uuid);
 }
 
 /* Assume that the gettimeofday() has microsecond granularity */

@@ -140,7 +140,7 @@ void HttpHeader_SetInteger(HttpHeader * thiz, const char *name, uint32_t value)
     RETURN_IF_FAIL(name);
 
     memset(v, 0, 32);
-    ct_snprintf(v, 32, "%u", value);
+    tiny_snprintf(v, 32, "%u", value);
     HttpHeader_Set(thiz, name, v);
 }
 
