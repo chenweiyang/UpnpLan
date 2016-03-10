@@ -190,7 +190,7 @@ int __tiny_log_write(int prio, const char *tag, const char *text)
     }
     else
     {
-        _write(log_fd, log, strlen(log));
+        int ret = _write(log_fd, log, strlen(log));
     }
 
     return 0;
