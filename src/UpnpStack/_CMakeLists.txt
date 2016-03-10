@@ -1,0 +1,207 @@
+#-----------------------------------------------------------------------------
+#
+# UpnpStack
+#
+#-----------------------------------------------------------------------------
+
+#-----------------------
+# Property
+#-----------------------
+SET(Property_Header
+    Property/ObjectType.h
+    Property/ObjectValue.h
+    Property/Object.h
+    Property/PropertyDefinition.h
+    Property/PropertyValue.h
+    Property/Property.h
+    Property/PropertyList.h
+    Property/AllowedValueList.h
+    Property/AllowedValueRange.h)
+
+SET(Property_Source
+    Property/ObjectType.c
+    Property/Object.c
+    Property/PropertyDefinition.c
+    Property/PropertyValue.c
+    Property/Property.c
+    Property/PropertyList.c
+    Property/AllowedValueList.c
+    Property/AllowedValueRange.c)
+
+SOURCE_GROUP(Property\\headers        FILES     ${Property_Header})
+SOURCE_GROUP(Property\\sources        FILES     ${Property_Source})
+
+#-----------------------
+# UpnpDevice
+#-----------------------
+SET(UpnpDevice_Header
+    UpnpDevice/UpnpActionDefinition.h
+    UpnpDevice/UpnpAction.h
+    UpnpDevice/UpnpActionList.h
+    UpnpDevice/UpnpState.h
+    UpnpDevice/UpnpStateList.h
+    UpnpDevice/UpnpServiceDefinition.h
+    UpnpDevice/UpnpService.h
+    UpnpDevice/UpnpServiceList.h
+    UpnpDevice/UpnpDeviceDefinition.h
+    UpnpDevice/UpnpDevice.h)
+
+SET(UpnpDevice_Source
+    UpnpDevice/UpnpAction.c
+    UpnpDevice/UpnpActionList.c
+    UpnpDevice/UpnpState.c
+    UpnpDevice/UpnpStateList.c
+    UpnpDevice/UpnpService.c
+    UpnpDevice/UpnpServiceList.c
+    UpnpDevice/UpnpDevice.c)
+
+SOURCE_GROUP(UpnpDevice\\headers        FILES     ${UpnpDevice_Header})
+SOURCE_GROUP(UpnpDevice\\sources        FILES     ${UpnpDevice_Source})
+
+#-----------------------
+# UpnpCommon
+#-----------------------
+SET(UpnpCommon_Header
+    UpnpCommon/upnp_api.h
+    UpnpCommon/upnp_define.h
+    UpnpCommon/UpnpUri.h
+    UpnpCommon/UpnpUsn.h)
+
+SET(UpnpCommon_Source
+    UpnpCommon/UpnpUri.c
+    UpnpCommon/UpnpUsn.c)
+
+SOURCE_GROUP(UpnpCommon\\headers        FILES     ${UpnpCommon_Header})
+SOURCE_GROUP(UpnpCommon\\sources        FILES     ${UpnpCommon_Source})
+
+#-----------------------
+# UpnpSsdp
+#-----------------------
+SET(UpnpSsdp_Header
+    UpnpSsdp/UpnpSsdp.h
+    UpnpSsdp/UpnpSsdpJob.h
+    UpnpSsdp/UpnpObject.h
+    UpnpSsdp/UpnpObjectList.h)
+
+SET(UpnpSsdp_Source
+    UpnpSsdp/UpnpSsdp.c
+    UpnpSsdp/UpnpSsdpJob.c
+    UpnpSsdp/UpnpObject.c
+    UpnpSsdp/UpnpObjectList.c)
+
+SOURCE_GROUP(UpnpSsdp\\headers        FILES     ${UpnpSsdp_Header})
+SOURCE_GROUP(UpnpSsdp\\sources        FILES     ${UpnpSsdp_Source})
+
+#-----------------------
+# UpnpSoap
+#-----------------------
+SET(UpnpSoap_Header
+    UpnpSoap/UpnpSoapMessage.h
+    UpnpSoap/UpnpSoapMessageDefinition.h
+    UpnpSoap/UpnpSoapClient.h)
+
+SET(UpnpSoap_Source
+    UpnpSoap/UpnpSoapMessage.c
+    UpnpSoap/UpnpSoapClient.c)
+
+SOURCE_GROUP(UpnpSoap\\headers        FILES     ${UpnpSoap_Header})
+SOURCE_GROUP(UpnpSoap\\sources        FILES     ${UpnpSoap_Source})
+
+#-----------------------
+# UpnpParser
+#-----------------------
+SET(UpnpParser_Header
+    UpnpParser/DDD.h
+    UpnpParser/SDD.h)
+
+SET(UpnpParser_Source
+    UpnpParser/DDD.c
+    UpnpParser/SDD.c)
+
+SOURCE_GROUP(UpnpParser\\headers      FILES     ${UpnpParser_Header})
+SOURCE_GROUP(UpnpParser\\sources      FILES     ${UpnpParser_Source})
+
+#-----------------------
+# UpnpMonitor
+#-----------------------
+SET(UpnpMonitor_Header
+    UpnpMonitor/UpnpMonitor.h
+    UpnpMonitor/UpnpSubscription.h
+    UpnpMonitor/UpnpEvent.h
+    UpnpMonitor/UpnpEventDefinition.h)
+
+SET(UpnpMonitor_Source
+    UpnpMonitor/UpnpMonitor.c
+    UpnpMonitor/UpnpEvent.c)
+
+SOURCE_GROUP(UpnpMonitor\\headers     FILES     ${UpnpMonitor_Header})
+SOURCE_GROUP(UpnpMonitor\\sources     FILES     ${UpnpMonitor_Source})
+
+#-----------------------
+# UpnpCtrlPoint
+#-----------------------
+SET(UpnpCtrlPoint_Header
+    UpnpCtrlPoint/UpnpCtrlPoint.h
+    UpnpCtrlPoint/UpnpDeviceSummary.h)
+
+SET(UpnpCtrlPoint_Source
+    UpnpCtrlPoint/UpnpCtrlPoint.c)
+
+SOURCE_GROUP(UpnpCtrlPoint\\headers        FILES     ${UpnpCtrlPoint_Header})
+SOURCE_GROUP(UpnpCtrlPoint\\sources        FILES     ${UpnpCtrlPoint_Source})
+
+#-----------------------
+# UpnpDeviceHost
+#-----------------------
+SET(UpnpDeviceHost_Header
+    UpnpDeviceHost/UpnpDeviceHost.h)
+
+SET(UpnpDeviceHost_Source
+    UpnpDeviceHost/UpnpDeviceHost.c)
+
+SOURCE_GROUP(UpnpDeviceHost\\headers        FILES     ${UpnpDeviceHost_Header})
+SOURCE_GROUP(UpnpDeviceHost\\sources        FILES     ${UpnpDeviceHost_Source})
+
+#----------------------------------------------------------------------------
+# source
+#----------------------------------------------------------------------------
+SET(SRC
+    ${Property_Header}
+    ${Property_Source}
+    ${UpnpCommon_Header}
+    ${UpnpCommon_Source}
+    ${UpnpDevice_Header}
+    ${UpnpDevice_Source}
+    ${UpnpSsdp_Header}
+    ${UpnpSsdp_Source}
+    ${UpnpSoap_Header}
+    ${UpnpSoap_Source}
+    ${UpnpParser_Header}
+    ${UpnpParser_Source}
+    ${UpnpMonitor_Header}
+    ${UpnpMonitor_Source}
+    ${UpnpCtrlPoint_Header}
+    ${UpnpCtrlPoint_Source}
+    ${UpnpDeviceHost_Header}
+    ${UpnpDeviceHost_Source}
+    )
+
+#----------------------------------------------------------------------------
+# static library
+#----------------------------------------------------------------------------
+#ADD_LIBRARY(upnp_static STATIC ${SRC})
+#SET_TARGET_PROPERTIES(upnp_static PROPERTIES OUTPUT_NAME "upnp_static")
+
+#----------------------------------------------------------------------------
+# shared library
+#----------------------------------------------------------------------------
+ADD_LIBRARY(upnp_shared SHARED ${SRC})
+SET_TARGET_PROPERTIES(upnp_shared PROPERTIES OUTPUT_NAME "upnp")
+TARGET_LINK_LIBRARIES(upnp_shared expat
+                                  tiny_static
+                                  ${OS_LIB})
+
+#----------------------------------------------------------------------------
+# test
+#----------------------------------------------------------------------------
+ADD_SUBDIRECTORY(test_UpnpCtrlPoint)

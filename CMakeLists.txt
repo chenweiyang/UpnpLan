@@ -1,29 +1,54 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(UpnpLan CXX)
+PROJECT(UpnpStack C)
+
+SET(PROJ_NAME "UpnpStack")
+
+
+#---------------------------------------------------------------------------------------
+#
+# c flags
+#
+#---------------------------------------------------------------------------------------
+ADD_DEFINITIONS(-DTINY_DEBUG)
 
 #---------------------------------------------------------------------------------------
 # WIN32
 #---------------------------------------------------------------------------------------
 IF(WIN32)
-    MESSAGE(STATUS "build UpnpLan for Win32")
-	ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-	
-	# unicode for windows
-    ADD_DEFINITIONS(-DUNICODE -D_UNICODE)
+
+    MESSAGE(STATUS "build ${PROJ_NAME}for Windows")
+
+    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+    ADD_DEFINITIONS(-D_XML_SECURE_NO_WARNINGS)
+    ADD_DEFINITIONS(-DUNICODE)
+    ADD_DEFINITIONS(-D_UNICODE)
 
 ELSE(WIN32)
-	ADD_DEFINITIONS(-fPIC)
+    
+    ADD_DEFINITIONS(-Wno-multichar)
+
+    # release
+    ADD_DEFINITIONS(-O3)
+
+    # debug
+    #ADD_DEFINITIONS(-g)
+
+    ADD_DEFINITIONS(-fPIC)
 
     #-----------------------------------------------------------------------------------
-    # APPLE OSX
+    # APPLE MACOSX
     #-----------------------------------------------------------------------------------
     IF(APPLE)
-        MESSAGE(STATUS "build UpnpLan for osx")
+        MESSAGE(STATUS "build ${PROJ_NAME} for osx")
+        ADD_DEFINITIONS(-D__MAC_OSX__)
+
         # Apple LLVM Compiler
         # SET(CMAKE_CXX_COMPILER /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++)
+
         # LLVM gcc Compiler
         SET(CMAKE_CXX_COMPILER /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++)
         SET(CMAKE_CXX_FLAGS -m64)
+
         #SET(CMAKE_CXX_COMPILER g++)
         #SET(CMAKE_CXX_FLAGS -m64)
 
@@ -31,30 +56,42 @@ ELSE(WIN32)
     # Linux
     #-----------------------------------------------------------------------------------
     ELSE(APPLE)
+        MESSAGE(STATUS "build ${PROJ_NAME} for Linux")
+        ADD_DEFINITIONS(-D__LINUX__)
     ENDIF(APPLE)
 ENDIF(WIN32)
+
 
 #---------------------------------------------------------------------------------------
 #
 # include dir
 #
 #---------------------------------------------------------------------------------------
-SET(BOOST_DIR ${PROJECT_SOURCE_DIR}/../boost_1_60_0)
-INCLUDE_DIRECTORIES(${BOOST_DIR})
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/UpnpCommon)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdpart_src/expat/lib)
 
-#--------------------------------------------------------------------------------------
-#
-# 3rdpart library dir
-#
-#--------------------------------------------------------------------------------------
-IF (WIN32)
-ELSE (WIN32)
-    IF(APPLE)
-        SET(LIB_DIR /usr/lib/system/)
-    ELSE(APPLE)
-    ENDIF(APPLE)
-ENDIF (WIN32)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Base)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Container)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Http)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Log)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Memory)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Socket)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/String)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Tcp)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Thread)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Timer)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Uuid)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Worker)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Tiny/Xml)
+
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/UpnpStack/UpnpCommon)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/UpnpStack/UpnpTypedef)
+
+#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Upnp/UpnpSoap)
+#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Upnp/UpnpSsdp)
+#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Upnp/UpnpParser)
+#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Upnp/UpnpMonitor)
+#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Upnp/UpnpDeviceHost)
+#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/Upnp/UpnpCtrlPoint)
 
 #--------------------------------------------------------------------------------------
 #
@@ -62,17 +99,17 @@ ENDIF (WIN32)
 #
 #--------------------------------------------------------------------------------------
 IF (WIN32)
-    SET(OS_LIB Iphlpapi.lib)
+    SET(OS_LIB ws2_32.lib Iphlpapi.lib Rpcrt4.lib winmm.lib)
 ELSE (WIN32)
-    SET(OS_LIB pthread dl)
-
     IF(APPLE)
-        LINK_DIRECTORIES("/opt/local/lib")
+        SET(OS_LIB m pthread)
     ELSE(APPLE)
+        SET(OS_LIB m pthread rt)
+        #SET(OS_LIB log)
     ENDIF(APPLE)
 ENDIF (WIN32)
 
-MESSAGE(STATUS "os_lib : ${OS_LIB}")
+MESSAGE(STATUS "os_lib: ${OS_LIB}")
 
 #-------------------------------------------------------------------------------------
 # set output dir
