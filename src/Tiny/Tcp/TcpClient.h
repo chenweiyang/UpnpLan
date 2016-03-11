@@ -35,9 +35,9 @@ typedef struct _TcpClient
     int                 socket_fd;
     uint32_t            recv_buf_size;
 
-    char                self_ip[CT_IP_LEN + 1];
+    char                self_ip[TINY_IP_LEN + 1];
     uint16_t            self_port;
-    char                server_ip[CT_IP_LEN + 1];
+    char                server_ip[TINY_IP_LEN + 1];
     uint16_t            server_port;
 } TcpClient;
 

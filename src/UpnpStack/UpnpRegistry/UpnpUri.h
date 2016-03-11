@@ -27,12 +27,12 @@
 #ifndef __UPNP_URI_H__
 #define __UPNP_URI_H__
 
-#include "ct_common.h"
+#include "tiny_base.h"
 #include "upnp_define.h"
 #include "upnp_api.h"
-#include "CtUuid.h"
+#include "TinyUuid.h"
 
-CT_BEGIN_DECLS
+TINY_BEGIN_DECLS
 
 
 typedef enum _UpnpUriType
@@ -55,27 +55,27 @@ typedef struct _UpnpUri
     char service_type[UPNP_TYPE_LEN];
     char version[UPNP_VERSION_LEN];
     bool strict_uuid;
-    CtUuid uuid;
+    TinyUuid uuid;
     char uuid_string[UPNP_UUID_LEN];
 } UpnpUri;
 
 UPNP_API UpnpUri * UpnpUri_New(void);
-UPNP_API CtRet UpnpUri_Construct(UpnpUri *thiz);
-UPNP_API CtRet UpnpUri_Dispose(UpnpUri *thiz);
+UPNP_API TinyRet UpnpUri_Construct(UpnpUri *thiz);
+UPNP_API TinyRet UpnpUri_Dispose(UpnpUri *thiz);
 UPNP_API void UpnpUri_Delete(UpnpUri *thiz);
 UPNP_API void UpnpUri_Copy(UpnpUri *dst, UpnpUri *src);
 
-UPNP_API CtRet UpnpUri_Initialize_RootDevice(UpnpUri *thiz);
-UPNP_API CtRet UpnpUri_Initialize_Uuid(UpnpUri *thiz, const char *uuid);
-UPNP_API CtRet UpnpUri_Initialize_UpnpDevice(UpnpUri *thiz, const char *type, const char *version);
-UPNP_API CtRet UpnpUri_Initialize_UpnpService(UpnpUri *thiz, const char *type, const char *version);
-UPNP_API CtRet UpnpUri_Initialize_NonUpnpDevice(UpnpUri *thiz, const char *domain, const char *type, const char *version);
-UPNP_API CtRet UpnpUri_Initialize_NonUpnpService(UpnpUri *thiz, const char *domain, const char *type, const char *version);
+UPNP_API TinyRet UpnpUri_Initialize_RootDevice(UpnpUri *thiz);
+UPNP_API TinyRet UpnpUri_Initialize_Uuid(UpnpUri *thiz, const char *uuid);
+UPNP_API TinyRet UpnpUri_Initialize_UpnpDevice(UpnpUri *thiz, const char *type, const char *version);
+UPNP_API TinyRet UpnpUri_Initialize_UpnpService(UpnpUri *thiz, const char *type, const char *version);
+UPNP_API TinyRet UpnpUri_Initialize_NonUpnpDevice(UpnpUri *thiz, const char *domain, const char *type, const char *version);
+UPNP_API TinyRet UpnpUri_Initialize_NonUpnpService(UpnpUri *thiz, const char *domain, const char *type, const char *version);
 
-UPNP_API CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid);
+UPNP_API TinyRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid);
 UPNP_API bool UpnpUri_IsEqual(UpnpUri *thiz, const char *string);
 
 
-CT_END_DECLS
+TINY_END_DECLS
 
 #endif /* __UPNP_URI_H__ */

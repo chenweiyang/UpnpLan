@@ -37,8 +37,8 @@ struct _TcpConn
     int                 socket_fd;
     uint32_t            recv_buf_size;
 
-    char                self_ip[CT_IP_LEN];
-    char                client_ip[CT_IP_LEN];
+    char                self_ip[TINY_IP_LEN];
+    char                client_ip[TINY_IP_LEN];
     uint16_t            client_port;
 
     TinyThread            thread;

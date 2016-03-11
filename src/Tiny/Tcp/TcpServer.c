@@ -183,11 +183,11 @@ static void accept_loop(void *param)
     {
         TinyRet ret = TINY_RET_OK;
         int fd = 0;
-        char ip[CT_IP_LEN];
+        char ip[TINY_IP_LEN];
         uint16_t port = 0;
 
-        memset(ip, 0, CT_IP_LEN);
-        fd = tiny_tcp_accept(thiz->socket_fd, ip, CT_IP_LEN, &port);
+        memset(ip, 0, TINY_IP_LEN);
+        fd = tiny_tcp_accept(thiz->socket_fd, ip, TINY_IP_LEN, &port);
         if (fd > 0)
         {
             TcpConn *conn = TcpConn_New();

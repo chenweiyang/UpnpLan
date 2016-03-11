@@ -13,9 +13,9 @@
 */
 
 #include "UpnpUsn.h"
-#include "ct_memory.h"
-#include "str_equal.h"
-#include "str_split.h"
+#include "tiny_memory.h"
+#include "tiny_str_equal.h"
+#include "tiny_str_split.h"
 
 UpnpUsn * UpnpUsn_New(void)
 {
@@ -23,9 +23,9 @@ UpnpUsn * UpnpUsn_New(void)
 
     do
     {
-        CtRet ret = CT_RET_OK;
+        TinyRet ret = TINY_RET_OK;
 
-        thiz = (UpnpUsn *)ct_malloc(sizeof(UpnpUsn));
+        thiz = (UpnpUsn *)tiny_malloc(sizeof(UpnpUsn));
         if (thiz == NULL)
         {
             break;
@@ -44,17 +44,17 @@ UpnpUsn * UpnpUsn_New(void)
     return thiz;
 }
 
-CtRet UpnpUsn_Construct(UpnpUsn *thiz)
+TinyRet UpnpUsn_Construct(UpnpUsn *thiz)
 {
-    CtRet ret = CT_RET_OK;
+    TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     do
     {
         memset(thiz, 0, sizeof(UpnpUsn));
 
-        ret = CtUuid_Construct(&thiz->uuid);
+        ret = TinyUuid_Construct(&thiz->uuid);
         if (RET_FAILED(ret))
         {
             break;
@@ -71,14 +71,14 @@ CtRet UpnpUsn_Construct(UpnpUsn *thiz)
     return ret;
 }
 
-CtRet UpnpUsn_Dispose(UpnpUsn *thiz)
+TinyRet UpnpUsn_Dispose(UpnpUsn *thiz)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     UpnpUri_Dispose(&thiz->uri);
-    CtUuid_Dispose(&thiz->uuid);
+    TinyUuid_Dispose(&thiz->uuid);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
 void UpnpUsn_Delete(UpnpUsn *thiz)
@@ -86,7 +86,7 @@ void UpnpUsn_Delete(UpnpUsn *thiz)
     RETURN_IF_FAIL(thiz);
 
     UpnpUsn_Dispose(thiz);
-    ct_free(thiz);
+    tiny_free(thiz);
 }
 
 void UpnpUsn_Copy(UpnpUsn *dst, UpnpUsn *src)
@@ -95,63 +95,63 @@ void UpnpUsn_Copy(UpnpUsn *dst, UpnpUsn *src)
     RETURN_IF_FAIL(src);
 
     strncpy(dst->string, src->string, UPNP_USN_LEN);
-    CtUuid_Copy(&dst->uuid, &src->uuid);
+    TinyUuid_Copy(&dst->uuid, &src->uuid);
     strncpy(dst->uuid_string, src->uuid_string, UPNP_UUID_LEN); 
     UpnpUri_Copy(&dst->uri, &src->uri);
 }
 
-CtRet UpnpUsn_Initialize_Uuid(UpnpUsn *thiz, const char *uuid)
+TinyRet UpnpUsn_Initialize_Uuid(UpnpUsn *thiz, const char *uuid)
 {
-    CtRet ret = CT_RET_OK;
+    TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(uuid, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(uuid, TINY_RET_E_ARG_NULL);
 
     do
     {
-        ret = CtUuid_ParseFromString(&thiz->uuid, uuid);
+        ret = TinyUuid_ParseFromString(&thiz->uuid, uuid);
         if (RET_FAILED(ret))
         {
             break;
         }
 
-        ct_snprintf(thiz->string, UPNP_USN_LEN, "uuid:%s", uuid);
+        tiny_snprintf(thiz->string, UPNP_USN_LEN, "uuid:%s", uuid);
     }
     while (0);
 
     return ret;
 }
 
-CtRet UpnpUsn_Initialize_Uuid_UpnpUri(UpnpUsn *thiz, const char *uuid, UpnpUri *uri)
+TinyRet UpnpUsn_Initialize_Uuid_UpnpUri(UpnpUsn *thiz, const char *uuid, UpnpUri *uri)
 {
-    CtRet ret = CT_RET_OK;
+    TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(uuid, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(uri, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(uuid, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(uri, TINY_RET_E_ARG_NULL);
 
     do
     {
-        ret = CtUuid_ParseFromString(&thiz->uuid, uuid);
+        ret = TinyUuid_ParseFromString(&thiz->uuid, uuid);
         if (RET_FAILED(ret))
         {
             break;
         }
 
         UpnpUri_Copy(&thiz->uri, uri);
-        ct_snprintf(thiz->string, UPNP_USN_LEN, "uuid:%s::%s", uuid, uri->string);
+        tiny_snprintf(thiz->string, UPNP_USN_LEN, "uuid:%s::%s", uuid, uri->string);
     }
     while (0);
 
     return ret;
 }
 
-CtRet UpnpUsn_Parse(UpnpUsn *thiz, const char *string, bool strict_uuid)
+TinyRet UpnpUsn_Parse(UpnpUsn *thiz, const char *string, bool strict_uuid)
 {
-    CtRet ret = CT_RET_OK;
+    TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(string, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(string, TINY_RET_E_ARG_NULL);
 
     do
     {
@@ -163,7 +163,7 @@ CtRet UpnpUsn_Parse(UpnpUsn *thiz, const char *string, bool strict_uuid)
         count = str_split(string, "::", group, 2);
         if (count == 0)
         {
-            ret = CT_RET_E_ARG_INVALID;
+            ret = TINY_RET_E_ARG_INVALID;
             break;
         }
 
@@ -176,7 +176,7 @@ CtRet UpnpUsn_Parse(UpnpUsn *thiz, const char *string, bool strict_uuid)
 
         if (p == NULL)
         {
-            ret = CT_RET_E_ARG_INVALID;
+            ret = TINY_RET_E_ARG_INVALID;
             break;
         }
 
@@ -184,7 +184,7 @@ CtRet UpnpUsn_Parse(UpnpUsn *thiz, const char *string, bool strict_uuid)
 
         if (strict_uuid)
         {
-            ret = CtUuid_ParseFromString(&thiz->uuid, p);
+            ret = TinyUuid_ParseFromString(&thiz->uuid, p);
             if (RET_FAILED(ret))
             {
                 break;

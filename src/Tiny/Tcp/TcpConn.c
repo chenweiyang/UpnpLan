@@ -91,7 +91,7 @@ TinyRet TcpConn_Initialize(TcpConn *thiz, uint32_t id, int fd, const char *ip, u
 
     tiny_socket_set_nonblock(thiz->socket_fd);
 
-    strncpy(thiz->client_ip, ip, CT_IP_LEN);
+    strncpy(thiz->client_ip, ip, TINY_IP_LEN);
     thiz->client_port = port;
 
     return TINY_RET_OK;
@@ -104,7 +104,7 @@ TinyRet TcpConn_Dispose(TcpConn *thiz)
     thiz->id = 0;
     thiz->socket_fd = 0;
 
-    memset(thiz->client_ip, 0, CT_IP_LEN);
+    memset(thiz->client_ip, 0, TINY_IP_LEN);
     thiz->client_port = 0;
 
     return TINY_RET_OK;

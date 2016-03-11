@@ -58,7 +58,7 @@ struct _HttpMessage
 {
     uint32_t            ref;
     HttpType            type;
-    char                ip[CT_IP_LEN];
+    char                ip[TINY_IP_LEN];
     uint16_t            port;
     char                protocol_identifier[PROTOCOL_LEN];
 
@@ -152,7 +152,7 @@ void HttpMessage_Copy(HttpMessage *dst, HttpMessage *src)
 
     dst->ref = src->ref;
     dst->type = src->type;
-    strncpy(dst->ip, src->ip, CT_IP_LEN);
+    strncpy(dst->ip, src->ip, TINY_IP_LEN);
     dst->port = src->port;
     strncpy(dst->protocol_identifier, src->protocol_identifier, PROTOCOL_LEN);
     strncpy(dst->request_line.method, src->request_line.method, HTTP_METHOD_LEN);
@@ -179,7 +179,7 @@ void HttpMessage_SetIp(HttpMessage *thiz, const char *ip)
     RETURN_IF_FAIL(thiz);
     RETURN_IF_FAIL(ip);
 
-    strncpy(thiz->ip, ip, CT_IP_LEN);
+    strncpy(thiz->ip, ip, TINY_IP_LEN);
 }
 
 const char * HttpMessage_GetIp(HttpMessage *thiz)
@@ -802,16 +802,16 @@ TinyRet HttpMessage_SetRequest(HttpMessage *thiz, const char * method, const cha
 
     do
     {
-        char ip[CT_IP_LEN];
+        char ip[TINY_IP_LEN];
         uint16_t port = 0;
         char uri[512];
         char host[128];
         
-        memset(ip, 0, CT_IP_LEN);
+        memset(ip, 0, TINY_IP_LEN);
         memset(uri, 0, 512);
         memset(host, 0, 128);
 
-        ret = url_split(url, ip, CT_IP_LEN, &port, uri, 512);
+        ret = url_split(url, ip, TINY_IP_LEN, &port, uri, 512);
         if (RET_FAILED(ret))
         {
             LOG_W(TAG, "url_split: %s", tiny_ret_to_str(ret));

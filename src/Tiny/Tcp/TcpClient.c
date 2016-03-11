@@ -132,10 +132,10 @@ TinyRet TcpClient_Connect(TcpClient *thiz, const char *ip, uint16_t port, uint32
 
         thiz->status = TCP_CLIENT_CONNECTED;
 
-        strncpy(thiz->server_ip, ip, CT_IP_LEN);
+        strncpy(thiz->server_ip, ip, TINY_IP_LEN);
         thiz->server_port = port;
 
-        tiny_socket_get_ip(thiz->socket_fd, thiz->self_ip, CT_IP_LEN);
+        tiny_socket_get_ip(thiz->socket_fd, thiz->self_ip, TINY_IP_LEN);
         thiz->self_port = tiny_socket_get_port(thiz->socket_fd);
     }
     while (false);

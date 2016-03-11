@@ -41,12 +41,12 @@
 #endif /* __ANDROID__ */
 
 #ifdef CT_DEBUG
-    #define LOG_TIME_BEGIN(tag, func) uint64_t usec_##func = ct_getusec()
+    #define LOG_TIME_BEGIN(tag, func) uint64_t usec_##func = tiny_getusec()
 
     #ifdef __MAC_OSX__
-        #define LOG_TIME_END(tag, func) LOG_D(tag, "%s, consuming: %lldms", #func, (ct_getusec() - usec_##func) / 1000)
+        #define LOG_TIME_END(tag, func) LOG_D(tag, "%s, consuming: %lldms", #func, (tiny_getusec() - usec_##func) / 1000)
     #else
-        #define LOG_TIME_END(tag, func) LOG_D(tag, "%s, consuming: %lums", #func, (ct_getusec() - usec_##func) / 1000)
+        #define LOG_TIME_END(tag, func) LOG_D(tag, "%s, consuming: %lums", #func, (tiny_getusec() - usec_##func) / 1000)
     #endif
 #else
     #define LOG_TIME_BEGIN(tag, func)

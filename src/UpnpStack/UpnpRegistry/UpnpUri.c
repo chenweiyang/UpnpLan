@@ -13,10 +13,10 @@
 */
 
 #include "UpnpUri.h"
-#include "ct_memory.h"
-#include "ct_log.h"
-#include "str_equal.h"
-#include "str_split.h"
+#include "tiny_memory.h"
+#include "tiny_log.h"
+#include "tiny_str_equal.h"
+#include "tiny_str_split.h"
 
 #define TAG             "UpnpUri"
 
@@ -32,9 +32,9 @@ UpnpUri * UpnpUri_New(void)
 
     do
     {
-        CtRet ret = CT_RET_OK;
+        TinyRet ret = TINY_RET_OK;
 
-        thiz = (UpnpUri *)ct_malloc(sizeof(UpnpUri));
+        thiz = (UpnpUri *)tiny_malloc(sizeof(UpnpUri));
         if (thiz == NULL)
         {
             break;
@@ -53,18 +53,18 @@ UpnpUri * UpnpUri_New(void)
     return thiz;
 }
 
-CtRet UpnpUri_Construct(UpnpUri *thiz)
+TinyRet UpnpUri_Construct(UpnpUri *thiz)
 {
-    CtRet ret = CT_RET_OK;
+    TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     do
     {
         memset(thiz, 0, sizeof(UpnpUri));
         thiz->type = UPNP_URI_UNDEFINED;
 
-        ret = CtUuid_Construct(&thiz->uuid);
+        ret = TinyUuid_Construct(&thiz->uuid);
         if (RET_FAILED(ret))
         {
             break;
@@ -75,13 +75,13 @@ CtRet UpnpUri_Construct(UpnpUri *thiz)
     return ret;
 }
 
-CtRet UpnpUri_Dispose(UpnpUri *thiz)
+TinyRet UpnpUri_Dispose(UpnpUri *thiz)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    CtUuid_Dispose(&thiz->uuid);
+    TinyUuid_Dispose(&thiz->uuid);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
 void UpnpUri_Delete(UpnpUri *thiz)
@@ -89,7 +89,7 @@ void UpnpUri_Delete(UpnpUri *thiz)
     RETURN_IF_FAIL(thiz);
 
     UpnpUri_Dispose(thiz);
-    ct_free(thiz);
+    tiny_free(thiz);
 }
 
 void UpnpUri_Copy(UpnpUri *dst, UpnpUri *src)
@@ -99,7 +99,7 @@ void UpnpUri_Copy(UpnpUri *dst, UpnpUri *src)
 
     dst->type = src->type;
     strncpy(dst->string, src->string, UPNP_URI_LEN);
-    CtUuid_Copy(&dst->uuid, &src->uuid);
+    TinyUuid_Copy(&dst->uuid, &src->uuid);
     strncpy(dst->uuid_string, src->uuid_string, UPNP_UUID_LEN);
     strncpy(dst->domain_name, src->domain_name, UPNP_DOMAIN_NAME_LEN);
     strncpy(dst->device_type, src->device_type, UPNP_TYPE_LEN);
@@ -107,82 +107,82 @@ void UpnpUri_Copy(UpnpUri *dst, UpnpUri *src)
     strncpy(dst->version, src->version, UPNP_VERSION_LEN);
 }
 
-CtRet UpnpUri_Initialize_RootDevice(UpnpUri *thiz)
+TinyRet UpnpUri_Initialize_RootDevice(UpnpUri *thiz)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     thiz->type = UPNP_URI_ROOT_DEVICE;
-    ct_snprintf(thiz->string, UPNP_URI_LEN, ROOT_DEVICE);
+    tiny_snprintf(thiz->string, UPNP_URI_LEN, ROOT_DEVICE);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
-CtRet UpnpUri_Initialize_Uuid(UpnpUri *thiz, const char *uuid)
+TinyRet UpnpUri_Initialize_Uuid(UpnpUri *thiz, const char *uuid)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     thiz->type = UPNP_URI_UUID;
-    ct_snprintf(thiz->string, UPNP_URI_LEN, "%s", uuid);
+    tiny_snprintf(thiz->string, UPNP_URI_LEN, "%s", uuid);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
-CtRet UpnpUri_Initialize_UpnpDevice(UpnpUri *thiz, const char *type, const char *version)
+TinyRet UpnpUri_Initialize_UpnpDevice(UpnpUri *thiz, const char *type, const char *version)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(type, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(version, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(type, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(version, TINY_RET_E_ARG_NULL);
 
     thiz->type = UPNP_URI_UPNP_DEVICE;
-    ct_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, SCHEMAS_UPNP_ORG, DEVICE, type, version);
+    tiny_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, SCHEMAS_UPNP_ORG, DEVICE, type, version);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
-CtRet UpnpUri_Initialize_UpnpService(UpnpUri *thiz, const char *type, const char *version)
+TinyRet UpnpUri_Initialize_UpnpService(UpnpUri *thiz, const char *type, const char *version)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(type, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(version, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(type, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(version, TINY_RET_E_ARG_NULL);
 
     thiz->type = UPNP_URI_UPNP_SERVICE;
-    ct_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, SCHEMAS_UPNP_ORG, SERVICE, type, version);
+    tiny_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, SCHEMAS_UPNP_ORG, SERVICE, type, version);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
-CtRet UpnpUri_Initialize_NonUpnpDevice(UpnpUri *thiz, const char *domain, const char *type, const char *version)
+TinyRet UpnpUri_Initialize_NonUpnpDevice(UpnpUri *thiz, const char *domain, const char *type, const char *version)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(domain, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(type, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(version, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(domain, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(type, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(version, TINY_RET_E_ARG_NULL);
 
     thiz->type = UPNP_URI_NON_UPNP_DEVICE;
-    ct_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, domain, DEVICE, type, version);
+    tiny_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, domain, DEVICE, type, version);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
-CtRet UpnpUri_Initialize_NonUpnpService(UpnpUri *thiz, const char *domain, const char *type, const char *version)
+TinyRet UpnpUri_Initialize_NonUpnpService(UpnpUri *thiz, const char *domain, const char *type, const char *version)
 {
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(domain, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(type, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(version, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(domain, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(type, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(version, TINY_RET_E_ARG_NULL);
 
     thiz->type = UPNP_URI_NON_UPNP_SERVICE;
-    ct_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, domain, SERVICE, type, version);
+    tiny_snprintf(thiz->string, UPNP_URI_LEN, "%s:%s:%s:%s:%s", URN, domain, SERVICE, type, version);
 
-    return CT_RET_OK;
+    return TINY_RET_OK;
 }
 
-CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
+TinyRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
 {
-    CtRet ret = CT_RET_OK;
+    TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(thiz, CT_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(string, CT_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(string, TINY_RET_E_ARG_NULL);
 
     do
     {
@@ -199,7 +199,7 @@ CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
         count = str_split(string, ":", group, 10);
         if (count == 0)
         {
-            ret = CT_RET_E_ARG_INVALID;
+            ret = TINY_RET_E_ARG_INVALID;
             break;
         }
 
@@ -209,7 +209,7 @@ CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
 
             if (strict_uuid)
             {
-                ret = CtUuid_ParseFromString(&thiz->uuid, group[1]);
+                ret = TinyUuid_ParseFromString(&thiz->uuid, group[1]);
             }
             break;
         }
@@ -218,7 +218,7 @@ CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
         {
             if (count != 5)
             {
-                ret = CT_RET_E_ARG_INVALID;
+                ret = TINY_RET_E_ARG_INVALID;
                 break;
             }
 
@@ -242,7 +242,7 @@ CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
                 }
                 else
                 {
-                    ret = CT_RET_E_ARG_INVALID;
+                    ret = TINY_RET_E_ARG_INVALID;
                     break;
                 }
             }
@@ -266,7 +266,7 @@ CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
                 }
                 else
                 {
-                    ret = CT_RET_E_ARG_INVALID;
+                    ret = TINY_RET_E_ARG_INVALID;
                     break;
                 }
             }
@@ -274,7 +274,7 @@ CtRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uuid)
             break;
         }
 
-        ret = CT_RET_E_ARG_INVALID;
+        ret = TINY_RET_E_ARG_INVALID;
     }
     while (0);
 

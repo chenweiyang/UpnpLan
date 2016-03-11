@@ -226,11 +226,11 @@ TinyRet TinySocketIpc_Recv(TinySocketIpc *thiz, IpcMsg * ipc_msg)
 
     do
     {
-        char ip[CT_IP_LEN] = { 0 };
+        char ip[TINY_IP_LEN] = { 0 };
         uint16_t port = 0;
         uint32_t len = 0;
 
-        if (socket_read(thiz->socket_fd, ipc_msg->msg, MAX_IPC_MSG_LEN, ip, CT_IP_LEN, &port) <= 0)
+        if (socket_read(thiz->socket_fd, ipc_msg->msg, MAX_IPC_MSG_LEN, ip, TINY_IP_LEN, &port) <= 0)
         {
             LOG_W(TAG, "socket_read: %s", strerror(errno));
             ret = TINY_RET_E_INTERNAL;

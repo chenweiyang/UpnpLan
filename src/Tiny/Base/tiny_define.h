@@ -16,8 +16,8 @@
 #define __TINY_DEFINE_H__
 
 
-#define CT_IP_LEN              32
-#define CT_URL_LEN             1024
+#define TINY_IP_LEN              32
+#define TINY_URL_LEN             1024
 
 
 
