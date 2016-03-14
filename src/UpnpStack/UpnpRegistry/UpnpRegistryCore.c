@@ -144,6 +144,7 @@ TinyRet UpnpRegistryCore_Start(UpnpRegistryCore *thiz,
         thiz->running = true;
         thiz->requestHandler = requestHandler;
         thiz->responseHandler = responseHandler;
+        thiz->ctx = ctx;
 
         TinyThread_Start(&thiz->thread);
     } while (0);

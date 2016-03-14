@@ -16,7 +16,7 @@
 #include "tiny_base.h"
 #include "upnp_api.h"
 #include "UpnpUsn.h"
-#include "UpnpDevice.h"
+#include "UpnpObject.h"
 
 TINY_BEGIN_DECLS
 
@@ -30,12 +30,13 @@ UPNP_API void UpnpRegistry_Delete(UpnpRegistry *thiz);
 UPNP_API TinyRet UpnpRegistry_Start(UpnpRegistry *thiz);
 UPNP_API TinyRet UpnpRegistry_Stop(UpnpRegistry *thiz);
 
-typedef void(*UpnpDeviceListener)(UpnpDevice *device, bool alive, void *ctx);
-UPNP_API TinyRet UpnpRegistry_Discover(UpnpRegistry *thiz, UpnpDeviceListener listener, void *ctx);
+typedef bool(*UpnpObjectFilter)(UpnpUsn *usn, void *ctx);
+typedef void(*UpnpObjectListener)(UpnpObject *object, bool alive, void *ctx);
+UPNP_API TinyRet UpnpRegistry_Discover(UpnpRegistry *thiz, bool strictedUuid, UpnpObjectListener listener, UpnpObjectFilter filter, void *ctx);
 UPNP_API TinyRet UpnpRegistry_StopDiscovery(UpnpRegistry *thiz);
 
-UPNP_API TinyRet UpnpRegistry_Register(UpnpRegistry *thiz, UpnpDevice *device);
-UPNP_API TinyRet UpnpRegistry_UnRegister(UpnpRegistry *thiz, UpnpDevice *device);
+UPNP_API TinyRet UpnpRegistry_Register(UpnpRegistry *thiz, UpnpObject *object);
+UPNP_API TinyRet UpnpRegistry_UnRegister(UpnpRegistry *thiz, UpnpObject *object);
 
 
 TINY_END_DECLS

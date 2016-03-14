@@ -4,16 +4,16 @@
 #define BYTEORDER 1234
 
 /* Define to 1 if you have the `bcopy' function. */
-#define HAVE_BCOPY
+/* #undef HAVE_BCOPY */
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H
+/* #undef HAVE_DLFCN_H */
 
 /* Define to 1 if you have the <fcntl.h> header file. */
 #define HAVE_FCNTL_H
 
 /* Define to 1 if you have the `getpagesize' function. */
-#define HAVE_GETPAGESIZE
+/* #undef HAVE_GETPAGESIZE */
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H
@@ -25,7 +25,7 @@
 #define HAVE_MEMORY_H
 
 /* Define to 1 if you have a working `mmap' system call. */
-#define HAVE_MMAP
+/* #undef HAVE_MMAP */
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H
@@ -34,7 +34,7 @@
 #define HAVE_STDLIB_H
 
 /* Define to 1 if you have the <strings.h> header file. */
-#define HAVE_STRINGS_H
+/* #undef HAVE_STRINGS_H */
 
 /* Define to 1 if you have the <string.h> header file. */
 #define HAVE_STRING_H
@@ -46,7 +46,7 @@
 #define HAVE_SYS_TYPES_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#define HAVE_UNISTD_H
+/* #undef HAVE_UNISTD_H */
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT

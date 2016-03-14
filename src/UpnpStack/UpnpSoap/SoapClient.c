@@ -30,7 +30,7 @@ struct _SoapClient
     HttpClient  * client;
 };
 
-SoapClient * UpnpSoapClient_New(void)
+SoapClient * SoapClient_New(void)
 {
     SoapClient *thiz = NULL;
 

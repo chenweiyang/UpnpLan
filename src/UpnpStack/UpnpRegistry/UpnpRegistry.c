@@ -15,6 +15,7 @@
 #include "tiny_log.h"
 #include "UpnpRegistryCore.h"
 #include "HttpMessage.h"
+#include "UpnpObjectList.h"
 
 #define TAG                 "UpnpRegistry"
 
@@ -89,10 +90,19 @@ static void handle_http_response(HttpMessage *response, void *ctx);
 static void handle_notify(UpnpRegistry *thiz, HttpMessage *message);
 static void handle_search_request(UpnpRegistry *thiz, HttpMessage *message);
 static void handle_search_response(UpnpRegistry *thiz, HttpMessage *message);
+static UpnpObject * convert_upnp_object(const char *ip, HttpMessage *msg, bool strictedUuid);
+static bool validate_usn(UpnpRegistry *thiz, const char *str_usn);
+static TinyRet validate_nt(const char *type, bool strict_uuid);
 
 struct _UpnpRegistry
 {
     UpnpRegistryCore            core;
+    UpnpObjectListener          listener;
+    UpnpObjectFilter            filter;
+    void                      * ctx;
+
+    bool                        strictedUuid;
+    UpnpObjectList            * foundObjects;
 };
 
 UpnpRegistry * UpnpRegistry_New(void)
@@ -130,9 +140,20 @@ static TinyRet UpnpRegistry_Construct(UpnpRegistry *thiz)
     do
     {
         memset(thiz, 0, sizeof(UpnpRegistry));
+        thiz->listener = NULL;
+        thiz->filter = NULL;
+        thiz->ctx = NULL;
+        thiz->strictedUuid = false;
+        thiz->foundObjects = NULL;
 
         UpnpRegistryCore_Construct(&thiz->core);
 
+        thiz->foundObjects = UpnpObjectList_New();
+        if (thiz->foundObjects == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
     } while (0);
 
     return ret;
@@ -143,6 +164,11 @@ static TinyRet UpnpRegistry_Dispose(UpnpRegistry *thiz)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     UpnpRegistryCore_Dispose(&thiz->core);
+
+    if (thiz->foundObjects != NULL)
+    {
+        UpnpObjectList_Delete(thiz->foundObjects);
+    }
 
     return TINY_RET_OK;
 }
@@ -173,12 +199,17 @@ TinyRet UpnpRegistry_Stop(UpnpRegistry *thiz)
     return TINY_RET_OK;
 }
 
-TinyRet UpnpRegistry_Discover(UpnpRegistry *thiz, UpnpDeviceListener listener, void *ctx)
+TinyRet UpnpRegistry_Discover(UpnpRegistry *thiz, bool strictedUuid, UpnpObjectListener listener, UpnpObjectFilter filter, void *ctx)
 {
     TinyRet ret = TINY_RET_OK;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-//    RETURN_VAL_IF_FAIL(listener, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(listener, TINY_RET_E_ARG_NULL);
+
+    thiz->strictedUuid = strictedUuid;
+    thiz->listener = listener;
+    thiz->filter = filter;
+    thiz->ctx = ctx;
 
     do
     {
@@ -211,23 +242,25 @@ TinyRet UpnpRegistry_StopDiscovery(UpnpRegistry *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_OK;
-}
-
-TinyRet UpnpRegistry_Register(UpnpRegistry *thiz, UpnpDevice *device)
-{
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+    thiz->listener = NULL;
 
     return TINY_RET_OK;
 }
 
-TinyRet UpnpRegistry_UnRegister(UpnpRegistry *thiz, UpnpDevice *device)
+TinyRet UpnpRegistry_Register(UpnpRegistry *thiz, UpnpObject *object)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(object, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_OK;
+    return TINY_RET_E_NOT_IMPLEMENTED;
+}
+
+TinyRet UpnpRegistry_UnRegister(UpnpRegistry *thiz, UpnpObject *object)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(object, TINY_RET_E_ARG_NULL);
+
+    return TINY_RET_E_NOT_IMPLEMENTED;
 }
 
 static void handle_http_request(HttpMessage *request, void *ctx)
@@ -253,9 +286,101 @@ static void handle_http_response(HttpMessage *response, void *ctx)
     handle_search_response((UpnpRegistry *)ctx, response);
 }
 
+/*
+NOTIFY * HTTP/1.1
+Host:239.255.255.250:1900
+NT:uuid:9ba32c90-9923-4ec6-81d0-335100229b91
+NTS:ssdp:alive
+Location:http://10.0.1.8:2869/upnphost/udhisapi.dll?content=uuid:9ba32c90-9923-4ec6-81d0-335100229b91
+USN:uuid:9ba32c90-9923-4ec6-81d0-335100229b91
+Cache-Control:max-age=1800
+Server:Microsoft-Windows-NT/5.1 UPnP/1.0 UPnP-Device-Host/1.0
+OPT:"http://schemas.upnp.org/upnp/1/0/"; ns=01
+01-NLS:f5662e2e617eb7532dbdedda7a40258a
+*/
+
+/*
+NOTIFY * HTTP/1.1
+Host:239.255.255.250:1900
+NT:urn:schemas-upnp-org:service:ConnectionManager:1
+NTS:ssdp:byebye
+Location:http://10.0.1.8:2869/upnphost/udhisapi.dll?content=uuid:9ba32c90-9923-4ec6-81d0-335100229b91
+USN:uuid:9ba32c90-9923-4ec6-81d0-335100229b91::urn:schemas-upnp-org:service:ConnectionManager:1
+Cache-Control:max-age=1800
+Server:Microsoft-Windows-NT/5.1 UPnP/1.0 UPnP-Device-Host/1.0
+OPT:"http://schemas.upnp.org/upnp/1/0/"; ns=01
+01-NLS:f5662e2e617eb7532dbdedda7a40258a
+*/
 static void handle_notify(UpnpRegistry *thiz, HttpMessage *message)
 {
     LOG_D(TAG, "handle_notify");
+
+    UpnpObjectList_Lock(thiz->foundObjects);
+
+    do
+    {
+        TinyRet ret = TINY_RET_OK;
+        const char *usn = NULL;
+        const char *nts = NULL;
+        UpnpObject *obj = NULL;
+
+        if (thiz->listener == NULL)
+        {
+            break;
+        }
+
+        usn = HttpMessage_GetHeaderValue(message, HEAD_USN);
+        if (usn == NULL)
+        {
+            LOG_D(TAG, "NOTIFY invalid: not found USN");
+            break;
+        }
+
+        if (!validate_usn(thiz, usn))
+        {
+            break;
+        }
+
+        nts = HttpMessage_GetHeaderValue(message, HEAD_NTS);
+        if (nts == NULL)
+        {
+            break;
+        }
+
+        obj = UpnpObjectList_GetObject(thiz->foundObjects, usn);
+
+        if (STR_EQUAL(nts, NTS_ALIVE))
+        {
+            if (obj != NULL)
+            {
+                UpnpObject_UpdateNextNotify(obj);
+                break;
+            }
+
+            obj = convert_upnp_object(HttpMessage_GetIp(message), message, thiz->strictedUuid);
+            if (obj == NULL)
+            {
+                break;
+            }
+
+            UpnpObjectList_AddObject(thiz->foundObjects, obj);
+            thiz->listener(obj, true, thiz->ctx);
+        }
+        else if (STR_EQUAL(nts, NTS_BYEBYE))
+        {
+            if (obj == NULL)
+            {
+                break;
+            }
+
+            thiz->listener(obj, false, thiz->ctx);
+            UpnpObjectList_RemoveObject(thiz->foundObjects, usn);
+        }
+    } while (0);
+
+    UpnpObjectList_Unlock(thiz->foundObjects);
+
+    return;
 }
 
 static void handle_search_request(UpnpRegistry *thiz, HttpMessage *message)
@@ -266,4 +391,174 @@ static void handle_search_request(UpnpRegistry *thiz, HttpMessage *message)
 static void handle_search_response(UpnpRegistry *thiz, HttpMessage *message)
 {
     LOG_D(TAG, "handle_search_request");
+
+    UpnpObjectList_Lock(thiz->foundObjects);
+
+    do
+    {
+        TinyRet ret = TINY_RET_OK;
+        const char *usn = NULL;
+        UpnpObject *obj = NULL;
+
+        if (thiz->listener == NULL)
+        {
+            break;
+        }
+
+        usn = HttpMessage_GetHeaderValue(message, HEAD_USN);
+        if (usn == NULL)
+        {
+            break;
+        }
+
+        if (!validate_usn(thiz, usn))
+        {
+            break;
+        }
+
+        obj = UpnpObjectList_GetObject(thiz->foundObjects, usn);
+        if (obj != NULL)
+        {
+            UpnpObject_UpdateNextNotify(obj);
+            break;
+        }
+
+        obj = convert_upnp_object(HttpMessage_GetIp(message), message, thiz->strictedUuid);
+        if (obj != NULL)
+        {
+            UpnpObjectList_AddObject(thiz->foundObjects, obj);
+            thiz->listener(obj, true, thiz->ctx);
+        }
+    } while (0);
+
+    UpnpObjectList_Unlock(thiz->foundObjects);
+}
+
+static UpnpObject * convert_upnp_object(const char *ip, HttpMessage *msg, bool strictedUuid)
+{
+    UpnpObject *obj = NULL;
+
+    do
+    {
+        TinyRet ret = TINY_RET_OK;
+        const char *usn = NULL;
+        const char *nt = NULL;
+        const char *cache_control = NULL;
+        const char *location = NULL;
+        const char *server = NULL;
+
+        usn = HttpMessage_GetHeaderValue(msg, HEAD_USN);
+        if (usn == NULL)
+        {
+            break;
+        }
+
+        nt = HttpMessage_GetHeaderValue(msg, HEAD_NT);
+        if (nt == NULL)
+        {
+            nt = HttpMessage_GetHeaderValue(msg, HEAD_ST);
+            if (nt == NULL)
+            {
+                break;
+            }
+        }
+
+        ret = validate_nt(nt, strictedUuid);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        cache_control = HttpMessage_GetHeaderValue(msg, HEAD_CACHE_CONTROL);
+        if (cache_control == NULL)
+        {
+            break;
+        }
+
+        location = HttpMessage_GetHeaderValue(msg, HEAD_LOCATION);
+        if (location == NULL)
+        {
+            break;
+        }
+
+        server = HttpMessage_GetHeaderValue(msg, HEAD_SERVER);
+        if (server == NULL)
+        {
+            break;
+        }
+
+        obj = UpnpObject_New();
+        if (obj == NULL)
+        {
+            LOG_E(TAG, "UpnpObject_New failed");
+            break;
+        }
+
+        UpnpObject_SetNt(obj, nt, strictedUuid);
+        UpnpObject_SetCacheControl(obj, cache_control);
+        UpnpObject_SetUsn(obj, usn);
+        UpnpObject_SetIp(obj, ip);
+        UpnpObject_SetLocation(obj, location);
+        UpnpObject_SetStackInfo(obj, server);
+        UpnpObject_UpdateNextNotify(obj);
+    } while (0);
+
+    return obj;
+}
+
+static bool validate_usn(UpnpRegistry *thiz, const char *str_usn)
+{
+    bool result = false;
+
+    do
+    {
+        TinyRet ret = TINY_RET_OK;
+        UpnpUsn usn;
+
+        ret = UpnpUsn_Construct(&usn);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        ret = UpnpUsn_Parse(&usn, str_usn, thiz->strictedUuid);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpUsn_Parse failed: %s", tiny_ret_to_str(ret));
+            break;
+        }
+
+        result = (thiz->filter == NULL) ? true : thiz->filter(&usn, thiz->ctx);
+
+        UpnpUsn_Dispose(&usn);
+    } while (0);
+
+    return result;
+}
+
+static TinyRet validate_nt(const char *type, bool strict_uuid)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        UpnpUri uri;
+
+        ret = UpnpUri_Construct(&uri);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        ret = UpnpUri_Parse(&uri, type, strict_uuid);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpUri_Parse failed: %s", TINY_RET_to_str(ret));
+        }
+
+        UpnpUri_Dispose(&uri);
+
+    } while (0);
+
+    return ret;
 }

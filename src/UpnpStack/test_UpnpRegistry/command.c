@@ -20,6 +20,23 @@
 static int g_loop = 0;
 static UpnpRegistry * gRegistry = NULL;
 
+static bool DeviceFilter(UpnpUsn *usn, void *ctx)
+{
+    printf("DeviceFilter: %s\n", usn->string);
+
+    return true;
+}
+
+static void ObjectListener(UpnpObject *object, bool alive, void *ctx)
+{
+    printf("ObjectListener\n");
+    printf("ip: %s\n", UpnpObject_GetIp(object));
+    printf("location: %s\n", UpnpObject_GetLocation(object));
+    printf("stackinfo: %s\n", UpnpObject_GetStackInfo(object));
+    printf("usn: %s\n", UpnpObject_GetUsn(object));
+    printf("age: %d\n", UpnpObject_GetAge(object));
+}
+
 static void cmd_help(void)
 {
     fprintf(stdout, "\n------------ help --------------\n");
@@ -43,7 +60,7 @@ static void cmd_stop(void)
 
 static void cmd_discover(void)
 {
-    LOG("UpnpRegistry_Discover", UpnpRegistry_Discover(gRegistry, NULL, NULL));
+    LOG("UpnpRegistry_Discover", UpnpRegistry_Discover(gRegistry, false, ObjectListener, DeviceFilter, NULL));
 }
 
 static void cmd_stopDiscovery(void)

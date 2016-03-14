@@ -233,6 +233,8 @@ SET(SRC
     ${Container_Source}
     ${Http_Header}
     ${Http_Source}
+    ${Soap_Header}
+    ${Soap_Source}
     ${Log_Header}
     ${Log_Source}
     ${Memory_Header}
