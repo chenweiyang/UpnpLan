@@ -125,14 +125,14 @@ void UpnpRuntime_Delete(UpnpRuntime *thiz)
     tiny_free(thiz);
 }
 
-TinyRet UpnpCtrlPoint_Start(UpnpRuntime *thiz)
+TinyRet UpnpRuntime_Start(UpnpRuntime *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     return UpnpRegistry_Start(thiz->registry);
 }
 
-TinyRet UpnpCtrlPoint_Stop(UpnpRuntime *thiz)
+TinyRet UpnpRuntime_Stop(UpnpRuntime *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
