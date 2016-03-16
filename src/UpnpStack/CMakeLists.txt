@@ -201,3 +201,4 @@ TARGET_LINK_LIBRARIES(upnp_shared tiny_static expat ${OS_LIB})
 # test
 #----------------------------------------------------------------------------
 ADD_SUBDIRECTORY(test_ControlPoint)
+ADD_SUBDIRECTORY(test_BinaryLight)

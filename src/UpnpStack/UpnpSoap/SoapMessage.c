@@ -33,9 +33,8 @@ static TinyRet SoapMessage_ParseXml(SoapMessage *thiz, TinyXml *xml);
 static bool is_envelope(SoapMessage *thiz, TinyXmlNode *root);
 static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root);
 static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault);
-static bool is_soap_fault(SoapMessage *thiz, const char *name);
-//static TinyRet get_action_name(SoapMessage *thiz, const char *name);
-//static TinyRet get_action_xmlns(SoapMessage *thiz, CtList *atts);
+static TinyRet get_action_name(SoapMessage *thiz, const char *name);
+static TinyRet get_action_xmlns(SoapMessage *thiz, TinyXmlNode *response);
 
 struct _SoapMessage
 {
@@ -258,14 +257,14 @@ TinyRet SoapMessage_Parse(SoapMessage *thiz, const char *bytes, uint32_t len)
             ret = TinyXml_Parse(xml, bytes, len);
             if (RET_FAILED(ret))
             {
-                LOG_D(TAG, "TinyXml_Parse failed: %s", TINY_RET_to_str(ret));
+                LOG_D(TAG, "TinyXml_Parse failed: %s", tiny_ret_to_str(ret));
                 break;
             }
 
             ret = SoapMessage_ParseXml(thiz, xml);
             if (RET_FAILED(ret))
             {
-                LOG_D(TAG, "SoapMessage_ParseXml failed: %s", TINY_RET_to_str(ret));
+                LOG_D(TAG, "SoapMessage_ParseXml failed: %s", tiny_ret_to_str(ret));
                 break;
             }
         } while (0);
@@ -399,18 +398,57 @@ TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len)
         count = PropertyList_GetSize(thiz->argumentList);
         for (i = 0; i < count; i++)
         {
-            Property *property = PropertyList_GetPropertyAt(thiz->propertyList, i);
+            Property *property = PropertyList_GetPropertyAt(thiz->argumentList, i);
             const char *name = property->definition.name;
             ClazzType clazzType = property->definition.type.clazzType;
             ObjectValue *v = &(property->value.object.value);
 
-            if (clazzType != CLAZZ_STRING)
+            switch (clazzType)
             {
-                LOG_E(TAG, "%s value must be string", name);
-                continue;
-            }
+            case CLAZZ_UNDEFINED:
+                LOG_E(TAG, "invalid type");
+                break;
 
-            tiny_snprintf(p, unused, "<%s>%s</%s>\n", name, v->stringValue, name);
+            case CLAZZ_BYTE:
+                tiny_snprintf(p, unused, "<%s>%d</%s>\n", name, v->byteValue, name);
+                break;
+
+            case CLAZZ_WORD:
+                tiny_snprintf(p, unused, "<%s>%d</%s>\n", name, v->wordValue, name);
+                break;
+
+            case CLAZZ_INTEGER:
+                tiny_snprintf(p, unused, "<%s>%d</%s>\n", name, v->integerValue, name);
+                break;
+
+            case CLAZZ_LONG:
+                tiny_snprintf(p, unused, "<%s>%l</%s>\n", name, v->longValue, name);
+                break;
+
+            case CLAZZ_FLOAT:
+                tiny_snprintf(p, unused, "<%s>%f</%s>\n", name, v->floatValue, name);
+                break;
+
+            case CLAZZ_DOUBLE:
+                tiny_snprintf(p, unused, "<%s>%f</%s>\n", name, v->doubleValue, name);
+                break;
+
+            case CLAZZ_BOOLEAN:
+                tiny_snprintf(p, unused, "<%s>%s</%s>\n", name, ObjectType_BooleanToString(v->boolValue), name);
+                break;
+
+            case CLAZZ_CHAR:
+                tiny_snprintf(p, unused, "<%s>%c</%s>\n", name, v->charValue, name);
+                break;
+
+            case CLAZZ_STRING:
+                tiny_snprintf(p, unused, "<%s>%s</%s>\n", name, v->stringValue, name);
+                break;
+
+            default:
+                LOG_E(TAG, "invalid type");
+                break;
+            }
 
             p[unused - 1] = 0;
 
@@ -540,15 +578,10 @@ static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
         uint32_t count = 0;
         uint32_t i = 0;
 
-        /* <s:Body> or
-        * <SOAP-ENV:Body>
-        */
-        body = TinyXmlNode_GetChildByName(root, "s:Body");
-        if (body == NULL)
-        {
-            body = TinyXmlNode_GetChildByName(root, "SOAP-ENV:Body");
-        }
-
+        /**
+         * <Body>
+         */
+        body = TinyXmlNode_GetChildByName(root, "Body");
         if (body == NULL)
         {
             ret = TINY_RET_E_NOT_FOUND;
@@ -562,11 +595,10 @@ static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
             break;
         }
 
-        /*
-        * SOAP-ENV:Fault or
-        * s:Fault
-        */
-        if (is_soap_fault(thiz, TinyXmlNode_GetName(response)))
+        /**
+         * <Fault
+         */
+        if (str_equal(TinyXmlNode_GetName(response), "Fault", true))
         {
             ret = SoapMessage_InitializeFault(thiz);
             if (RET_FAILED(ret))
@@ -578,32 +610,27 @@ static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
             break;
         }
 
-#if 0
-        /*
-        * Get the action name
-        *
-        * <u:[action name][Response]> or
-        * <e:[action name][Response]>
-        */
-        ret = get_action_name(thiz, response->name);
+        /**
+         * Get the action name
+         *
+         * [action name][Response]
+         */
+        ret = get_action_name(thiz, TinyXmlNode_GetName(response));
         if (RET_FAILED(ret))
         {
             break;
         }
-#endif
 
-#if 0
-        /*
-        * Get the xmlns
-        * xmlns:m="urn:schemas-upnp-org:service:AVTransport:1" or
-        * xmlns:u="GetDeviceCapabilities"
-        */
-        ret = get_action_xmlns(thiz, response->attributes);
+        /**
+         * Get the xmlns
+         * xmlns:m="urn:schemas-upnp-org:service:AVTransport:1" or
+         * xmlns:u="GetDeviceCapabilities"
+         */
+        ret = get_action_xmlns(thiz, response);
         if (RET_FAILED(ret))
         {
             break;
         }
-#endif
 
         count = TinyXmlNode_GetChildren(response);
         for (i = 0; i < count; i++)
@@ -650,8 +677,8 @@ static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
 #define SOAP_FAULT_CODE                 "faultcode"
 #define SOAP_FAULT_STRING               "faultstring"
 #define SOAP_FAULT_DETAIL               "detail"
-#define SOAP_FAULT_DETAIL_ERR_CODE      "u:errorCode"
-#define SOAP_FAULT_DETAIL_ERR_DESC      "u:errorDescription"
+#define SOAP_FAULT_DETAIL_ERR_CODE      "errorCode"
+#define SOAP_FAULT_DETAIL_ERR_DESC      "errorDescription"
 
 static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault)
 {
@@ -701,7 +728,7 @@ static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault)
             break;
         }
 
-        /* <u:UPnPError> */
+        /* <UPnPError> */
         detail_fault = TinyXmlNode_GetChildAt(detail, 0);
         if (fault == NULL)
         {
@@ -748,65 +775,20 @@ static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault)
     return ret;
 }
 
-static bool is_soap_fault(SoapMessage *thiz, const char *name)
-{
-    bool ret = false;
+#define SOAP_ACTION_NAME_LEN    128
 
-    do
-    {
-        uint32_t count = 0;
-        char group[8][128];
-        char *p = NULL;
-
-        /*
-        * SOAP-ENV:Fault or
-        * s:Fault
-        */
-        memset(group, 0, 8 * 128);
-        count = str_split(name, ":", group, 8);
-        if (count < 2)
-        {
-            break;
-        }
-
-        if (str_equal(group[1], "Fault", true))
-        {
-            ret = true;
-        }
-    } while (0);
-
-    return ret;
-}
-
-#if 0
-static TinyRet get_action_name(SoapMessage *thiz, const char *name)
+static TinyRet get_action_name(SoapMessage *thiz, const char *action_response)
 {
     TinyRet ret = TINY_RET_OK;
 
+    LOG_D(TAG, "get_action_name: %s", action_response);
+
     do
     {
-        uint32_t count = 0;
-        char group[8][128];
-        char action_response[SOAP_ACTION_NAME_LEN];
+        char action_name[SOAP_ACTION_NAME_LEN];
         char *p = NULL;
 
-        count = str_split(name, ":", group, 8);
-        if (count == 0)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (count == 1)
-        {
-            strncpy(action_response, group[0], SOAP_ACTION_NAME_LEN);
-            action_response[SOAP_ACTION_NAME_LEN - 1] = 0;
-        }
-        else
-        {
-            strncpy(action_response, group[1], SOAP_ACTION_NAME_LEN);
-            action_response[SOAP_ACTION_NAME_LEN - 1] = 0;
-        }
+        memset(action_name, 0, SOAP_ACTION_NAME_LEN);
 
         p = strstr(action_response, "Response");
         if (p == NULL)
@@ -815,41 +797,39 @@ static TinyRet get_action_name(SoapMessage *thiz, const char *name)
             break;
         }
 
-        strncpy(thiz->action_name, action_response, p - action_response);
+        if ((p - action_response) > SOAP_ACTION_NAME_LEN)
+        {
+            LOG_E(TAG, "actionName is too long!");
+            ret = TINY_RET_E_NOT_FOUND;
+            break;
+        }
+
+        strncpy(action_name, action_response, p - action_response);
+
+        LOG_D(TAG, "actionName is: %s", action_name);
+
+        SoapMessage_SetPropertyValue(thiz, SOAP_ActionName, action_name);
     } while (0);
 
     return ret;
 }
-#endif
 
-#if 0
-static TinyRet get_action_xmlns(SoapMessage *thiz, CtList *attrs)
+static TinyRet get_action_xmlns(SoapMessage *thiz, TinyXmlNode *response)
 {
     TinyRet ret = TINY_RET_OK;
 
     do
     {
-        TinyXmlAttr *attr = NULL;
-
-        if (attrs == NULL)
-        {
-            LOG_D(TAG, "Not Found attributes");
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        attr = (TinyXmlAttr *)CtList_GetAt(attrs, 0);
+        TinyXmlAttr *attr = TinyXmlNode_GetAttr(response, "xmlns");
         if (attr == NULL)
         {
-            LOG_D(TAG, "Not Found xmlns");
+            LOG_D(TAG, "xmlns: not found");
             ret = TINY_RET_E_NOT_FOUND;
             break;
         }
 
-        strncpy(thiz->action_xmlns, attr->value, SOAP_ACTION_XMLNS_LEN);
-        thiz->action_xmlns[SOAP_ACTION_XMLNS_LEN - 1] = 0;
+        SoapMessage_SetPropertyValue(thiz, SOAP_ActionXmlns, attr->value);
     } while (0);
 
     return ret;
 }
-#endif

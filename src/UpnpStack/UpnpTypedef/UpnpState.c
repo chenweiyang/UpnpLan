@@ -91,8 +91,20 @@ TinyRet UpnpState_Initialize(UpnpState *thiz, const char *name, ObjectType *type
     {
         thiz->service = service;
         thiz->sendEvents = sendEvents;
+
+        /**
+         * init PropertyDefinition
+         */
         PropertyDefinition_Initialize(&thiz->definition, name, type);
 
+        /**
+         * init PropertyValue.DataType
+         */
+        thiz->value.object.type.clazzType = type->clazzType;
+
+        /**
+         * init PropertyValue.DataValue
+         */
         if (data == NULL)
         {
             break;

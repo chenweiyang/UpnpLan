@@ -92,7 +92,6 @@ void UpnpActionInvoker_Delete(UpnpActionInvoker *thiz)
 
 TinyRet UpnpActionInvoker_Invoke(UpnpActionInvoker *thiz, UpnpAction *action, UpnpError *error)
 {
-
     TinyRet ret = TINY_RET_OK;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);

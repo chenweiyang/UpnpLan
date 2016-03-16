@@ -28,11 +28,11 @@
     #define LOG_OPEN(file)  __tiny_log_open(file)
     #define LOG_CLOSE() __tiny_log_close()
 
-    #ifdef CT_DEBUG
+    #ifdef TINY_DEBUG
         #define LOG_D(tag, format, ...) __tiny_log_print(TINY_LOG_DEBUG, tag, format, ##__VA_ARGS__)
     #else
         #define LOG_D(tag, format, ...)
-    #endif /* CT_DEBUG */
+    #endif /* TINY_DEBUG */
 
     #define LOG_E(tag, format, ...) __tiny_log_print(TINY_LOG_ERROR, tag, format, ##__VA_ARGS__)
     #define LOG_I(tag, format, ...) __tiny_log_print(TINY_LOG_INFO, tag, format, ##__VA_ARGS__)
@@ -40,7 +40,7 @@
     #define LOG_W(tag, format, ...) __tiny_log_print(TINY_LOG_WARN, tag, format, ##__VA_ARGS__)
 #endif /* __ANDROID__ */
 
-#ifdef CT_DEBUG
+#ifdef TINY_DEBUG
     #define LOG_TIME_BEGIN(tag, func) uint64_t usec_##func = tiny_getusec()
 
     #ifdef __MAC_OSX__

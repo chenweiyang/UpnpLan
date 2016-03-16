@@ -97,7 +97,7 @@ TinyRet UpnpDeviceParser_Parse(const char *url, UpnpDevice *device, uint32_t tim
         ret = UpnpDevice_SetURLBase(device, url);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "UpnpDevice_SetUrlBase failed: %s", TINY_RET_to_str(ret));
+            LOG_D(TAG, "UpnpDevice_SetUrlBase failed: %s", tiny_ret_to_str(ret));
             break;
         }
 
@@ -129,14 +129,14 @@ TinyRet UpnpDeviceParser_Parse(const char *url, UpnpDevice *device, uint32_t tim
             ret = HttpMessage_SetRequest(request, "GET", url);
             if (RET_FAILED(ret))
             {
-                LOG_D(TAG, "HttpMessage_Set_GET failed: %s", TINY_RET_to_str(ret));
+                LOG_D(TAG, "HttpMessage_Set_GET failed: %s", tiny_ret_to_str(ret));
                 break;
             }
 
             ret = HttpClient_Execute(client, request, response, timeout);
             if (RET_FAILED(ret))
             {
-                LOG_D(TAG, "HttpClient_Execute failed: %s", TINY_RET_to_str(ret));
+                LOG_D(TAG, "HttpClient_Execute failed: %s", tiny_ret_to_str(ret));
                 break;
             }
 
@@ -161,14 +161,14 @@ TinyRet UpnpDeviceParser_Parse(const char *url, UpnpDevice *device, uint32_t tim
                 ret = TinyXml_Parse(xml, HttpMessage_GetContentObject(response), HttpMessage_GetContentSize(response));
                 if (RET_FAILED(ret))
                 {
-                    LOG_D(TAG, "TinyXml_Parse failed: %s", TINY_RET_to_str(ret));
+                    LOG_D(TAG, "TinyXml_Parse failed: %s", tiny_ret_to_str(ret));
                     break;
                 }
 
                 ret = DDD_ParseXml(device, xml);
                 if (RET_FAILED(ret))
                 {
-                    LOG_D(TAG, "DDD_ParseXml failed: %s", TINY_RET_to_str(ret));
+                    LOG_D(TAG, "DDD_ParseXml failed: %s", tiny_ret_to_str(ret));
                     break;
                 }
             } while (0);

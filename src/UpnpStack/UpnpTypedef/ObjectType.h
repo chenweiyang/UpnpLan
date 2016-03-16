@@ -45,6 +45,9 @@ UPNP_API void ObjectType_Copy(ObjectType *dst, ObjectType *src);
 UPNP_API void ObjectType_SetName(ObjectType *thiz, const char *name);
 UPNP_API void ObjectType_SetType(ObjectType *thiz, ClazzType DataType);
 
+UPNP_API bool ObjectType_StringToBoolean(const char *string);
+UPNP_API const char * ObjectType_BooleanToString(bool b);
+
 
 TINY_END_DECLS
 

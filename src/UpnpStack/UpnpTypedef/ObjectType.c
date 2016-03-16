@@ -11,6 +11,9 @@
  */
 
 #include "ObjectType.h"
+#include "tiny_log.h"
+
+#define TAG                     "ObjectType"
 
 #define	TYPE_UI1                "ui1"
 #define	TYPE_UI2                "ui2"
@@ -213,4 +216,28 @@ void ObjectType_SetType(ObjectType *thiz, ClazzType clazzType)
 
     thiz->clazzType = clazzType;
     strncpy(thiz->clazzName, ClazzType_GetName(clazzType), CLAZZ_NAME_LEN);
+}
+
+bool ObjectType_StringToBoolean(const char *string)
+{
+    RETURN_VAL_IF_FAIL(string, false);
+
+    if (STR_EQUAL("1", string) || STR_EQUAL("YES", string) || STR_EQUAL("TRUE", string))
+    {
+        return true;
+    }
+
+    if (STR_EQUAL("0", string) || STR_EQUAL("NO", string) || STR_EQUAL("FALSE", string))
+    {
+        return false;
+    }
+
+    LOG_W(TAG, "invalid boolean value: %s", string);
+
+    return false;
+}
+
+const char * ObjectType_BooleanToString(bool b)
+{
+    return b ? "1" : "0";
 }

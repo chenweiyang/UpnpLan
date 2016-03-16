@@ -13,15 +13,15 @@
 #ifndef __COMMAND_H__
 #define __COMMAND_H__
 
-#include <UpnpCtrlPoint.h>
+#include <UpnpRuntime.h>
 
-CT_BEGIN_DECLS
-
-
-void cmd_loop(UpnpCtrlPoint * cp);
+TINY_BEGIN_DECLS
 
 
-CT_END_DECLS
+void cmd_loop(UpnpRuntime * cp);
+
+
+TINY_END_DECLS
 
 
 #endif /* __COMMAND_H__ */

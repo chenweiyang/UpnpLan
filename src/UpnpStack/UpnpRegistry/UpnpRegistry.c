@@ -553,7 +553,7 @@ static TinyRet validate_nt(const char *type, bool strict_uuid)
         ret = UpnpUri_Parse(&uri, type, strict_uuid);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "UpnpUri_Parse failed: %s", TINY_RET_to_str(ret));
+            LOG_D(TAG, "UpnpUri_Parse failed: %s", tiny_ret_to_str(ret));
         }
 
         UpnpUri_Dispose(&uri);

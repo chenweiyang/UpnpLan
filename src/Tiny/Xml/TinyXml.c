@@ -13,6 +13,7 @@
 #include "TinyXml.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
+#include "tiny_str_split.h"
 #include <expat.h>
 
 #define TAG                     "TinyXml"
@@ -177,7 +178,37 @@ static void xml_start (void *userObject, const XML_Char *name, const XML_Char **
     printf("<%s", name);
 #endif
 
-    TinyXmlNode_SetName(node, name);
+    /**
+    * usage:
+    *     char *s = "urn:schemas-upnp-org:device:mediaserver:1"
+    *     char group[10][128];
+    *     uint32_t ret = str_split(s, ":", group, 10);
+    *
+    *     result:  (ret > 0)
+    *       ret = 5;
+    *       group[0] = "urn"
+    *       group[1] = "schemas-upnp-org"
+    *       group[2] = "device"
+    *       group[3] = "mediaserver"
+    *       group[4] = "1"
+    */
+    {
+        char group[2][128];
+        uint32_t ret = 0;
+
+        memset(group, 0, 2 * 128);
+
+        ret = str_split(name, ":", group, 2);
+        if (ret == 1)
+        {
+            TinyXmlNode_SetName(node, name);
+        }
+        else if (ret == 2)
+        {
+            TinyXmlNode_SetNamePrefix(node, group[0]);
+            TinyXmlNode_SetName(node, group[1]);
+        }
+    }
 
     for (i = 0; atts[i]; i ++)
     {

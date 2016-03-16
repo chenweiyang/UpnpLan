@@ -21,7 +21,7 @@
 TINY_BEGIN_DECLS
 
 
-#define HTTP_DEBUG      0
+#define HTTP_DEBUG      1
 
 struct _HttpClient;
 typedef struct _HttpClient HttpClient;

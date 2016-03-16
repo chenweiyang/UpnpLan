@@ -356,14 +356,14 @@ static TinyRet load_content(UpnpEvent *thiz, const char *bytes, uint32_t len)
             ret = TinyXml_Parse(xml, bytes, len);
             if (RET_FAILED(ret))
             {
-                LOG_D(TAG, "TinyXml_Parse failed: %s", TINY_RET_to_str(ret));
+                LOG_D(TAG, "TinyXml_Parse failed: %s", tiny_ret_to_str(ret));
                 break;
             }
 
             ret = load_xml(thiz, xml);
             if (RET_FAILED(ret))
             {
-                LOG_D(TAG, "parse_event_xml failed: %s", TINY_RET_to_str(ret));
+                LOG_D(TAG, "parse_event_xml failed: %s", tiny_ret_to_str(ret));
                 break;
             }
         } while (0);

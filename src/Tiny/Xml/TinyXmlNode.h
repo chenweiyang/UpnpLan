@@ -38,10 +38,12 @@ void TinyXmlNode_Delete(TinyXmlNode *thiz);
 void TinyXmlNode_SetParent(TinyXmlNode *thiz, TinyXmlNode *parent);
 TinyRet TinyXmlNode_AddChild(TinyXmlNode *thiz, TinyXmlNode *child);
 TinyRet TinyXmlNode_AddAttribute(TinyXmlNode *thiz, const char *name, const char *value);
+TinyRet TinyXmlNode_SetNamePrefix(TinyXmlNode *thiz, const char *namePrefix);
 TinyRet TinyXmlNode_SetName(TinyXmlNode *thiz, const char *name);
 TinyRet TinyXmlNode_SetText(TinyXmlNode *thiz, const char *text, uint32_t len);
 
 TinyXmlNode * TinyXmlNode_GetParent(TinyXmlNode *thiz);
+const char * TinyXmlNode_GetNamePrefix(TinyXmlNode *thiz);
 const char * TinyXmlNode_GetName(TinyXmlNode *thiz);
 const char * TinyXmlNode_GetContent(TinyXmlNode *thiz);
 uint32_t TinyXmlNode_GetContentLength(TinyXmlNode *thiz);

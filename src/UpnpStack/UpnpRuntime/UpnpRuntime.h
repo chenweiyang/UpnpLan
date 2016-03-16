@@ -15,6 +15,7 @@
 
 #include "tiny_base.h"
 #include "upnp_api.h"
+#include "UpnpUri.h"
 #include "UpnpError.h"
 #include "UpnpAction.h"
 #include "UpnpDevice.h"
@@ -37,7 +38,7 @@ UPNP_API TinyRet UpnpRuntime_Stop(UpnpRuntime *thiz);
  * for UpnpControlPoint
  */
 typedef void(*UpnpDeviceListener)(UpnpDeviceSummary *deviceSummary, bool alive, void *ctx);
-typedef bool(*UpnpDeviceFilter)(const char *schemas, const char *deviceType, void *ctx);
+typedef bool(*UpnpDeviceFilter)(UpnpUri *uri, void *ctx);
 UPNP_API TinyRet UpnpRuntime_StartScan(UpnpRuntime *thiz, UpnpDeviceListener listener, UpnpDeviceFilter filter, void *ctx);
 UPNP_API TinyRet UpnpRuntime_StopScan(UpnpRuntime *thiz);
 UPNP_API TinyRet UpnpRuntime_Invoke(UpnpRuntime *thiz, UpnpAction *action, UpnpError *error);

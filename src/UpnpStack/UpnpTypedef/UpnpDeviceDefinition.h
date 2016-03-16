@@ -17,6 +17,7 @@
 #define UPNP_DEVICE_UDN                     "UDN"
 #define UPNP_DEVICE_FriendlyName            "friendlyName"
 #define UPNP_DEVICE_DeviceType              "deviceType"
+#define UPNP_DEVICE_DeviceVersion           "deviceVersion"
 #define UPNP_DEVICE_Manufacturer            "manufacturer"
 #define UPNP_DEVICE_ManufacturerURL         "manufacturerURL"
 #define UPNP_DEVICE_ModelName               "modelName"

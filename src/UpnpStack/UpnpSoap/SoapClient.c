@@ -123,36 +123,40 @@ TinyRet SoapClient_Invoke(SoapClient *thiz, SoapMessage *request, SoapMessage *r
         ret = SoapRequest_ToHttpRequest(request, httpRequest);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "SoapRequest_ToHttpRequest failed: %s", TINY_RET_to_str(ret));
+            LOG_D(TAG, "SoapRequest_ToHttpRequest failed: %s", tiny_ret_to_str(ret));
             break;
         }
 
         ret = HttpClient_Execute(thiz->client, httpRequest, httpResponse, UPNP_TIMEOUT);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "HttpClient_Execute failed: %s", TINY_RET_to_str(ret));
+            LOG_D(TAG, "HttpClient_Execute failed: %s", tiny_ret_to_str(ret));
             break;
         }
 
         if (HttpMessage_GetStatusCode(httpResponse) != HTTP_STATUS_OK)
         {
-            LOG_D(TAG, "HttpClient_Execute failed: %s", TINY_RET_to_str(ret));
+            LOG_D(TAG, "HttpClient_Execute failed: %d %s",
+                HttpMessage_GetStatusCode(httpResponse),
+                HttpMessage_GetStatus(httpResponse));
             ret = TINY_RET_E_UPNP_INVOKE_FAILED;
             break;
         }
 
+#if 0
         if (HttpMessage_GetContentSize(httpResponse) > 0)
         {
             ret = TINY_RET_E_UPNP_INVOKE_FAILED;
             break;
         }
+#endif
 
         ret = SoapMessage_Parse(response,
             HttpMessage_GetContentObject(httpResponse),
             HttpMessage_GetContentSize(httpResponse));
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "SoapMessage_Parse failed: %s", TINY_RET_to_str(ret));
+            LOG_D(TAG, "SoapMessage_Parse failed: %s", tiny_ret_to_str(ret));
             break;
         }
 
@@ -169,7 +173,7 @@ TinyRet SoapClient_Invoke(SoapClient *thiz, SoapMessage *request, SoapMessage *r
         HttpMessage_Delete(httpResponse);
     }
 
-    LOG_TIME_END(TAG, UpnpActionExecutor_Invoke);
+    LOG_TIME_END(TAG, SoapClient_Invoke);
 
     return ret;
 }

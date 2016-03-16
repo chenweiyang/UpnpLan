@@ -4,4 +4,4 @@
 #
 #-----------------------------------------------------------------------------
 ADD_SUBDIRECTORY(ctrlpoint)
-ADD_SUBDIRECTORY(host)
+#ADD_SUBDIRECTORY(host)

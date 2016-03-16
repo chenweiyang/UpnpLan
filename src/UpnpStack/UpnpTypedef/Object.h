@@ -31,6 +31,8 @@ UPNP_API void Object_Construct(Object *thiz);
 UPNP_API void Object_Dispose(Object *thiz);
 UPNP_API void Object_Copy(Object *dst, Object *src);
 
+UPNP_API TinyRet Object_setValue(Object *thiz, const char *value);
+
 UPNP_API void Object_setByte(Object *thiz, int8_t value);
 UPNP_API void Object_setWord(Object *thiz, int16_t value);
 UPNP_API void Object_setInteger(Object *thiz, int32_t value);

@@ -137,14 +137,14 @@ TinyRet UpnpServiceParser_Parse(const char *url, UpnpService *service, uint32_t 
                 ret = TinyXml_Parse(xml, HttpMessage_GetContentObject(response), HttpMessage_GetContentSize(response));
                 if (RET_FAILED(ret))
                 {
-                    LOG_D(TAG, "TinyXml_Parse failed: %s", TINY_RET_to_str(ret));
+                    LOG_D(TAG, "TinyXml_Parse failed: %s", tiny_ret_to_str(ret));
                     break;
                 }
 
                 ret = SDD_ParseXml(service, xml);
                 if (RET_FAILED(ret))
                 {
-                    LOG_D(TAG, "SDD_ParseXml failed: %s", TINY_RET_to_str(ret));
+                    LOG_D(TAG, "SDD_ParseXml failed: %s", tiny_ret_to_str(ret));
                     break;
                 }
             } while (0);
@@ -319,7 +319,7 @@ static TinyRet SDD_LoadServiceStateTable(UpnpService *thiz, TinyXmlNode *root)
             }
 
             ObjectType_SetName(&dataType, state_dataType);
-            UpnpStateList_InitState(list, state_name, &dataType, STR_EQUAL(attr_sendEvents->value, "yes"), thiz);
+            UpnpStateList_InitState(list, state_name, &dataType, ObjectType_StringToBoolean(attr_sendEvents->value), thiz);
 
             ObjectType_Dispose(&dataType);
         }

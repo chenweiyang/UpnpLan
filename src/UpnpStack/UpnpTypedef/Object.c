@@ -66,6 +66,63 @@ void Object_Copy(Object *dst, Object *src)
     }
 }
 
+TinyRet Object_setValue(Object *thiz, const char *value)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    switch (thiz->type.clazzType)
+    {
+    case CLAZZ_UNDEFINED:
+        ret = TINY_RET_E_ARG_INVALID;
+        break;
+
+    case CLAZZ_BYTE:
+        Object_setByte(thiz, (int8_t)(atoi(value)));
+        break;
+
+    case CLAZZ_WORD:
+        Object_setWord(thiz, (int16_t)atoi(value));
+        break;
+
+    case CLAZZ_INTEGER:
+        Object_setInteger(thiz, atoi(value));
+        break;
+
+    case CLAZZ_LONG:
+        Object_setLong(thiz, atol(value));
+        break;
+
+    case CLAZZ_FLOAT:
+        // BUG !!!
+        Object_setFloat(thiz, (float)atof(value));
+        break;
+
+    case CLAZZ_DOUBLE:
+        Object_setDouble(thiz, atof(value));
+        break;
+
+    case CLAZZ_BOOLEAN:
+        Object_setBool(thiz, ObjectType_StringToBoolean(value));
+        break;
+
+    case CLAZZ_CHAR:
+        Object_setChar(thiz, value[0]);
+        break;
+
+    case CLAZZ_STRING:
+        Object_setString(thiz, value);
+        break;
+
+    default:
+        ret = TINY_RET_E_ARG_INVALID;
+        break;
+    }
+
+    return ret;
+}
+
 void Object_setByte(Object *thiz, int8_t value)
 {
     RETURN_IF_FAIL(thiz);

@@ -49,17 +49,16 @@ UpnpRuntime * UpnpRuntime_New(void)
 
     do
     {
-        TinyRet ret = TINY_RET_OK;
-
         thiz = (UpnpRuntime *)tiny_malloc(sizeof(UpnpRuntime));
         if (thiz == NULL)
         {
+            LOG_E(TAG, "OUT OF MEMORY");
             break;
         }
 
-        ret = UpnpRuntime_Construct(thiz);
-        if (RET_FAILED(ret))
+        if (RET_FAILED(UpnpRuntime_Construct(thiz)))
         {
+            LOG_E(TAG, "UpnpRuntime_Construct failed");
             UpnpRuntime_Delete(thiz);
             thiz = NULL;
             break;
@@ -228,7 +227,7 @@ static bool object_filter(UpnpUsn *usn, void *ctx)
             break;
         }
 
-        result = (thiz->deviceFilter == NULL) ? true : thiz->deviceFilter(usn->uri.domain_name, usn->uri.device_type, thiz->discoveryCtx);
+        result = (thiz->deviceFilter == NULL) ? true : thiz->deviceFilter(&usn->uri, thiz->discoveryCtx);
     } while (0);
 
     return result;
@@ -256,7 +255,7 @@ static void object_listener(UpnpObject *object, bool alive, void *ctx)
             strncpy(device.deviceUrl, UpnpObject_GetLocation(object), TINY_URL_LEN);
             strncpy(device.domainName, nt->domain_name, UPNP_DOMAIN_NAME_LEN);
             strncpy(device.deviceType, nt->device_type, UPNP_TYPE_LEN);
-            device.deviceVersion = atoi(nt->version);
+            strncpy(device.deviceVersion,nt->version, UPNP_VERSION_LEN);
             strncpy(device.upnpStackInfo, UpnpObject_GetStackInfo(object), UPNP_STACK_INFO_LEN);
 
             thiz->deviceListener(&device, alive, thiz->discoveryCtx);

@@ -19,6 +19,7 @@
 #define TAG                         "TinyXmlNode"
 #define XML_ELEMENT_UNDEFINED       0
 #define XML_ELEMENT_TAG             1
+#define XML_TAG_NAME_PREFIX_LEN     128
 #define XML_TAG_NAME_LEN            128
 
 static void child_delete(void * data, void *ctx);
@@ -34,9 +35,10 @@ typedef struct _XmlScContent
 struct _TinyXmlNode
 {
     uint32_t                type;
+    char                    namePrefix[XML_TAG_NAME_PREFIX_LEN];
     char                    name[XML_TAG_NAME_LEN];
-    TinyList                * attributes;
-    TinyList                * children;
+    TinyList              * attributes;
+    TinyList              * children;
     TinyXmlNode           * parent;
     TinyXmlContent          content;
     uint32_t                depth;
@@ -191,6 +193,15 @@ TinyRet TinyXmlNode_AddAttribute(TinyXmlNode *thiz, const char *name, const char
     } while (0);
 
     return ret;
+}
+
+TinyRet TinyXmlNode_SetNamePrefix(TinyXmlNode *thiz, const char *namePrefix)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(namePrefix, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->namePrefix, namePrefix, XML_TAG_NAME_LEN);
+    return TINY_RET_OK;
 }
 
 TinyRet TinyXmlNode_SetName(TinyXmlNode *thiz, const char *name)
@@ -381,6 +392,13 @@ TinyXmlAttr * TinyXmlNode_GetAttr(TinyXmlNode *thiz, const char *name)
     } while (0);
 
     return attr;
+}
+
+const char * TinyXmlNode_GetNamePrefix(TinyXmlNode *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->namePrefix;
 }
 
 const char * TinyXmlNode_GetName(TinyXmlNode *thiz)

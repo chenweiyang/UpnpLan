@@ -28,7 +28,7 @@ typedef struct _UpnpDeviceSummary
     char deviceUrl[TINY_URL_LEN];
     char domainName[UPNP_DOMAIN_NAME_LEN];
     char deviceType[UPNP_TYPE_LEN];
-    uint32_t deviceVersion;
+    char deviceVersion[UPNP_VERSION_LEN];
     char upnpStackInfo[UPNP_STACK_INFO_LEN];
 } UpnpDeviceSummary;
 

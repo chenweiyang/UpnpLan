@@ -15,7 +15,12 @@
 #include "UpnpService.h"
 #include "UpnpDeviceDefinition.h"
 #include "UpnpServiceDefinition.h"
+#include "UpnpActionDefinition.h"
 #include "SoapDefinition.h"
+#include "tiny_log.h"
+#include "UpnpCode.h"
+
+#define TAG             "UpnpSoapHelper"
 
 TinyRet ActionToSoapMessage(UpnpAction *action, SoapMessage *soap)
 {
@@ -61,6 +66,18 @@ TinyRet ActionToSoapMessage(UpnpAction *action, SoapMessage *soap)
             break;
         }
 
+        ret = SoapMessage_SetPropertyValue(soap, SOAP_ActionName, UpnpAction_GetPropertyValue(action, UPNP_ACTION_Name));
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        ret = SoapMessage_SetPropertyValue(soap, SOAP_ActionXmlns, UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceType));
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
         soapArguments = SoapMessage_GetArgumentList(soap);
         actionArguments = UpnpAction_GetArgumentList(action);
         PropertyList_Copy(soapArguments, actionArguments);
@@ -95,15 +112,26 @@ TinyRet SoapMessageToActionResult(SoapMessage *soap, UpnpAction *action, UpnpErr
         {
             Property *p = PropertyList_GetPropertyAt(actionResults, i);
             const char *name = p->definition.name;
-            ObjectType *type = &p->definition.type;
 
             Property *result = PropertyList_GetProperty(soapResults, name);
-            if (result->definition.type.clazzType != type->clazzType)
+            if (result->definition.type.clazzType == CLAZZ_STRING)
             {
-                ret = TINY_RET_E_UPNP_INVOKE_FAILED;
-                break;
+                p->value.object.type.clazzType = p->definition.type.clazzType;
+
+                ret = Object_setValue(&p->value.object, result->value.object.value.stringValue);
+                if (RET_FAILED(ret))
+                {
+                    LOG_D(TAG, "Object_setValue failed: %s, Property Value Type is: %d, Property definition type is: %d",
+                        result->value.object.value.stringValue,
+                        p->value.object.type.clazzType,
+                        p->definition.type.clazzType);
+                    break;
+                }
             }
         }
+
+        error->code = UPNP_SUCCESS;
+        strncpy(error->description, "OK", UPNP_ERR_DESCRIPTION_LEN);
     }
 
     return ret;

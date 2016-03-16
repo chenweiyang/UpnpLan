@@ -21,6 +21,12 @@ bool str_equal(const char *dst, const char *src, bool ignore_case)
 
     do
     {
+        if (dst == NULL || src == NULL)
+        {
+            ret = false;
+            break;
+        }
+
         if (!ignore_case)
         {
             ret = STR_EQUAL(dst, src);
