@@ -194,6 +194,7 @@ SET(SRC
 #----------------------------------------------------------------------------
 ADD_LIBRARY(upnp_shared SHARED ${SRC})
 SET_TARGET_PROPERTIES(upnp_shared PROPERTIES OUTPUT_NAME "upnp")
+SET_TARGET_PROPERTIES(upnp_shared PROPERTIES LINKER_LANGUAGE C)
 TARGET_LINK_LIBRARIES(upnp_shared tiny_static expat ${OS_LIB})
 
 #----------------------------------------------------------------------------
