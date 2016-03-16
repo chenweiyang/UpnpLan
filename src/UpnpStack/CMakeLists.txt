@@ -80,13 +80,13 @@ SOURCE_GROUP(UpnpTypedef\\sources        FILES     ${UpnpTypedef_Source})
 # Soap
 #-----------------------
 SET(UpnpSoap_Header
-    UpnpSoap/Soapclient.h
+    UpnpSoap/SoapClient.h
     UpnpSoap/SoapMessage.h
     UpnpSoap/SoapDefinition.h
     )
 
 SET(UpnpSoap_Source
-    UpnpSoap/Soapclient.c
+    UpnpSoap/SoapClient.c
     UpnpSoap/SoapMessage.c
     )
 
@@ -198,6 +198,7 @@ SET(SRC
 #----------------------------------------------------------------------------
 ADD_LIBRARY(upnp_shared SHARED ${SRC})
 SET_TARGET_PROPERTIES(upnp_shared PROPERTIES OUTPUT_NAME "upnp")
+SET_TARGET_PROPERTIES(upnp_shared PROPERTIES LINKER_LANGUAGE C)
 TARGET_LINK_LIBRARIES(upnp_shared tiny_static expat ${OS_LIB})
 
 #----------------------------------------------------------------------------
