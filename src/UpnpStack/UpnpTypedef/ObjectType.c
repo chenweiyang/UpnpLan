@@ -12,6 +12,7 @@
 
 #include "ObjectType.h"
 #include "tiny_log.h"
+#include "tiny_str_equal.h"
 
 #define TAG                     "ObjectType"
 
@@ -222,12 +223,12 @@ bool ObjectType_StringToBoolean(const char *string)
 {
     RETURN_VAL_IF_FAIL(string, false);
 
-    if (STR_EQUAL("1", string) || STR_EQUAL("YES", string) || STR_EQUAL("TRUE", string))
+    if (STR_EQUAL("1", string) || str_equal("YES", string, true) || str_equal("TRUE", string, true))
     {
         return true;
     }
 
-    if (STR_EQUAL("0", string) || STR_EQUAL("NO", string) || STR_EQUAL("FALSE", string))
+    if (STR_EQUAL("0", string) || str_equal("NO", string, true) || str_equal("FALSE", string, true))
     {
         return false;
     }
