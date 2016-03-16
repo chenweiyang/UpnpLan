@@ -20,7 +20,7 @@
 TINY_BEGIN_DECLS
 
 
-#define PROPERTY_NAME_LEN   32
+#define PROPERTY_NAME_LEN   64
 
 typedef struct _PropertyDefinition
 {

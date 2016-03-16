@@ -399,7 +399,7 @@ static bool core_select_once(UpnpRegistryCore *thiz, uint32_t timeout)
                 break;
             }
 
-#if 1
+#if 0
             printf("%s\n", buf);
 #endif
 

@@ -80,13 +80,13 @@ SOURCE_GROUP(UpnpTypedef\\sources        FILES     ${UpnpTypedef_Source})
 # Soap
 #-----------------------
 SET(UpnpSoap_Header
-    UpnpSoap/Soapclient.h
+    UpnpSoap/SoapClient.h
     UpnpSoap/SoapMessage.h
     UpnpSoap/SoapDefinition.h
     )
 
 SET(UpnpSoap_Source
-    UpnpSoap/Soapclient.c
+    UpnpSoap/SoapClient.c
     UpnpSoap/SoapMessage.c
     )
 
@@ -100,10 +100,8 @@ SET(UpnpRegistry_Header
     UpnpRegistry/UpnpObject.h
     UpnpRegistry/UpnpObjectList.h
     UpnpRegistry/UpnpObjectMessage.h
-    UpnpRegistry/UpnpRegistrar.h
     UpnpRegistry/UpnpRegistry.h
     UpnpRegistry/UpnpRegistryCore.h
-    UpnpRegistry/UpnpSearcher.h
     UpnpRegistry/UpnpUri.h
     UpnpRegistry/UpnpUsn.h
 	)
@@ -112,10 +110,8 @@ SET(UpnpRegistry_Source
     UpnpRegistry/UpnpObject.c
     UpnpRegistry/UpnpObjectList.c
     UpnpRegistry/UpnpObjectMessage.c
-    UpnpRegistry/UpnpRegistrar.c
     UpnpRegistry/UpnpRegistry.c
     UpnpRegistry/UpnpRegistryCore.c
-    UpnpRegistry/UpnpSearcher.c
     UpnpRegistry/UpnpUri.c
     UpnpRegistry/UpnpUsn.c
 	)
@@ -203,6 +199,4 @@ TARGET_LINK_LIBRARIES(upnp_shared tiny_static expat ${OS_LIB})
 #----------------------------------------------------------------------------
 # test
 #----------------------------------------------------------------------------
-#ADD_SUBDIRECTORY(test_UpnpCtrlPoint)
-#ADD_SUBDIRECTORY(test_UpnpRegistry)
-ADD_SUBDIRECTORY(test)
+ADD_SUBDIRECTORY(test_ControlPoint)

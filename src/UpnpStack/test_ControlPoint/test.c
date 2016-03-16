@@ -7,6 +7,7 @@ int main(void)
     UpnpRuntime *runtime = NULL;
 
     UpnpInitializer_Initialize();
+
     runtime = UpnpRuntime_New();
     if (runtime == NULL)
     {
@@ -17,6 +18,7 @@ int main(void)
     cmd_loop(runtime);
 
     UpnpRuntime_Delete(runtime);
+
     UpnpInitializer_Destroy();
 
     return 0;
