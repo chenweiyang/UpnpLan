@@ -49,9 +49,9 @@ UPNP_API TinyRet UpnpRuntime_Unsubscribe(UpnpRuntime *thiz, UpnpSubscription *su
 * for UpnpDeviceHost
 */
 typedef uint32_t (*UpnpActionHandler)(UpnpAction *action, void *ctx);
-UPNP_API TinyRet UpnpRuntime_register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHandler *handler, void *ctx);
-UPNP_API TinyRet UpnpRuntime_unregister(UpnpRuntime *thiz, UpnpDevice *device);
-UPNP_API TinyRet UpnpRuntime_sendEvents(UpnpRuntime *thiz, UpnpService *service);
+UPNP_API TinyRet UpnpRuntime_Register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHandler *handler, void *ctx);
+UPNP_API TinyRet UpnpRuntime_Unregister(UpnpRuntime *thiz, UpnpDevice *device);
+UPNP_API TinyRet UpnpRuntime_SendEvents(UpnpRuntime *thiz, UpnpService *service);
 
 
 TINY_END_DECLS

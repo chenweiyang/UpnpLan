@@ -146,6 +146,7 @@ SOURCE_GROUP(UpnpCtrlPoint\\sources           FILES     ${UpnpCtrlPoint_Source})
 #-----------------------
 SET(UpnpRuntime_Header
     UpnpRuntime/UpnpRuntime.h
+	UpnpRuntime/UpnpDeviceConfig.h
 	UpnpRuntime/UpnpDeviceSummary.h
 	UpnpRuntime/UpnpDeviceFactory.h
 	UpnpRuntime/UpnpDeviceParser.h
@@ -154,6 +155,7 @@ SET(UpnpRuntime_Header
 
 SET(UpnpRuntime_Source
     UpnpRuntime/UpnpRuntime.c
+	UpnpRuntime/UpnpDeviceConfig.c
 	UpnpRuntime/UpnpDeviceFactory.c
 	UpnpRuntime/UpnpDeviceParser.c
 	UpnpRuntime/UpnpServiceParser.c
@@ -200,5 +202,5 @@ TARGET_LINK_LIBRARIES(upnp_shared tiny_static expat ${OS_LIB})
 #----------------------------------------------------------------------------
 # test
 #----------------------------------------------------------------------------
-ADD_SUBDIRECTORY(test_ControlPoint)
+#ADD_SUBDIRECTORY(test_ControlPoint)
 ADD_SUBDIRECTORY(test_BinaryLight)

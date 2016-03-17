@@ -11,29 +11,27 @@
 */
 
 #include "BinaryLight.h"
-#include "UpnpDeviceDefinition.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
 
-#define TAG             "BinaryLight"
+#define TAG "BinaryLight"
 
 static const char * _ID_SwitchPower = "urn:upnp-org:serviceId:SwitchPower";
 
-static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDevice *device, UpnpRuntime *runtime);
+static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDeviceConfig *config, UpnpRuntime *runtime);
 static void BinaryLight_Dispose(BinaryLight *thiz);
 
 struct _BinaryLight
 {
-    UpnpDevice *device;
     UpnpRuntime *runtime;
     SwitchPower *switchPower;
 };
 
-BinaryLight * BinaryLight_Create(UpnpDevice *device, UpnpRuntime *runtime)
+BinaryLight * BinaryLight_Create(UpnpDeviceConfig *config, UpnpRuntime *runtime)
 {
     BinaryLight * thiz = NULL;
 
-    RETURN_VAL_IF_FAIL(device, NULL);
+    RETURN_VAL_IF_FAIL(config, NULL);
     RETURN_VAL_IF_FAIL(runtime, NULL);
 
     do
@@ -45,7 +43,7 @@ BinaryLight * BinaryLight_Create(UpnpDevice *device, UpnpRuntime *runtime)
             break;
         }
 
-        if (RET_FAILED(BinaryLight_Construct(thiz, device, runtime)))
+        if (RET_FAILED(BinaryLight_Construct(thiz, config, runtime)))
         {
             LOG_E(TAG, "BinaryLight_Construct failed");
             BinaryLight_Delete(thiz);
@@ -57,7 +55,7 @@ BinaryLight * BinaryLight_Create(UpnpDevice *device, UpnpRuntime *runtime)
     return thiz;
 }
 
-static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDevice *device, UpnpRuntime *runtime)
+static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDeviceConfig *config, UpnpRuntime *runtime)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -65,36 +63,11 @@ static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDevice *device, Upnp
 
     do
     {
-        UpnpServiceList * _list = NULL;
-        UpnpService * _SwitchPower = NULL;
-
         memset(thiz, 0, sizeof(BinaryLight));
-        thiz->device = device;
         thiz->runtime = runtime;
 
-        if (!STR_EQUAL(BINARYLIGHT_DEVICE_TYPE, UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_DeviceType)))
-        {
-            LOG_E(TAG, "DEVICE_TYPE invalid: %s", UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_DeviceType));
-            ret = TINY_RET_E_CONSTRUCT;
-            break;
-        }
-
-        _list = UpnpDevice_GetServiceList(device);
-        _SwitchPower = UpnpServiceList_GetService(_list, _ID_SwitchPower);
-        if (_SwitchPower == NULL)
-        {
-            LOG_E(TAG, "Service not found: %s", _ID_SwitchPower);
-            ret = TINY_RET_E_CONSTRUCT;
-            break;
-        }
-
-        thiz->switchPower = SwitchPower_Create(_SwitchPower, runtime);
-        if (thiz->switchPower == NULL)
-        {
-            LOG_E(TAG, "SwitchPower_Create: failed");
-            ret = TINY_RET_E_CONSTRUCT;
-            break;
-        }
+        // TODO...
+        
     } while (0);
 
     return ret;
@@ -130,4 +103,18 @@ SwitchPower * BinaryLight_GetSwitchPower(BinaryLight *thiz)
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     return thiz->switchPower;
+}
+
+TinyRet BinaryLight_Start(BinaryLight *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TINY_RET_OK;
+}
+
+TinyRet BinaryLight_Stop(BinaryLight *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TINY_RET_OK;
 }

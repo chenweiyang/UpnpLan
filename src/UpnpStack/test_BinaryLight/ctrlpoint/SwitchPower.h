@@ -14,7 +14,6 @@
 #define __SWITCH_POWER_H__
 
 #include "tiny_base.h"
-#include "upnp_api.h"
 #include "UpnpService.h"
 #include "UpnpRuntime.h"
 

@@ -83,7 +83,8 @@ static void print_property(Property *p, int spaceSize)
         break;
 
     case CLAZZ_LONG:
-        printf("%s: %lld\n", p->definition.name, p->value.object.value.longValue);
+        //printf("%s: %lld\n", p->definition.name, p->value.object.value.longValue);
+        printf("%s: %ld\n", p->definition.name, p->value.object.value.longValue);
         break;
 
     case CLAZZ_BOOLEAN:
@@ -208,7 +209,7 @@ static void device_listener(UpnpDeviceSummary *deviceSummary, bool alive, void *
     printf("deviceId: %s\n", deviceSummary->deviceId);
     printf("domainName: %s\n", deviceSummary->domainName);
     printf("deviceType: %s\n", deviceSummary->deviceType);
-    printf("deviceVersion: %d\n", deviceSummary->deviceVersion);
+    printf("deviceVersion: %s\n", deviceSummary->deviceVersion);
     printf("deviceUrl: %s\n", deviceSummary->deviceUrl);
     printf("upnpStackInfo: %s\n", deviceSummary->upnpStackInfo);
 
@@ -236,6 +237,7 @@ static void cmd_stop(void)
 static void cmd_discover(void)
 {
     LOG("UpnpRuntime_StartScan", UpnpRuntime_StartScan(gRuntime, device_listener, device_filter, NULL));
+    UpnpRuntime_StartScan(gRuntime, device_listener, device_filter, NULL);
 }
 
 static void cmd_stopDiscovery(void)

@@ -422,7 +422,7 @@ TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len)
                 break;
 
             case CLAZZ_LONG:
-                tiny_snprintf(p, unused, "<%s>%l</%s>\n", name, v->longValue, name);
+                tiny_snprintf(p, unused, "<%s>%ld</%s>\n", name, v->longValue, name);
                 break;
 
             case CLAZZ_FLOAT:

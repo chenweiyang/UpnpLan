@@ -22,9 +22,9 @@
 static const char * _SERVICE_TYPE = "urn:schemas-upnp-org:service:SwitchPower:1";
 
 //-------------------------------------------------------
-// Action Names (3)
+// action names (3)
 //-------------------------------------------------------
-static const char * ACTION_GetTarget = "GetTarget";
+static const char * ACTION_GetTarget = "gettarget";
 static const char * _GetTarget_ARG_RetTargetValue = "RetTargetValue";
 static const char * ACTION_SetTarget = "SetTarget";
 static const char * _SetTarget_ARG_newTargetValue = "newTargetValue";
