@@ -184,7 +184,7 @@ TinyRet UpnpRuntime_Unsubscribe(UpnpRuntime *thiz, UpnpSubscription *subscriptio
     return UpnpSubscriber_Unsubscribe(thiz->subscriber, error);
 }
 
-TinyRet UpnpRuntime_register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHandler *handler, void *ctx)
+TinyRet UpnpRuntime_Register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHandler handler, void *ctx)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
@@ -193,7 +193,7 @@ TinyRet UpnpRuntime_register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHa
     return TINY_RET_E_NOT_IMPLEMENTED;
 }
 
-TinyRet UpnpRuntime_unregister(UpnpRuntime *thiz, UpnpDevice *device)
+TinyRet UpnpRuntime_Unregister(UpnpRuntime *thiz, UpnpDevice *device)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
@@ -201,7 +201,7 @@ TinyRet UpnpRuntime_unregister(UpnpRuntime *thiz, UpnpDevice *device)
     return TINY_RET_E_NOT_IMPLEMENTED;
 }
 
-TinyRet UpnpRuntime_sendEvents(UpnpRuntime *thiz, UpnpService *service)
+TinyRet UpnpRuntime_SendEvents(UpnpRuntime *thiz, UpnpService *service)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);

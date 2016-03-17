@@ -14,6 +14,8 @@
 #include "tiny_memory.h"
 #include "tiny_str_equal.h"
 #include "tiny_log.h"
+#include "UpnpServiceDefinition.h"
+#include "UpnpActionDefinition.h"
 
 #define TAG             "SwitchPower"
 
@@ -22,7 +24,7 @@ static const char * _SERVICE_TYPE = "urn:schemas-upnp-org:service:SwitchPower:1"
 //-------------------------------------------------------
 // action names (3)
 //-------------------------------------------------------
-static const char * action_gettarget = "gettarget";
+static const char * ACTION_GetTarget = "GetTarget";
 static const char * _GetTarget_ARG_RetTargetValue = "RetTargetValue";
 static const char * ACTION_SetTarget = "SetTarget";
 static const char * _SetTarget_ARG_newTargetValue = "newTargetValue";
@@ -41,6 +43,10 @@ static const char * PROPERTY_Target = "Target";
 
 static TinyRet SwitchPower_Construct(SwitchPower *thiz, UpnpDevice *device, UpnpRuntime *runtime);
 static void SwitchPower_Dispose(SwitchPower *thiz);
+
+static UpnpCode handle_GetTarget(SwitchPower *thiz, UpnpAction *action);
+static UpnpCode handle_SetTarget(SwitchPower *thiz, UpnpAction *action);
+static UpnpCode handle_GetStatus(SwitchPower *thiz, UpnpAction *action);
 
 struct _SwitchPower
 {
@@ -117,18 +123,54 @@ void SwitchPower_Delete(SwitchPower *thiz)
     tiny_free(thiz);
 }
 
-TinyRet SwitchPower_SetHandler(SwitchPower *thiz, SwitchPower_ActionHandler handler, void *ctx)
+bool SwitchPower_IsImplemented(SwitchPower *thiz, UpnpService *service)
+{
+    RETURN_VAL_IF_FAIL(thiz, false);
+    RETURN_VAL_IF_FAIL(service, false);
+
+    return STR_EQUAL(UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceType), _SERVICE_TYPE);
+}
+
+TinyRet SwitchPower_SetHandler(SwitchPower *thiz, SwitchPower_ActionHandler *handler, void *ctx)
 {
     TinyRet ret = TINY_RET_OK;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    thiz->OnGetTarget = handler.OnGetTarget;
-    thiz->OnSetTarget = handler.OnSetTarget;
-    thiz->OnGetStatus = handler.OnGetStatus;
+    thiz->OnGetTarget = handler->OnGetTarget;
+    thiz->OnSetTarget = handler->OnSetTarget;
+    thiz->OnGetStatus = handler->OnGetStatus;
     thiz->ctx = ctx;
 
     return ret;  
+}
+
+UpnpCode SwitchPower_OnAction(SwitchPower *thiz, UpnpAction *action)
+{
+    const char *actionName = NULL;
+
+    RETURN_VAL_IF_FAIL(thiz, UPNP_ERR_INVALID_ARGS);
+    RETURN_VAL_IF_FAIL(action, UPNP_ERR_INVALID_ARGS);
+
+    actionName = UpnpAction_GetPropertyValue(action, UPNP_ACTION_Name);
+    LOG_D(TAG, "SwitchPower_OnAction: %s", actionName);
+
+    if (STR_EQUAL(actionName, ACTION_GetTarget))
+    {
+        return handle_GetTarget(thiz, action);
+    }
+
+    if (STR_EQUAL(actionName, ACTION_SetTarget))
+    {
+        return handle_SetTarget(thiz, action);
+    }
+
+    if (STR_EQUAL(actionName, ACTION_GetStatus))
+    {
+        return handle_GetStatus(thiz, action);
+    }
+
+    return UPNP_ERR_ACTION_FAILED;
 }
 
 TinyRet SwitchPower_SendEvents(SwitchPower *thiz)
@@ -156,4 +198,109 @@ TinyRet SwitchPower_SetTarget(SwitchPower *thiz, bool theTarget)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     return ret;  
+}
+
+static UpnpCode handle_GetTarget(SwitchPower *thiz, UpnpAction *action)
+{
+    UpnpCode code = UPNP_SUCCESS;
+
+    do
+    {
+        SwitchPower_GetTargetResult result;
+
+        /**
+        * Argument IN (0)
+        */
+
+        memset(&result, 0, sizeof(SwitchPower_GetTargetResult));
+
+        code = thiz->OnGetTarget(thiz, &result, thiz->ctx);
+        if (code != UPNP_SUCCESS)
+        {
+            break;
+        }
+
+        /**
+        * Argument OUT (1)
+        */
+        PropertyList *_out = UpnpAction_GetResultList(action);
+        Property *_RetTargetValue = PropertyList_GetProperty(_out, _GetTarget_ARG_RetTargetValue);
+        if (_RetTargetValue == NULL)
+        {
+            LOG_E(TAG, "Result invalid: %s NOT FOUND!", _GetTarget_ARG_RetTargetValue);
+            break;
+        }
+
+        _RetTargetValue->value.object.value.boolValue = result.theTargetValue;
+    } while (0);
+
+    return code;
+}
+
+static UpnpCode handle_SetTarget(SwitchPower *thiz, UpnpAction *action)
+{
+    UpnpCode code = UPNP_SUCCESS;
+
+    do
+    {
+        /**
+        * Argument IN (1)
+        */
+        PropertyList *_in = UpnpAction_GetArgumentList(action);
+        Property *_newTargetValue = PropertyList_GetProperty(_in, _SetTarget_ARG_newTargetValue);
+        if (_newTargetValue == NULL)
+        {
+            LOG_E(TAG, "argument invalid: %s NOT FOUND!", _SetTarget_ARG_newTargetValue);
+            break;
+        }
+
+        code = thiz->OnSetTarget(thiz, _newTargetValue->value.object.value.boolValue, thiz->ctx);
+        if (code != UPNP_SUCCESS)
+        {
+            break;
+        }
+
+        /**
+        * Argument OUT (0)
+        */
+    } while (0);
+
+    return code;
+}
+
+static UpnpCode handle_GetStatus(SwitchPower *thiz, UpnpAction *action)
+{
+    UpnpCode code = UPNP_SUCCESS;
+
+    do
+    {
+        SwitchPower_GetStatusResult result;
+
+        /**
+        * Argument IN (0)
+        */
+
+        memset(&result, 0, sizeof(SwitchPower_GetStatusResult));
+
+        code = thiz->OnGetStatus(thiz, &result, thiz->ctx);
+        if (code != UPNP_SUCCESS)
+        {
+            break;
+        }
+
+        /**
+        * Argument OUT (1)
+        */
+        PropertyList *_out = UpnpAction_GetResultList(action);
+        Property *_ResultStatus = PropertyList_GetProperty(_out, _GetStatus_ARG_ResultStatus);
+        if (_ResultStatus == NULL)
+        {
+            LOG_E(TAG, "Result invalid: %s NOT FOUND!", _GetStatus_ARG_ResultStatus);
+            break;
+        }
+
+        _ResultStatus->value.object.value.boolValue = result.theResultStatus;
+    } while (0);
+
+    return code;
 }

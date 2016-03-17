@@ -20,14 +20,16 @@ static const char * _ID_SwitchPower = "urn:upnp-org:serviceId:SwitchPower";
 
 static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDeviceConfig *config, UpnpRuntime *runtime);
 static void BinaryLight_Dispose(BinaryLight *thiz);
+static uint32_t action_handler(UpnpAction *action, void *ctx);
 
 struct _BinaryLight
 {
+    UpnpDevice *device;
     UpnpRuntime *runtime;
     SwitchPower *switchPower;
 };
 
-BinaryLight * BinaryLight_Create(UpnpDeviceConfig *config, UpnpRuntime *runtime)
+BinaryLight * BinaryLight_New(UpnpDeviceConfig *config, UpnpRuntime *runtime)
 {
     BinaryLight * thiz = NULL;
 
@@ -66,8 +68,21 @@ static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDeviceConfig *config
         memset(thiz, 0, sizeof(BinaryLight));
         thiz->runtime = runtime;
 
-        // TODO...
-        
+        thiz->device = UpnpDeviceConfig_CreateDevice(config);
+        if (thiz->device == NULL)
+        {
+            LOG_E(TAG, "UpnpDeviceConfig_CreateDevice failed");
+            ret = TINY_RET_E_CONSTRUCT;
+            break;
+        }
+
+        thiz->switchPower = SwitchPower_Create(thiz->device, runtime);
+        if (thiz->switchPower == NULL)
+        {
+            LOG_E(TAG, "SwitchPower_Create failed");
+            ret = TINY_RET_E_CONSTRUCT;
+            break;
+        }
     } while (0);
 
     return ret;
@@ -80,6 +95,11 @@ static void BinaryLight_Dispose(BinaryLight *thiz)
     if (thiz->switchPower != NULL)
     {
         SwitchPower_Delete(thiz->switchPower);
+    }
+
+    if (thiz->device != NULL)
+    {
+        UpnpDevice_Delete(thiz->device);
     }
 }
 
@@ -109,12 +129,26 @@ TinyRet BinaryLight_Start(BinaryLight *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_OK;
+    return UpnpRuntime_Register(thiz->runtime, thiz->device, action_handler, thiz);
 }
 
 TinyRet BinaryLight_Stop(BinaryLight *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_OK;
+    return UpnpRuntime_Unregister(thiz->runtime, thiz->device);
+}
+
+static uint32_t action_handler(UpnpAction *action, void *ctx)
+{
+    BinaryLight *thiz = (BinaryLight *)ctx;
+
+    LOG_D(TAG, "action_handler");
+
+    if (SwitchPower_IsImplemented(thiz->switchPower, (UpnpService *)UpnpAction_GetParentService(action)))
+    {
+        return SwitchPower_OnAction(thiz->switchPower, action);
+    }
+
+    return UPNP_ERR_INVALID_ACTION;
 }

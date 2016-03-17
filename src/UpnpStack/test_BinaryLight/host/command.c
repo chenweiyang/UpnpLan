@@ -18,55 +18,76 @@
 #include "SwitchPower.h"
 #include "UpnpCode.h"
 
-#define LOG(func, ret)  printf("%s: %s\n", func, tiny_ret_to_str(ret))
-
 static int g_loop = 0;
 static UpnpRuntime * gRuntime = NULL;
+static BinaryLight * gBinaryLight = NULL;
+static bool gTaget = false;
+static bool gStatus = false;
+
+UpnpCode OnGetTarget(SwitchPower *thiz, SwitchPower_GetTargetResult *result, void *ctx)
+{
+    printf("OnGetTarget\n");
+
+    result->theTargetValue = gTaget;
+
+    return UPNP_SUCCESS;
+}
+
+UpnpCode OnSetTarget(SwitchPower *thiz, bool newTargetValue, void *ctx)
+{
+    printf("OnSetTarget: %s\n", newTargetValue ? "ON" : "OFF");
+
+    gTaget = newTargetValue;
+
+    return UPNP_SUCCESS;
+}
+
+UpnpCode OnGetStatus(SwitchPower *thiz, SwitchPower_GetStatusResult *result, void *ctx)
+{
+    printf("OnGetStatus\n");
+
+    result->theResultStatus = gStatus;
+
+    return UPNP_SUCCESS;
+}
 
 static void cmd_help(void)
 {
     fprintf(stdout, "\n------------ help --------------\n");
     fprintf(stdout, "h          --  show help information\n");
     fprintf(stdout, "x          --  exit\n");
-    fprintf(stdout, "start      --  start\n");
-    fprintf(stdout, "stop       --  stop\n");
-    fprintf(stdout, "blstart    --  start BinaryLight\n");
-    fprintf(stdout, "blstop     --  stop BinaryLight\n");
+    fprintf(stdout, "start      --  start BinaryLight\n");
+    fprintf(stdout, "stop       --  stop BinaryLight\n");
     fprintf(stdout, "sett       --  set target\n");
     fprintf(stdout, "sets       --  set status\n");
     fprintf(stdout, "sendevents --  sendEvents\n");
 }
 
-static BinaryLight *binaryLight = NULL;
-
-static void cmd_start(void)
+static void cmd_Start(void)
 {
-    LOG("UpnpRuntime_Start", UpnpRuntime_Start(gRuntime));
+    LOG("BinaryLight_Start", BinaryLight_Start(gBinaryLight));
 }
 
-static void cmd_stop(void)
+static void cmd_Stop(void)
 {
-    LOG("UpnpRuntime_Stop", UpnpRuntime_Stop(gRuntime));
-}
-
-static void cmd_blstart(void)
-{
-}
-
-static void cmd_blstop(void)
-{
+    LOG("BinaryLight_Stop", BinaryLight_Stop(gBinaryLight));
 }
 
 static void cmd_SetTarget(void)
 {
+    gTaget = !gTaget;
+    LOG("SwitchPower_SetTarget", SwitchPower_SetTarget(BinaryLight_GetSwitchPower(gBinaryLight), gTaget));
 }
 
 static void cmd_SetStatus(void)
 {
+    gStatus = !gStatus;
+    LOG("SwitchPower_SetStatus", SwitchPower_SetStatus(BinaryLight_GetSwitchPower(gBinaryLight), gStatus));
 }
 
 static void cmd_SendEvents(void)
 {
+    LOG("SwitchPower_SendEvents", SwitchPower_SendEvents(BinaryLight_GetSwitchPower(gBinaryLight)));
 }
 
 static void cmd_exit(void)
@@ -85,10 +106,8 @@ struct _cmd_exec {
 struct _cmd_exec cmd_exec[] = {
         { "h", cmd_help },
         { "x", cmd_exit },
-        { "start", cmd_start },
-        { "stop", cmd_stop },
-        { "blstart", cmd_blstart},
-        { "blstop", cmd_blstop},
+        { "start", cmd_Start},
+        { "stop", cmd_Stop},
         { "sett", cmd_SetTarget},
         { "sets", cmd_SetStatus},
         { "sendevents", cmd_SendEvents},
@@ -111,11 +130,12 @@ void command(const char *buf)
 }
 
 #ifdef _WIN32
-void cmd_loop(UpnpRuntime * runtime)
+void cmd_loop(UpnpRuntime * runtime, BinaryLight *light)
 {
     char buf[1024];
 
     gRuntime = runtime;
+    gBinaryLight = light;
     g_loop = 1;
 
     while (g_loop)
@@ -165,7 +185,7 @@ void cmd_pre_select(int *p_max_soc, fd_set *p_read_set, fd_set *p_write_set, fd_
 /**
  * @brief Linuxƽ̨�����У��ȴ��û���������ָ�ִ��
  */
-void cmd_loop(UpnpRuntime * cp)
+void cmd_loop(UpnpRuntime * runtime, BinaryLight *light)
 {
     fd_set  read_set;
     fd_set  write_set;
@@ -173,7 +193,8 @@ void cmd_loop(UpnpRuntime * cp)
     int     max_soc = 0;
     int     ret = 0;
 
-    gRuntime = cp;
+    gRuntime = runtime;
+    gBinaryLight = light;
     g_loop = 1;
 
     while (g_loop)

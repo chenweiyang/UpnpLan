@@ -159,7 +159,7 @@ TinyRet SwitchPower_SetTarget(SwitchPower *thiz, bool newTargetValue, UpnpError 
         }
 
         /**
-        * Argument OUT (1)
+        * Argument IN (1)
         */
 
         PropertyList *_in = UpnpAction_GetArgumentList(action);

@@ -26,34 +26,35 @@ typedef struct _SwitchPower SwitchPower;
 
 SwitchPower * SwitchPower_Create(UpnpDevice *device, UpnpRuntime *runtime);
 void SwitchPower_Delete(SwitchPower *thiz);
+bool SwitchPower_IsImplemented(SwitchPower *thiz, UpnpService *service);
 
 /**
- * OnGetTarget
+ * Action: OnGetTarget
  */
 typedef struct _SwitchPower_GetTargetResult
 {
     bool theTargetValue;
 } SwitchPower_GetTargetResult;
 
-typedef UpnpCode (* SwitchPower_OnGetTarget)(SwitchPower *thiz, SwitchPower_GetTargetResult result, void *ctx);
+typedef UpnpCode (* SwitchPower_OnGetTarget)(SwitchPower *thiz, SwitchPower_GetTargetResult *result, void *ctx);
 
 /**
- * OnSetTarget
+ * Action: OnSetTarget
  */
 typedef UpnpCode (* SwitchPower_OnSetTarget)(SwitchPower *thiz, bool newTargetValue, void *ctx);
 
 /**
- * OnGetStatus
+ * Action: OnGetStatus
  */
 typedef struct _SwitchPower_GetStatusResult
 {
     bool theResultStatus;
 } SwitchPower_GetStatusResult;
 
-typedef UpnpCode (* SwitchPower_OnGetStatus)(SwitchPower *thiz, SwitchPower_GetStatusResult result, void *ctx);
+typedef UpnpCode (* SwitchPower_OnGetStatus)(SwitchPower *thiz, SwitchPower_GetStatusResult *result, void *ctx);
 
 /**
- * Handlers (3)
+ * ActionHandlers (3)
  */
 typedef struct _SwitchPower_ActionHandler
 {
@@ -62,7 +63,8 @@ typedef struct _SwitchPower_ActionHandler
     SwitchPower_OnGetStatus OnGetStatus;
 } SwitchPower_ActionHandler;
 
-TinyRet SwitchPower_SetHandler(SwitchPower *thiz, SwitchPower_ActionHandler handler, void *ctx);
+TinyRet SwitchPower_SetHandler(SwitchPower *thiz, SwitchPower_ActionHandler *handler, void *ctx);
+UpnpCode SwitchPower_OnAction(SwitchPower *thiz, UpnpAction *action);
 
 /**
  * SendEvents

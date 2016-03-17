@@ -26,7 +26,7 @@ TINY_BEGIN_DECLS
 struct _BinaryLight;
 typedef struct _BinaryLight BinaryLight;
 
-BinaryLight * BinaryLight_Create(UpnpDeviceConfig *config, UpnpRuntime *runtime);
+BinaryLight * BinaryLight_New(UpnpDeviceConfig *config, UpnpRuntime *runtime);
 void BinaryLight_Delete(BinaryLight *thiz);
 
 const char * BinaryLight_GetDeviceType(BinaryLight *thiz);
