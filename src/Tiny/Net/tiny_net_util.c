@@ -95,7 +95,7 @@ TinyRet tiny_net_for_each_ip(IpVisitor visitor, void *ctx)
 {
     TinyRet ret = TINY_RET_E_NOT_FOUND;
 
-    RETURN_VAL_IF_FAIL(handler, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(visitor, TINY_RET_E_ARG_NULL);
 
     do
     {
