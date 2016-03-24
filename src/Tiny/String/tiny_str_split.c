@@ -16,7 +16,7 @@
 #include <ctype.h>
 
 
-uint32_t str_split(const char *str, const char *c, char group[][128], uint32_t count)
+uint32_t str_split(const char *str, const char *c, char group[][128], uint32_t groupCount)
 {
     uint32_t len = 128;
     uint32_t i = 0;
@@ -42,7 +42,7 @@ uint32_t str_split(const char *str, const char *c, char group[][128], uint32_t c
 
         i++;
 
-        if (i >= count)
+        if (i >= groupCount)
         {
             break;
         }

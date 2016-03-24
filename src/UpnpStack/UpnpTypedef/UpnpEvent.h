@@ -21,10 +21,15 @@
 TINY_BEGIN_DECLS
 
 
-struct _UpnpEvent;
-typedef struct _UpnpEvent UpnpEvent;
+typedef struct _UpnpEvent
+{
+    PropertyList * propertyList;
+    PropertyList * argumentList;
+} UpnpEvent;
 
 UPNP_API UpnpEvent * UpnpEvent_New(void);
+UPNP_API TinyRet UpnpEvent_Construct(UpnpEvent *thiz);
+UPNP_API void UpnpEvent_Dispose(UpnpEvent *thiz);
 UPNP_API void UpnpEvent_Delete(UpnpEvent *thiz);
 
 UPNP_API TinyRet UpnpEvent_SetPropertyValue(UpnpEvent *thiz, const char *propertyName, const char *value);
@@ -34,7 +39,13 @@ UPNP_API PropertyList* UpnpEvent_GetArgumentList(UpnpEvent *thiz);
 UPNP_API TinyRet UpnpEvent_SetArgumentValue(UpnpEvent *thiz, const char *argumentName, const char *value);
 UPNP_API const char * UpnpEvent_GetArgumentValue(UpnpEvent *thiz, const char *argumentName);
 
-UPNP_API TinyRet UpnpEvent_Parse(UpnpEvent *thiz, HttpMessage *request);
+UPNP_API TinyRet UpnpEvent_Parse(UpnpEvent *thiz,
+    const char *nt,
+    const char *nts,
+    const char *sid,
+    const char *seq,
+    const char *content);
+
 UPNP_API TinyRet UpnpEvent_ToString(UpnpEvent *thiz, char *bytes, uint32_t len);
 
 

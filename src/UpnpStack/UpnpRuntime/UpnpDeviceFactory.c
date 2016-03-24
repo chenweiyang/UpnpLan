@@ -38,6 +38,8 @@ UpnpDevice * UpnpDeviceFactory_Create(UpnpDeviceSummary *summary)
             break;
         }
 
+        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_Address, summary->deviceIp);
+
         ret = UpnpDeviceParser_Parse(summary->deviceUrl, device, UPNP_TIMEOUT);
         if (RET_FAILED(ret))
         {

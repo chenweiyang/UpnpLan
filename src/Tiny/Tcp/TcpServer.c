@@ -163,6 +163,13 @@ TinyRet TcpServer_Stop(TcpServer *thiz)
     return ret;
 }
 
+bool TcpServer_IsRunning(TcpServer *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, false);
+
+    return thiz->running;
+}
+
 uint16_t TcpServer_GetListenPort(TcpServer *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, 0);

@@ -18,10 +18,12 @@
 #include "PropertyList.h"
 #include "UpnpObject.h"
 #include "UpnpUsn.h"
+#include "UpnpHttpManager.h"
 #include "UpnpRegistry.h"
 #include "UpnpActionInvoker.h"
 #include "UpnpSubscriber.h"
 #include "UpnpSubscription.h"
+#include "UpnpHost.h"
 
 #define TAG             "UpnpRuntime"
 
@@ -34,13 +36,17 @@ static void object_listener(UpnpObject *object, bool alive, void *ctx);
 
 struct _UpnpRuntime
 {
-    UpnpRegistry          * registry;
+    UpnpHttpManager         http;
+
+    UpnpRegistry            registry;
     UpnpDeviceListener      deviceListener;
     UpnpDeviceFilter        deviceFilter;
     void                  * discoveryCtx;
 
-    UpnpSubscriber        * subscriber;
-    UpnpActionInvoker     * invoker;
+    UpnpSubscriber          subscriber;
+    UpnpActionInvoker       invoker;
+
+    UpnpHost                host;
 };
 
 UpnpRuntime * UpnpRuntime_New(void)
@@ -81,27 +87,41 @@ static TinyRet UpnpRuntime_Construct(UpnpRuntime *thiz)
         thiz->deviceFilter = NULL;
         thiz->discoveryCtx = NULL;
 
-        thiz->registry = UpnpRegistry_New();
-        if (thiz->registry == NULL)
+        ret = UpnpHttpManager_Construct(&thiz->http);
+        if (RET_FAILED(ret))
         {
+            LOG_E(TAG, "UpnpHttpManager_Construct failed");
             ret = TINY_RET_E_NEW;
             break;
         }
 
-        thiz->invoker = UpnpActionInvoker_New();
-        if (thiz->invoker == NULL)
+        ret = UpnpRegistry_Construct(&thiz->registry);
+        if (RET_FAILED(ret))
         {
-            ret = TINY_RET_E_NEW;
+            LOG_E(TAG, "UpnpRegistry_Construct failed");
             break;
         }
 
-        thiz->subscriber = UpnpSubscriber_New();
-        if (thiz->subscriber == NULL)
+        ret = UpnpActionInvoker_Construct(&thiz->invoker, &thiz->http);
+        if (RET_FAILED(ret))
         {
-            ret = TINY_RET_E_NEW;
+            LOG_E(TAG, "UpnpActionInvoker_Construct failed");
             break;
         }
 
+        ret = UpnpSubscriber_Construct(&thiz->subscriber, &thiz->http);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "UpnpSubscriber_Construct failed");
+            break;
+        }
+
+        ret = UpnpHost_Construct(&thiz->host, &thiz->http);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "UpnpHost_Construct failed");
+            break;
+        }
     } while (0);
 
     return ret;
@@ -111,9 +131,11 @@ static void UpnpRuntime_Dispose(UpnpRuntime *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    UpnpActionInvoker_Delete(thiz->invoker);
-    UpnpSubscriber_Delete(thiz->subscriber);
-    UpnpRegistry_Delete(thiz->registry);
+    UpnpHost_Dispose(&thiz->host);
+    UpnpActionInvoker_Dispose(&thiz->invoker);
+    UpnpSubscriber_Dispose(&thiz->subscriber);
+    UpnpRegistry_Dispose(&thiz->registry);
+    UpnpHttpManager_Dispose(&thiz->http);
 }
 
 void UpnpRuntime_Delete(UpnpRuntime *thiz)
@@ -126,16 +148,68 @@ void UpnpRuntime_Delete(UpnpRuntime *thiz)
 
 TinyRet UpnpRuntime_Start(UpnpRuntime *thiz)
 {
+    TinyRet ret = TINY_RET_OK;
+
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return UpnpRegistry_Start(thiz->registry);
+    do
+    {
+        ret = UpnpHttpServer_Start(&thiz->http.server);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpHttpServer_Start failed");
+            break;
+        }
+
+        ret = UpnpHost_Start(&thiz->host);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpHttpServer_Start failed");
+            break;
+        }
+
+        ret = UpnpRegistry_Start(&thiz->registry);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpHttpServer_Start failed");
+            break;
+        }
+    } while (0);
+
+    return ret;
 }
 
 TinyRet UpnpRuntime_Stop(UpnpRuntime *thiz)
 {
+    TinyRet ret = TINY_RET_OK;
+
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return UpnpRegistry_Stop(thiz->registry);
+    do
+    {
+        ret = UpnpRegistry_Stop(&thiz->registry);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpRegistry_Stop failed");
+            break;
+        }
+
+        ret = UpnpHost_Stop(&thiz->host);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpHost_Stop failed");
+            break;
+        }
+
+        ret = UpnpHttpServer_Stop(&thiz->http.server);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpHttpServer_Stop failed");
+            break;
+        }
+    } while (0);
+
+    return ret;
 }
 
 TinyRet UpnpRuntime_StartScan(UpnpRuntime *thiz, UpnpDeviceListener listener, UpnpDeviceFilter filter, void *ctx)
@@ -148,14 +222,14 @@ TinyRet UpnpRuntime_StartScan(UpnpRuntime *thiz, UpnpDeviceListener listener, Up
     thiz->deviceFilter = filter;
     thiz->discoveryCtx = ctx;
 
-    return UpnpRegistry_Discover(thiz->registry, false, object_listener, object_filter, thiz);
+    return UpnpRegistry_Discover(&thiz->registry, false, object_listener, object_filter, thiz);
 }
 
 TinyRet UpnpRuntime_StopScan(UpnpRuntime *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return UpnpRegistry_StopDiscovery(thiz->registry);
+    return UpnpRegistry_StopDiscovery(&thiz->registry);
 }
 
 TinyRet UpnpRuntime_Invoke(UpnpRuntime *thiz, UpnpAction *action, UpnpError *error)
@@ -164,24 +238,26 @@ TinyRet UpnpRuntime_Invoke(UpnpRuntime *thiz, UpnpAction *action, UpnpError *err
     RETURN_VAL_IF_FAIL(action, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
 
-    return UpnpActionInvoker_Invoke(thiz->invoker, action, error);
+    return UpnpActionInvoker_Invoke(&thiz->invoker, action, error);
 }
 
-TinyRet UpnpRuntime_Subscribe(UpnpRuntime *thiz, UpnpSubscription *subscription, UpnpError *error)
+TinyRet UpnpRuntime_Subscribe(UpnpRuntime *thiz, UpnpService *service, uint32_t timeout, UpnpEventListener listener, void *ctx, UpnpError *error)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(subscription, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(listener, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
 
-    return UpnpSubscriber_Subscribe(thiz->subscriber, subscription, error);
+    return UpnpSubscriber_Subscribe(&thiz->subscriber, service, timeout, listener, ctx, error);
 }
 
-TinyRet UpnpRuntime_Unsubscribe(UpnpRuntime *thiz, UpnpSubscription *subscription, UpnpError *error)
+TinyRet UpnpRuntime_Unsubscribe(UpnpRuntime *thiz, UpnpService *service, UpnpError *error)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
 
-    return UpnpSubscriber_Unsubscribe(thiz->subscriber, error);
+    return UpnpSubscriber_Unsubscribe(&thiz->subscriber, service, error);
 }
 
 TinyRet UpnpRuntime_Register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHandler handler, void *ctx)
@@ -190,7 +266,10 @@ TinyRet UpnpRuntime_Register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHa
     RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(handler, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    UpnpHost_AddDevice(&thiz->host, device, handler, ctx);
+    UpnpRegistry_Register(&thiz->registry, device);
+
+    return TINY_RET_OK;
 }
 
 TinyRet UpnpRuntime_Unregister(UpnpRuntime *thiz, UpnpDevice *device)
@@ -198,7 +277,10 @@ TinyRet UpnpRuntime_Unregister(UpnpRuntime *thiz, UpnpDevice *device)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    UpnpRegistry_UnRegister(&thiz->registry, device);
+    UpnpHost_RemoveDevice(&thiz->host, device);
+
+    return TINY_RET_OK;
 }
 
 TinyRet UpnpRuntime_SendEvents(UpnpRuntime *thiz, UpnpService *service)
@@ -206,7 +288,7 @@ TinyRet UpnpRuntime_SendEvents(UpnpRuntime *thiz, UpnpService *service)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    return UpnpHost_SendEvents(&thiz->host, service);
 }
 
 static bool object_filter(UpnpUsn *usn, void *ctx)

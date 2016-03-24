@@ -13,54 +13,12 @@
 */
 
 #include "UpnpObjectList.h"
-#include "TinyMutex.h"
-#include "TinyMap.h"
 #include "tiny_memory.h"
-
-struct _UpnpObjectList
-{
-    TinyMutex     mutex;
-    TinyMap       objects;
-};
 
 static void object_delete_listener(void * data, void *ctx)
 {
     UpnpObject *object = (UpnpObject *)data;
     UpnpObject_Delete(object);
-}
-
-static TinyRet UpnpObjectList_Construct(UpnpObjectList *thiz)
-{
-    TinyRet ret = TINY_RET_OK;
-
-    do
-    {
-        ret = TinyMutex_Construct(&thiz->mutex);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = TinyMap_Construct(&thiz->objects);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        TinyMap_SetDeleteListener(&thiz->objects, object_delete_listener, NULL);
-    } while (0);
-
-    return ret;
-}
-
-static TinyRet UpnpObjectList_Dispose(UpnpObjectList *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-
-    TinyMutex_Dispose(&thiz->mutex);
-    TinyMap_Dispose(&thiz->objects);
-
-    return TINY_RET_OK;
 }
 
 UpnpObjectList * UpnpObjectList_New(void)
@@ -87,6 +45,40 @@ UpnpObjectList * UpnpObjectList_New(void)
     } while (0);
 
     return thiz;
+}
+
+TinyRet UpnpObjectList_Construct(UpnpObjectList *thiz)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        ret = TinyMutex_Construct(&thiz->mutex);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        ret = TinyMap_Construct(&thiz->objects);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        TinyMap_SetDeleteListener(&thiz->objects, object_delete_listener, NULL);
+    } while (0);
+
+    return ret;
+}
+
+TinyRet UpnpObjectList_Dispose(UpnpObjectList *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    TinyMutex_Dispose(&thiz->mutex);
+    TinyMap_Dispose(&thiz->objects);
+
+    return TINY_RET_OK;
 }
 
 void UpnpObjectList_Delete(UpnpObjectList *thiz)

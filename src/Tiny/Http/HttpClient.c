@@ -20,6 +20,12 @@
 
 #define TAG             "HttpClient"
 
+#if (HTTP_DEBUG)
+    #define HTTP_LOG(f, s) LOG_D(TAG, f, s)
+#else
+    #define HTTP_LOG(f, s)
+#endif
+
 struct _HttpClient
 {
     TcpClient     client;
@@ -106,10 +112,7 @@ TinyRet HttpClient_Execute(HttpClient *thiz, HttpMessage *request, HttpMessage *
             break;
         }
 
-        ret = TcpClient_Connect(&thiz->client, 
-            HttpMessage_GetIp(request),
-            HttpMessage_GetPort(request),
-            timeout);
+        ret = TcpClient_Connect(&thiz->client, HttpMessage_GetIp(request), HttpMessage_GetPort(request), timeout);
         if (RET_FAILED(ret))
         {
             break;
@@ -121,9 +124,7 @@ TinyRet HttpClient_Execute(HttpClient *thiz, HttpMessage *request, HttpMessage *
             break;
         }
 
-    #if (HTTP_DEBUG)
-        printf("%s", bytes);
-    #endif
+        HTTP_LOG("%s", bytes);
 
         ret = TcpClient_Send(&thiz->client, bytes, size, timeout);
         if (RET_FAILED(ret))
@@ -141,9 +142,7 @@ TinyRet HttpClient_Execute(HttpClient *thiz, HttpMessage *request, HttpMessage *
             break;
         }
 
-    #if (HTTP_DEBUG)
-        printf("%s", bytes);
-    #endif
+        HTTP_LOG("%s", bytes);
 
         ret = HttpMessage_Parse(response, bytes, size);
         if (RET_FAILED(ret))
@@ -173,9 +172,7 @@ TinyRet HttpClient_Execute(HttpClient *thiz, HttpMessage *request, HttpMessage *
                 break;
             }
 
-        #if (HTTP_DEBUG)
-            printf("%s", bytes);
-        #endif
+            HTTP_LOG("%s", bytes);
 
             ret = HttpMessage_AddContentObject(response, bytes, size);
             if (RET_FAILED(ret))

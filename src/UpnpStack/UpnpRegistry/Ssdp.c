@@ -4,46 +4,47 @@
 * @author jxfengzi@gmail.com
 * @date   2013-11-19
 *
-* @file   UpnpRegistryCore.c
+* @file   Ssdp.c
 *
 * @remark
 *
 */
 
-#include "UpnpRegistryCore.h"
+#include "Ssdp.h"
 #include "upnp_define.h"
 #include "tiny_socket.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
 
-#define TAG                 "UpnpRegistryCore"
+#define TAG                 "Ssdp"
 
-static TinyRet UpnpRegistryCore_SendMessage(UpnpRegistryCore *thiz, HttpMessage *message, int fd, const char *ip, uint16_t port);
-static TinyRet open_sockets(UpnpRegistryCore *thiz);
-static TinyRet close_sockets(UpnpRegistryCore *thiz);
-static void core_loop(void *param);
-static TinyRet core_pre_select(UpnpRegistryCore *thiz, uint32_t *timeout);
-static bool core_select_once(UpnpRegistryCore *thiz, uint32_t timeout);
-static void core_handle_message(UpnpRegistryCore *thiz, const char *buf, size_t len, const char *ip, uint16_t port);
 
-UpnpRegistryCore * UpnpRegistryCore_New(void)
+static TinyRet Ssdp_Send(Ssdp *thiz, const char *bytes, uint32_t len, int fd, const char *ip, uint16_t port);
+static TinyRet Ssdp_OpenSockets(Ssdp *thiz);
+static TinyRet Ssdp_CloseSockets(Ssdp *thiz);
+static void Ssdp_Loop(void *param);
+static TinyRet Ssdp_PreSelect(Ssdp *thiz, uint32_t *timeout);
+static bool Ssdp_SelectOnce(Ssdp *thiz, uint32_t timeout);
+static void Ssdp_ProcessMessage(Ssdp *thiz, const char *buf, size_t len, const char *ip, uint16_t port);
+
+Ssdp * Ssdp_New(void)
 {
-    UpnpRegistryCore *thiz = NULL;
+    Ssdp *thiz = NULL;
 
     do
     {
         TinyRet ret = TINY_RET_OK;
 
-        thiz = (UpnpRegistryCore *)tiny_malloc(sizeof(UpnpRegistryCore));
+        thiz = (Ssdp *)tiny_malloc(sizeof(Ssdp));
         if (thiz == NULL)
         {
             break;
         }
 
-        ret = UpnpRegistryCore_Construct(thiz);
+        ret = Ssdp_Construct(thiz);
         if (RET_FAILED(ret))
         {
-            UpnpRegistryCore_Delete(thiz);
+            Ssdp_Delete(thiz);
             thiz = NULL;
             break;
         }
@@ -52,7 +53,7 @@ UpnpRegistryCore * UpnpRegistryCore_New(void)
     return thiz;
 }
 
-TinyRet UpnpRegistryCore_Construct(UpnpRegistryCore *thiz)
+TinyRet Ssdp_Construct(Ssdp *thiz)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -60,12 +61,11 @@ TinyRet UpnpRegistryCore_Construct(UpnpRegistryCore *thiz)
 
     do
     {
-        memset(thiz, 0, sizeof(UpnpRegistryCore));
+        memset(thiz, 0, sizeof(Ssdp));
         thiz->running = false;
         thiz->group_fd = 0;
         thiz->search_fd = 0;
-        thiz->requestHandler = NULL;
-        thiz->responseHandler = NULL;
+        thiz->handler = NULL;
         thiz->ctx = NULL;
 
         ret = TinyThread_Construct(&thiz->thread);
@@ -74,7 +74,7 @@ TinyRet UpnpRegistryCore_Construct(UpnpRegistryCore *thiz)
             break;
         }
 
-        ret = TinyThread_Initialize(&thiz->thread, core_loop, thiz, "UpnpRegistryCore");
+        ret = TinyThread_Initialize(&thiz->thread, Ssdp_Loop, thiz, "Ssdp");
         if (RET_FAILED(ret))
         {
             break;
@@ -96,31 +96,48 @@ TinyRet UpnpRegistryCore_Construct(UpnpRegistryCore *thiz)
     return ret;
 }
 
-TinyRet UpnpRegistryCore_Dispose(UpnpRegistryCore *thiz)
+void Ssdp_Dispose(Ssdp *thiz)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_IF_FAIL(thiz);
 
-    UpnpRegistryCore_Stop(thiz);
+    Ssdp_Stop(thiz);
 
     TinySocketIpc_Dispose(&thiz->ipc);
     TinySelector_Dispose(&thiz->selector);
     TinyThread_Dispose(&thiz->thread);
-
-    return TINY_RET_OK;
 }
 
-void UpnpRegistryCore_Delete(UpnpRegistryCore *thiz)
+void Ssdp_Delete(Ssdp *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    UpnpRegistryCore_Dispose(thiz);
+    Ssdp_Dispose(thiz);
     tiny_free(thiz);
 }
 
-TinyRet UpnpRegistryCore_Start(UpnpRegistryCore *thiz,
-    HttpRequestHandler requestHandler,
-    HttpResponseHandler responseHandler,
-    void *ctx)
+TinyRet Ssdp_SetMessageHandler(Ssdp *thiz, SsdpMessageHandler handler, void *ctx)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(handler, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        if (thiz->running)
+        {
+            ret = TINY_RET_E_STARTED;
+            break;
+        }
+
+        thiz->handler = handler;
+        thiz->ctx = ctx;
+    } while (0);
+
+    return ret;
+}
+
+TinyRet Ssdp_Start(Ssdp *thiz)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -134,17 +151,14 @@ TinyRet UpnpRegistryCore_Start(UpnpRegistryCore *thiz,
             break;
         }
 
-        ret = open_sockets(thiz);
+        ret = Ssdp_OpenSockets(thiz);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "open_sockets failed");
+            LOG_D(TAG, "Ssdp_OpenSockets failed");
             break;
         }
 
         thiz->running = true;
-        thiz->requestHandler = requestHandler;
-        thiz->responseHandler = responseHandler;
-        thiz->ctx = ctx;
 
         TinyThread_Start(&thiz->thread);
     } while (0);
@@ -152,7 +166,7 @@ TinyRet UpnpRegistryCore_Start(UpnpRegistryCore *thiz,
     return ret;
 }
 
-TinyRet UpnpRegistryCore_Stop(UpnpRegistryCore *thiz)
+TinyRet Ssdp_Stop(Ssdp *thiz)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -168,10 +182,10 @@ TinyRet UpnpRegistryCore_Stop(UpnpRegistryCore *thiz)
 
         TinySocketIpc_SendStopMsg(&thiz->ipc);
 
-        ret = close_sockets(thiz);
+        ret = Ssdp_CloseSockets(thiz);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "close_sockets failed");
+            LOG_D(TAG, "Ssdp_CloseSockets failed");
             break;
         }
 
@@ -183,72 +197,67 @@ TinyRet UpnpRegistryCore_Stop(UpnpRegistryCore *thiz)
     return ret;
 }
 
-static TinyRet UpnpRegistryCore_SendMessage(UpnpRegistryCore *thiz, HttpMessage *message, int fd, const char *ip, uint16_t port)
+static TinyRet Ssdp_Send(Ssdp *thiz, const char *bytes, uint32_t len, int fd, const char *ip, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(message, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(bytes, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(ip, TINY_RET_E_ARG_NULL);
 
     do
     {
-        char *bytes = NULL;
-        uint32_t len = 0;
-
         if (!thiz->running)
         {
-            LOG_D(TAG, "invalid operation, UpnpRegistryCore NOT Start");
+            LOG_D(TAG, "invalid operation, Ssdp NOT Start");
             ret = TINY_RET_E_STOPPED;
             break;
         }
 
-        ret = HttpMessage_ToBytes(message, &bytes, &len);
-        if (RET_FAILED(ret))
-        {
-            LOG_D(TAG, "HttpMessage_ToBytes: %s", tiny_ret_to_str(ret));
-            break;
-        }
-
         tiny_udp_write(fd, ip, port, bytes, len);
-        tiny_free(bytes);
     } while (0);
 
     return ret;
 }
 
-TinyRet UpnpRegistryCore_Notify(UpnpRegistryCore *thiz, HttpMessage *message)
+TinyRet Ssdp_SendMessage(Ssdp *thiz, SsdpMessage *message)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(message, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return UpnpRegistryCore_SendMessage(thiz, message, thiz->group_fd, UPNP_GROUP, UPNP_PORT);
+    do
+    {
+        char string[SSDP_MSG_MAX_LEN];
+        uint32_t len = 0;
+
+        memset(string, 0, SSDP_MSG_MAX_LEN);
+
+        len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
+        if (len == 0)
+        {
+            ret = TINY_RET_E_INTERNAL;
+            break;
+        }
+
+        switch (message->type)
+        {
+        case SSDP_ALIVE:
+        case SSDP_BYEBYE:
+            break;
+
+        case SSDP_MSEARCH_REQUEST:
+            ret = Ssdp_Send(thiz, string, len, thiz->search_fd, UPNP_GROUP, UPNP_PORT);
+            break;
+
+        case SSDP_MSEARCH_RESPONSE:
+            ret = Ssdp_Send(thiz, string, len, thiz->group_fd, message->ip, message->port);
+            break;
+        }
+    } while (0);
+
+    return ret;
 }
 
-TinyRet UpnpRegistryCore_SendResponseTo(UpnpRegistryCore *thiz, HttpMessage *message)
-{
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(message, TINY_RET_E_ARG_NULL);
-
-    return UpnpRegistryCore_SendMessage(thiz, message, thiz->group_fd, HttpMessage_GetIp(message), HttpMessage_GetPort(message));
-}
-
-TinyRet UpnpRegistryCore_SendRequest(UpnpRegistryCore *thiz, HttpMessage *message)
-{
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(message, TINY_RET_E_ARG_NULL);
-
-    return UpnpRegistryCore_SendMessage(thiz, message, thiz->search_fd, UPNP_GROUP, UPNP_PORT);
-}
-
-TinyRet UpnpRegistryCore_SendRequestTo(UpnpRegistryCore *thiz, HttpMessage *message)
-{
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(message, TINY_RET_E_ARG_NULL);
-
-    return UpnpRegistryCore_SendMessage(thiz, message, thiz->group_fd, HttpMessage_GetIp(message), HttpMessage_GetPort(message));
-}
-
-static TinyRet open_sockets(UpnpRegistryCore *thiz)
+static TinyRet Ssdp_OpenSockets(Ssdp *thiz)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -272,7 +281,7 @@ static TinyRet open_sockets(UpnpRegistryCore *thiz)
     return ret;
 }
 
-static TinyRet close_sockets(UpnpRegistryCore *thiz)
+static TinyRet Ssdp_CloseSockets(Ssdp *thiz)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -296,29 +305,29 @@ static TinyRet close_sockets(UpnpRegistryCore *thiz)
     return ret;
 }
 
-static void core_loop(void *param)
+static void Ssdp_Loop(void *param)
 {
     TinyRet ret = TINY_RET_OK;
-    UpnpRegistryCore *thiz = (UpnpRegistryCore *)param;
+    Ssdp *thiz = (Ssdp *)param;
 
     while (thiz->running)
     {
         uint32_t timeout = 0;
 
-        ret = core_pre_select(thiz, &timeout);
+        ret = Ssdp_PreSelect(thiz, &timeout);
         if (RET_FAILED(ret))
         {
             break;
         }
 
-        if (!core_select_once(thiz, timeout))
+        if (!Ssdp_SelectOnce(thiz, timeout))
         {
             break;
         }
     }
 }
 
-static TinyRet core_pre_select(UpnpRegistryCore *thiz, uint32_t *timeout)
+static TinyRet Ssdp_PreSelect(Ssdp *thiz, uint32_t *timeout)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
@@ -332,7 +341,7 @@ static TinyRet core_pre_select(UpnpRegistryCore *thiz, uint32_t *timeout)
     return TINY_RET_OK;
 }
 
-static bool core_select_once(UpnpRegistryCore *thiz, uint32_t timeout)
+static bool Ssdp_SelectOnce(Ssdp *thiz, uint32_t timeout)
 {
     bool select_result = true;
     TinyRet ret = TINY_RET_OK;
@@ -403,68 +412,23 @@ static bool core_select_once(UpnpRegistryCore *thiz, uint32_t timeout)
             printf("%s\n", buf);
 #endif
 
-            if (thiz->requestHandler != NULL || thiz->responseHandler != NULL) 
-            {
-                core_handle_message(thiz, buf, bytes_read, ip, port);
-            }
+            Ssdp_ProcessMessage(thiz, buf, bytes_read, ip, port);
         }
     } while (0);
 
     return select_result;
 }
 
-static void core_handle_message(UpnpRegistryCore *thiz, const char *buf, size_t len, const char *ip, uint16_t port)
+static void Ssdp_ProcessMessage(Ssdp *thiz, const char *buf, size_t len, const char *ip, uint16_t port)
 {
-    HttpMessage *msg = NULL;
+    SsdpMessage message;
 
-    do
+    if (RET_FAILED(SsdpMessage_Construct(&message, ip, port, buf, len)))
     {
-        HttpType type = HTTP_UNDEFINED;
-        const char *method = NULL;
-        const char *uri = NULL;
-        TinyRet ret = TINY_RET_OK;
-
-        msg = HttpMessage_New();
-        if (msg == NULL)
-        {
-            LOG_D(TAG, "HttpMessage_New failed");
-            break;
-        }
-
-        ret = HttpMessage_Parse(msg, buf, len);
-        if (RET_FAILED(ret))
-        {
-            LOG_D(TAG, "HttpMessage_Parse: invliad message");
-            break;
-        }
-
-        HttpMessage_SetIp(msg, ip);
-        HttpMessage_SetPort(msg, port);
-
-        switch (HttpMessage_GetType(msg))
-        {
-        case HTTP_REQUEST:
-            if (thiz->requestHandler != NULL)
-            {
-                thiz->requestHandler(msg, thiz->ctx);
-            }
-            break;
-
-        case HTTP_RESPONSE:
-            if (thiz->responseHandler != NULL)
-            {
-                thiz->responseHandler(msg, thiz->ctx);
-            }
-            break;
-
-        default:
-            LOG_D(TAG, "parse message: invliad HTTP type");
-            break;
-        }
-    } while (0);
-
-    if (msg != NULL)
-    {
-        HttpMessage_Delete(msg);
+        return;
     }
+
+    thiz->handler(&message, thiz->ctx);
+
+    SsdpMessage_Dispose(&message);
 }

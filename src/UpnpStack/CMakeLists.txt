@@ -9,11 +9,11 @@
 #-----------------------
 SET(UpnpInitializer_Header
     UpnpInitializer/UpnpInitializer.h
-	)
+    )
 
 SET(UpnpInitializer_Source
     UpnpInitializer/UpnpInitializer.c
-	)
+    )
 
 SOURCE_GROUP(UpnpInitializer\\headers        FILES     ${UpnpInitializer_Header})
 SOURCE_GROUP(UpnpInitializer\\sources        FILES     ${UpnpInitializer_Source})
@@ -26,14 +26,21 @@ SET(UpnpCommon_Header
     UpnpCommon/upnp_define.h
     UpnpCommon/UpnpCode.h
     UpnpCommon/UpnpError.h
-	)
+    UpnpCommon/upnp_net_util.h
+    )
+
+SET(UpnpCommon_Source
+    UpnpCommon/upnp_net_util.c
+    )
 
 SOURCE_GROUP(UpnpCommon\\headers        FILES     ${UpnpCommon_Header})
+SOURCE_GROUP(UpnpCommon\\Source         FILES     ${UpnpCommon_Source})
 
 #-----------------------
 # UpnpTypedef
 #-----------------------
 SET(UpnpTypedef_Header
+    UpnpTypedef/UpnpListener.h
     UpnpTypedef/ObjectType.h
     UpnpTypedef/ObjectValue.h
     UpnpTypedef/Object.h
@@ -43,7 +50,7 @@ SET(UpnpTypedef_Header
     UpnpTypedef/PropertyList.h
     UpnpTypedef/AllowedValueList.h
     UpnpTypedef/AllowedValueRange.h
-	UpnpTypedef/UpnpActionDefinition.h
+    UpnpTypedef/UpnpActionDefinition.h
     UpnpTypedef/UpnpAction.h
     UpnpTypedef/UpnpActionList.h
     UpnpTypedef/UpnpState.h
@@ -53,7 +60,12 @@ SET(UpnpTypedef_Header
     UpnpTypedef/UpnpServiceList.h
     UpnpTypedef/UpnpDeviceDefinition.h
     UpnpTypedef/UpnpDevice.h
-	)
+    UpnpTypedef/UpnpDeviceSummary.h
+    UpnpTypedef/UpnpUri.h
+    UpnpTypedef/UpnpUsn.h
+    UpnpTypedef/UpnpEvent.h
+    UpnpTypedef/UpnpEventDefinition.h
+    )
 
 SET(UpnpTypedef_Source
     UpnpTypedef/ObjectType.c
@@ -71,27 +83,48 @@ SET(UpnpTypedef_Source
     UpnpTypedef/UpnpService.c
     UpnpTypedef/UpnpServiceList.c
     UpnpTypedef/UpnpDevice.c
-	)
+    UpnpTypedef/UpnpUri.c
+    UpnpTypedef/UpnpUsn.c
+    UpnpTypedef/UpnpEvent.c
+    )
 
 SOURCE_GROUP(UpnpTypedef\\headers        FILES     ${UpnpTypedef_Header})
 SOURCE_GROUP(UpnpTypedef\\sources        FILES     ${UpnpTypedef_Source})
 
 #-----------------------
-# Soap
+# UpnpHttp
 #-----------------------
-SET(UpnpSoap_Header
-    UpnpSoap/SoapClient.h
-    UpnpSoap/SoapMessage.h
-    UpnpSoap/SoapDefinition.h
+SET(UpnpHttp_Header
+    UpnpHttp/message/soap/SoapMessage.h
+    UpnpHttp/message/soap/SoapDefinition.h
+    UpnpHttp/message/ActionRequest.h
+    UpnpHttp/message/ActionResponse.h
+    UpnpHttp/message/ServiceSubRequest.h
+    UpnpHttp/message/ServiceSubResponse.h
+    UpnpHttp/message/ServiceUnsubRequest.h
+    UpnpHttp/message/ServiceUnsubResponse.h
+    UpnpHttp/UpnpHttpManager.h
+    UpnpHttp/UpnpHttpClient.h
+    UpnpHttp/UpnpHttpConnection.h
+    UpnpHttp/UpnpHttpServer.h
     )
 
-SET(UpnpSoap_Source
-    UpnpSoap/SoapClient.c
-    UpnpSoap/SoapMessage.c
+SET(UpnpHttp_Source
+    UpnpHttp/message/soap/SoapMessage.c
+    UpnpHttp/message/ActionRequest.c
+    UpnpHttp/message/ActionResponse.c
+    UpnpHttp/message/ServiceSubRequest.c
+    UpnpHttp/message/ServiceSubResponse.c
+    UpnpHttp/message/ServiceUnsubRequest.c
+    UpnpHttp/message/ServiceUnsubResponse.c
+    UpnpHttp/UpnpHttpManager.c
+    UpnpHttp/UpnpHttpClient.c
+    UpnpHttp/UpnpHttpConnection.c
+    UpnpHttp/UpnpHttpServer.c
     )
 
-SOURCE_GROUP(UpnpSoap\\headers        FILES     ${UpnpSoap_Header})
-SOURCE_GROUP(UpnpSoap\\sources        FILES     ${UpnpSoap_Source})
+SOURCE_GROUP(UpnpHttp\\headers        FILES     ${UpnpHttp_Header})
+SOURCE_GROUP(UpnpHttp\\sources        FILES     ${UpnpHttp_Source})
 
 #-----------------------
 # UpnpRegistry
@@ -101,20 +134,22 @@ SET(UpnpRegistry_Header
     UpnpRegistry/UpnpObjectList.h
     UpnpRegistry/UpnpObjectMessage.h
     UpnpRegistry/UpnpRegistry.h
-    UpnpRegistry/UpnpRegistryCore.h
-    UpnpRegistry/UpnpUri.h
-    UpnpRegistry/UpnpUsn.h
-	)
+    UpnpRegistry/UpnpValidator.h
+    UpnpRegistry/UpnpObjectFactory.h
+    UpnpRegistry/Ssdp.h
+    UpnpRegistry/SsdpMessage.h
+    )
 
 SET(UpnpRegistry_Source
     UpnpRegistry/UpnpObject.c
     UpnpRegistry/UpnpObjectList.c
     UpnpRegistry/UpnpObjectMessage.c
     UpnpRegistry/UpnpRegistry.c
-    UpnpRegistry/UpnpRegistryCore.c
-    UpnpRegistry/UpnpUri.c
-    UpnpRegistry/UpnpUsn.c
-	)
+    UpnpRegistry/UpnpValidator.c
+    UpnpRegistry/UpnpObjectFactory.c
+    UpnpRegistry/Ssdp.c
+    UpnpRegistry/SsdpMessage.c
+    )
 
 SOURCE_GROUP(UpnpRegistry\\headers          FILES     ${UpnpRegistry_Header})
 SOURCE_GROUP(UpnpRegistry\\sources          FILES     ${UpnpRegistry_Source})
@@ -123,43 +158,52 @@ SOURCE_GROUP(UpnpRegistry\\sources          FILES     ${UpnpRegistry_Source})
 # UpnpCtrlPoint
 #-----------------------
 SET(UpnpCtrlPoint_Header
-    UpnpCtrlPoint/UpnpEvent.h
-	UpnpCtrlPoint/UpnpEventDefinition.h
-	UpnpCtrlPoint/UpnpSubscriber.h
-	UpnpCtrlPoint/UpnpSubscription.h
+    UpnpCtrlPoint/UpnpSubscriber.h
+    UpnpCtrlPoint/UpnpSubscription.h
     UpnpCtrlPoint/UpnpActionInvoker.h
-	UpnpCtrlPoint/UpnpSoapHelper.h
-	)
+    )
 
 SET(UpnpCtrlPoint_Source
-    UpnpCtrlPoint/UpnpEvent.c
-	UpnpCtrlPoint/UpnpSubscriber.c
-	UpnpCtrlPoint/UpnpActionInvoker.c
-    UpnpCtrlPoint/UpnpSoapHelper.c
-	)
+    UpnpCtrlPoint/UpnpSubscriber.c
+    UpnpCtrlPoint/UpnpSubscription.c
+    UpnpCtrlPoint/UpnpActionInvoker.c
+    )
 
 SOURCE_GROUP(UpnpCtrlPoint\\headers           FILES     ${UpnpCtrlPoint_Header})
 SOURCE_GROUP(UpnpCtrlPoint\\sources           FILES     ${UpnpCtrlPoint_Source})
+
+#-----------------------
+# UpnpHost
+#-----------------------
+SET(UpnpHost_Header
+    UpnpHost/UpnpHost.h
+    )
+
+SET(UpnpHost_Source
+    UpnpHost/UpnpHost.c
+    )
+
+SOURCE_GROUP(UpnpHost\\headers               FILES     ${UpnpHost_Header})
+SOURCE_GROUP(UpnpHost\\sources               FILES     ${UpnpHost_Source})
 
 #-----------------------
 # UpnpRuntime
 #-----------------------
 SET(UpnpRuntime_Header
     UpnpRuntime/UpnpRuntime.h
-	UpnpRuntime/UpnpDeviceConfig.h
-	UpnpRuntime/UpnpDeviceSummary.h
-	UpnpRuntime/UpnpDeviceFactory.h
-	UpnpRuntime/UpnpDeviceParser.h
-	UpnpRuntime/UpnpServiceParser.h
-	)
+    UpnpRuntime/UpnpDeviceConfig.h
+    UpnpRuntime/UpnpDeviceFactory.h
+    UpnpRuntime/UpnpDeviceParser.h
+    UpnpRuntime/UpnpServiceParser.h
+    )
 
 SET(UpnpRuntime_Source
     UpnpRuntime/UpnpRuntime.c
-	UpnpRuntime/UpnpDeviceConfig.c
-	UpnpRuntime/UpnpDeviceFactory.c
-	UpnpRuntime/UpnpDeviceParser.c
-	UpnpRuntime/UpnpServiceParser.c
-	)
+    UpnpRuntime/UpnpDeviceConfig.c
+    UpnpRuntime/UpnpDeviceFactory.c
+    UpnpRuntime/UpnpDeviceParser.c
+    UpnpRuntime/UpnpServiceParser.c
+    )
 
 SOURCE_GROUP(UpnpRuntime\\headers           FILES     ${UpnpRuntime_Header})
 SOURCE_GROUP(UpnpRuntime\\sources           FILES     ${UpnpRuntime_Source})
@@ -170,15 +214,18 @@ SOURCE_GROUP(UpnpRuntime\\sources           FILES     ${UpnpRuntime_Source})
 SET(SRC
     ${UpnpInitializer_Header}
     ${UpnpInitializer_Source}
-	${UpnpCommon_Header}
+    ${UpnpCommon_Header}
+    ${UpnpCommon_Source}
     ${UpnpTypedef_Header}
     ${UpnpTypedef_Source}
-    ${UpnpSoap_Header}
-    ${UpnpSoap_Source}
+    ${UpnpHttp_Header}
+    ${UpnpHttp_Source}
     ${UpnpRegistry_Header}
     ${UpnpRegistry_Source}
     ${UpnpCtrlPoint_Header}
     ${UpnpCtrlPoint_Source}
+    ${UpnpHost_Header}
+    ${UpnpHost_Source}
     ${UpnpRuntime_Header}
     ${UpnpRuntime_Source}
     )

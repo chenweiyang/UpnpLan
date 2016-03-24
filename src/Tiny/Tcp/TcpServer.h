@@ -28,10 +28,10 @@ typedef struct _TcpServer
     bool                        running;
     int                         socket_fd;
     uint16_t                    listen_port;
-    TinyThread                    thread;
+    TinyThread                  thread;
 
-    TcpConnPool               conn_pool;
-    TcpConnListener           conn_listener;
+    TcpConnPool                 conn_pool;
+    TcpConnListener             conn_listener;
     void                      * conn_listener_ctx;
     uint32_t                    conn_id;
 } TcpServer;
@@ -43,6 +43,7 @@ void TcpServer_Delete(TcpServer *thiz);
 
 TinyRet TcpServer_Start(TcpServer *thiz, uint16_t port, TcpConnListener listener, void *ctx);
 TinyRet TcpServer_Stop(TcpServer *thiz);
+bool TcpServer_IsRunning(TcpServer *thiz);
 uint16_t TcpServer_GetListenPort(TcpServer *thiz);
 
 

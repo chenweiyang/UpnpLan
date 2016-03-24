@@ -19,16 +19,20 @@
 #include "upnp_define.h"
 #include "UpnpAction.h"
 #include "UpnpError.h"
+#include "UpnpHttpManager.h"
 
 TINY_BEGIN_DECLS
 
 
-struct _UpnpActionInvoker;
-typedef struct _UpnpActionInvoker UpnpActionInvoker;
+typedef struct _UpnpActionInvoker
+{
+    UpnpHttpManager     *http;
+} UpnpActionInvoker;
 
-UpnpActionInvoker * UpnpActionInvoker_New(void);
+UpnpActionInvoker * UpnpActionInvoker_New(UpnpHttpManager *http);
+TinyRet UpnpActionInvoker_Construct(UpnpActionInvoker *thiz, UpnpHttpManager *http);
+void UpnpActionInvoker_Dispose(UpnpActionInvoker *thiz);
 void UpnpActionInvoker_Delete(UpnpActionInvoker *thiz);
-
 TinyRet UpnpActionInvoker_Invoke(UpnpActionInvoker *thiz, UpnpAction *action, UpnpError *error);
 
 

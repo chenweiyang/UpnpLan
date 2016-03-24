@@ -27,9 +27,20 @@ typedef struct _UpnpSubscription
     UpnpService *service;
     UpnpEventListener listener;
     void *ctx;
-    char subscribeId[UPNP_UUID_LEN];
+    uint16_t port;
     uint32_t timeout;
+    char subscribeId[UPNP_UUID_LEN];
+    char callbackUri[TINY_URL_LEN];
+    char callbackFull[TINY_URL_LEN];
 } UpnpSubscription;
+
+UpnpSubscription * UpnpSubscription_New(UpnpService *service, uint16_t port, uint32_t timeout, UpnpEventListener listener, void *ctx);
+TinyRet UpnpSubscription_Construct(UpnpSubscription *thiz, UpnpService *service, uint16_t port, uint32_t timeout, UpnpEventListener listener, void *ctx);
+void UpnpSubscription_Dispose(UpnpSubscription *thiz);
+void UpnpSubscription_Delete(UpnpSubscription *thiz);
+
+const char * UpnpSubscription_GetCallBackUri(UpnpSubscription *thiz);
+const char * UpnpSubscription_GetFullCallBack(UpnpSubscription *thiz);
 
 
 TINY_END_DECLS

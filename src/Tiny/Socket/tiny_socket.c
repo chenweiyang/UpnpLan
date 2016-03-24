@@ -266,7 +266,7 @@ TinyRet tiny_socket_waiting_for_read(int fd, uint32_t timeout)
         /*
         * NOTE
         *   max_fd is not used on Windows,
-        *   but on linux/unix it MUST Greater than socket_no.
+        *   but on linux/unix it MUST Greater than socket_fd.
         */
         max_fd = fd + 1;
 
@@ -327,7 +327,7 @@ TinyRet tiny_socket_waiting_for_write(int fd, uint32_t timeout)
         /*
         * NOTE
         *   max_fd is not used on Windows,
-        *   but on linux/unix it MUST Greater than socket_no.
+        *   but on linux/unix it MUST Greater than socket_fd.
         */
         max_fd = fd + 1;
 
@@ -550,7 +550,7 @@ TinyRet tiny_tcp_waiting_for_connected(int fd, uint32_t timeout)
         /*
         * NOTE
         *   max_fd is not used on Windows,
-        *   but on linux/unix it MUST Greater than socket_no.
+        *   but on linux/unix it MUST Greater than socket_fd.
         */
         max_fd = fd + 1;
 

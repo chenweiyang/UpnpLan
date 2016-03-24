@@ -18,14 +18,21 @@
 #include "tiny_base.h"
 #include "upnp_define.h"
 #include "UpnpObject.h"
+#include "TinyMutex.h"
+#include "TinyMap.h"
 
 TINY_BEGIN_DECLS
 
 
-struct _UpnpObjectList;
-typedef struct _UpnpObjectList UpnpObjectList;
+typedef struct _UpnpObjectList
+{
+    TinyMutex     mutex;
+    TinyMap       objects;
+} UpnpObjectList;
 
 UpnpObjectList * UpnpObjectList_New(void);
+TinyRet UpnpObjectList_Construct(UpnpObjectList *thiz);
+TinyRet UpnpObjectList_Dispose(UpnpObjectList *thiz);
 void UpnpObjectList_Delete(UpnpObjectList *thiz);
 
 void UpnpObjectList_Lock(UpnpObjectList *thiz);

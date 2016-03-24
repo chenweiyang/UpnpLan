@@ -16,6 +16,8 @@
 #define __HTTP_MESSAGE_H__
 
 #include "tiny_base.h"
+#include "HttpHeader.h"
+#include "HttpContent.h"
 
 TINY_BEGIN_DECLS
 
@@ -81,11 +83,48 @@ typedef enum _HttpType
     HTTP_RESPONSE   = 2,
 } HttpType;
 
-#define PROTOCOL_HTTP       "HTTP"
-#define PROTOCOL_RTSP       "RTSP"
+#define PROTOCOL_HTTP                   "HTTP"
+#define PROTOCOL_RTSP                   "RTSP"
+#define HTTP_METHOD_LEN                 32
+#define HTTP_URI_LEN                    256
+#define HTTP_STATUS_LEN                 256
 
-struct _HttpMessage;
-typedef struct _HttpMessage HttpMessage;
+typedef struct _HttpRequestLine
+{
+    char method[HTTP_METHOD_LEN];
+    char uri[HTTP_URI_LEN];
+} HttpRequestLine;
+
+typedef struct _HttpStatusLine
+{
+    int code;
+    char status[HTTP_STATUS_LEN];
+} HttpStatusLine;
+
+typedef struct _HttpVersion
+{
+    int major;
+    int minor;
+} HttpVersion;
+
+#define PROTOCOL_LEN         8
+
+typedef struct _HttpMessage
+{
+    uint32_t            ref;
+    HttpType            type;
+    char                ip[TINY_IP_LEN];
+    uint16_t            port;
+    char                protocol_identifier[PROTOCOL_LEN];
+
+    HttpRequestLine     request_line;
+    HttpStatusLine      status_line;
+    HttpVersion         version;
+    uint32_t            content_length;
+
+    HttpHeader          header;
+    HttpContent         content;
+} HttpMessage;
 
 HttpMessage * HttpMessage_New(void);
 TinyRet HttpMessage_Construct(HttpMessage *thiz);
@@ -103,6 +142,7 @@ uint16_t HttpMessage_GetPort(HttpMessage *thiz);
 /* Parse bytes & to bytes */
 TinyRet HttpMessage_Parse(HttpMessage * thiz, const char *bytes, uint32_t len);
 TinyRet HttpMessage_ToBytes(HttpMessage *thiz, char **bytes, uint32_t *len);
+uint32_t HttpMessage_ToString(HttpMessage *thiz, char *string, uint32_t len);
 
 void HttpMessage_SetType(HttpMessage * thiz, HttpType type);
 HttpType HttpMessage_GetType(HttpMessage * thiz);

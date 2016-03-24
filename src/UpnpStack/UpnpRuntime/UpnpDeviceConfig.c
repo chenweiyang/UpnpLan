@@ -11,13 +11,16 @@
 */
 
 #include "UpnpDeviceConfig.h"
+#include "UpnpDeviceDefinition.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
+#include "TinyUuid.h"
 
 #define TAG     "UpnpDeviceConfig"
 
 static TinyRet UpnpDeviceConfig_Construct(UpnpDeviceConfig *thiz);
 static void UpnpDeviceConfig_Dispose(UpnpDeviceConfig *thiz);
+static bool generateNewDeviceId(UpnpDevice * device);
 
 #define LEN     128
 
@@ -142,7 +145,59 @@ void UpnpDeviceConfig_SetManufacturerUrl(UpnpDeviceConfig *thiz, const char *url
 
 UpnpDevice * UpnpDeviceConfig_CreateDevice(UpnpDeviceConfig *thiz)
 {
+    UpnpDevice * device = NULL;
+
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
-    return NULL;
+    do
+    {
+        device = UpnpDevice_New();
+        if (device == NULL)
+        {
+            LOG_D(TAG, "UpnpDevice_New failed");
+            break;
+        }
+        
+        // UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_DeviceType, deviceType);
+        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_FriendlyName, thiz->deviceName);
+        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ModelNumber, thiz->modelNumber);
+        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ModelName, thiz->modelName);
+        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ModelURL, thiz->modelUrl);
+        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_Manufacturer, thiz->manufacturer);
+        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ManufacturerURL, thiz->manufacturerUrl);
+
+        if (!generateNewDeviceId(device))
+        {
+            LOG_D(TAG, "generateNewDeviceId failed");
+            UpnpDevice_Delete(device);
+            device = NULL;
+            break;
+        }
+    } while (0);
+
+    return device;
+}
+
+static bool generateNewDeviceId(UpnpDevice * device)
+{
+    TinyUuid uuid;
+
+    if (RET_FAILED(TinyUuid_Construct(&uuid)))
+    {
+        LOG_E(TAG, "TinyUuid_Construct failed");
+        return false;
+    }
+
+    if (RET_FAILED(TinyUuid_GenerateRandom(&uuid)))
+    {
+        LOG_E(TAG, "TinyUuid_GenerateRandom failed");
+        TinyUuid_Dispose(&uuid);
+        return false;
+    }
+
+    UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_UDN, TinyUuid_ToString(&uuid, true));
+
+    TinyUuid_Dispose(&uuid);
+
+    return true;
 }

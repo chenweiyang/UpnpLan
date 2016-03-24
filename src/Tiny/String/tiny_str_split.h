@@ -33,7 +33,7 @@ TINY_BEGIN_DECLS
  *       group[3] = "mediaserver"
  *       group[4] = "1"
  */
-uint32_t str_split(const char *str, const char *c, char group[][128], uint32_t count);
+uint32_t str_split(const char *str, const char *c, char group[][128], uint32_t groupCount);
 
 
 TINY_END_DECLS

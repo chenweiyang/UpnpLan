@@ -21,18 +21,6 @@
 
 
 #define TAG                     "UpnpObject"
-#define UPNP_USN_LEN            128
-
-struct _UpnpObject
-{
-    UpnpUri nt;
-    char ip[TINY_IP_LEN];
-    char location[TINY_URL_LEN];
-    char stack_info[UPNP_STACK_INFO_LEN];
-    char usn[UPNP_USN_LEN];
-    uint64_t max_age;
-    uint64_t next_notify;
-};
 
 UpnpObject * UpnpObject_New(void)
 {

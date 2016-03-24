@@ -16,21 +16,29 @@
 #define __UPNP_SUBSCRIBER_H__
 
 #include "tiny_base.h"
-#include "upnp_api.h"
-#include "UpnpSubscription.h"
 #include "UpnpError.h"
+#include "UpnpSubscription.h"
+#include "UpnpHttpManager.h"
+#include "TinyMap.h"
+#include "TinyMutex.h"
 
 TINY_BEGIN_DECLS
 
 
-struct _UpnpSubscriber;
-typedef struct _UpnpSubscriber UpnpSubscriber;
+typedef struct _UpnpSubscriber
+{
+    UpnpHttpManager           * http;
+    TinyMap                     map;
+    TinyMutex                   mutex;
+} UpnpSubscriber;
 
-UPNP_API UpnpSubscriber * UpnpSubscriber_New(void);
-UPNP_API void UpnpSubscriber_Delete(UpnpSubscriber *thiz);
+UpnpSubscriber * UpnpSubscriber_New(UpnpHttpManager *http);
+TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz, UpnpHttpManager *http);
+void UpnpSubscriber_Dispose(UpnpSubscriber *thiz);
+void UpnpSubscriber_Delete(UpnpSubscriber *thiz);
 
-UPNP_API TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz, UpnpSubscription *subscription, UpnpError *error);
-UPNP_API TinyRet UpnpSubscriber_Unsubscribe(UpnpSubscriber *thiz, UpnpError *error);
+TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz, UpnpService *service, uint32_t timeout, UpnpEventListener listener, void *ctx, UpnpError *error);
+TinyRet UpnpSubscriber_Unsubscribe(UpnpSubscriber *thiz, UpnpService *service, UpnpError *error);
 
 
 TINY_END_DECLS

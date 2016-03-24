@@ -3,6 +3,8 @@
 #include "BinaryLight.h"
 #include "command.h"
 
+//#include "upnp_net_util.h"
+
 int main(void)
 {
     UpnpInitializer_Initialize();
@@ -10,6 +12,14 @@ int main(void)
         UpnpRuntime *runtime = NULL;
         BinaryLight *binaryLight = NULL;
         UpnpDeviceConfig *config = NULL;
+
+#if 0
+        const char *remoteIp = "10.0.1.5";
+        char selfIp[32];
+        
+        memset(selfIp, 0, 32);
+        printf("upnp_net_get_ip: %d\n", upnp_net_get_ip(remoteIp, selfIp, 32));
+#endif 
 
         runtime = UpnpRuntime_New();
         if (runtime == NULL)

@@ -23,8 +23,18 @@
 TINY_BEGIN_DECLS
 
 
-struct _UpnpObject;
-typedef struct _UpnpObject UpnpObject;
+#define UPNP_USN_LEN            128
+
+typedef struct _UpnpObject
+{
+    UpnpUri nt;
+    char ip[TINY_IP_LEN];
+    char location[TINY_URL_LEN];
+    char stack_info[UPNP_STACK_INFO_LEN];
+    char usn[UPNP_USN_LEN];
+    uint64_t max_age;
+    uint64_t next_notify;
+} UpnpObject;
 
 UPNP_API UpnpObject * UpnpObject_New(void);
 UPNP_API TinyRet UpnpObject_Construct(UpnpObject *thiz);

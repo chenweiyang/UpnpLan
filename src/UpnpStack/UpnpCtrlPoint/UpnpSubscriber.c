@@ -14,14 +14,8 @@
 
 
 #include "UpnpSubscriber.h"
-#include "upnp_define.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
-#include "tiny_str_get_value.h"
-#include "TcpServer.h"
-#include "TinyWorker.h"
-#include "HttpMessage.h"
-#include "HttpClient.h"
 #include "TinyXml.h"
 #include "UpnpEvent.h"
 #include "UpnpService.h"
@@ -29,36 +23,32 @@
 #include "UpnpDevice.h"
 #include "UpnpDeviceDefinition.h"
 
+
 #define TAG                 "UpnpSubscriber"
 
-static TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz);
-static TinyRet UpnpSubscriber_Dispose(UpnpSubscriber *thiz);
+static void item_delete_listener(void * data, void *ctx);
+static void notify_handler(UpnpHttpConnection *conn,
+    const char *uri,
+    const char *nt,
+    const char *nts,
+    const char *sid,
+    const char *seq,
+    const char *content,
+    void *ctx);
 
-static void conn_listener(TcpConn *conn, void *ctx);
-static TinyRet conn_recv_http_msg(UpnpSubscriber *thiz, TcpConn *conn, HttpMessage *msg, uint32_t timeout);
-
-struct _UpnpSubscriber
-{
-    TcpServer                   httpServer;
-    UpnpSubscription          * subscription;
-};
-
-UpnpSubscriber * UpnpSubscriber_New(void)
+UpnpSubscriber * UpnpSubscriber_New(UpnpHttpManager *http)
 {
     UpnpSubscriber *thiz = NULL;
 
     do
     {
-        TinyRet ret = TINY_RET_OK;
-
         thiz = (UpnpSubscriber *)tiny_malloc(sizeof(UpnpSubscriber));
         if (thiz == NULL)
         {
             break;
         }
 
-        ret = UpnpSubscriber_Construct(thiz);
-        if (RET_FAILED(ret))
+        if (RET_FAILED(UpnpSubscriber_Construct(thiz, http)))
         {
             UpnpSubscriber_Delete(thiz);
             thiz = NULL;
@@ -69,7 +59,7 @@ UpnpSubscriber * UpnpSubscriber_New(void)
     return thiz;
 }
 
-TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz)
+TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz, UpnpHttpManager *http)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -78,9 +68,29 @@ TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz)
     do
     {
         memset(thiz, 0, sizeof(UpnpSubscriber));
-        ret = TcpServer_Construct(&thiz->httpServer);
+
+        ret = TinyMap_Construct(&thiz->map);
         if (RET_FAILED(ret))
         {
+            LOG_E(TAG, "TinyMap_Construct failed");
+            break;
+        }
+
+        TinyMap_SetDeleteListener(&thiz->map, item_delete_listener, thiz);
+
+        ret = TinyMutex_Construct(&thiz->mutex);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "TinyMutex_Construct failed");
+            break;
+        }
+
+        thiz->http = http;
+
+        ret = UpnpHttpServer_RegisterNotifyHandler(&thiz->http->server, notify_handler, thiz);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "UpnpHttpServer_RegisterNotifyHandler: failed");
             break;
         }
     } while (0);
@@ -88,18 +98,15 @@ TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz)
     return ret;
 }
 
-TinyRet UpnpSubscriber_Dispose(UpnpSubscriber *thiz)
+void UpnpSubscriber_Dispose(UpnpSubscriber *thiz)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_IF_FAIL(thiz);
 
-    TcpServer_Dispose(&thiz->httpServer);
+    UpnpHttpServer_UnregisterNotifyHandler(&thiz->http->server);
+    thiz->http = NULL;
 
-    if (thiz->subscription != NULL)
-    {
-        tiny_free(thiz->subscription);
-    }
-
-    return TINY_RET_OK;
+    TinyMutex_Dispose(&thiz->mutex);
+    TinyMap_Dispose(&thiz->map);
 }
 
 void UpnpSubscriber_Delete(UpnpSubscriber *thiz)
@@ -109,392 +116,168 @@ void UpnpSubscriber_Delete(UpnpSubscriber *thiz)
     tiny_free(thiz);
 }
 
-/*
-HTTP/1.1 200 OK
-Server: Microsoft-Windows-NT/5.1 UPnP/1.0 UPnP-Device-Host/1.0 Microsoft-HTTPAPI/2.0
-Timeout: Second-300
-SID: uuid:f8343300-c3e2-41ec-91f0-ceac669d6c7c
-Date: Thu, 30 Oct 2014 07:38:06 GMT
-Content-Length: 0
-*/
-TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz, UpnpSubscription *subscription, UpnpError *error)
+static void item_delete_listener(void * data, void *ctx)
 {
-    LOG_TIME_BEGIN(TAG, UpnpSubscriber_Subscribe);
-
-    TinyRet ret = TINY_RET_OK;
-    HttpClient *client = NULL;
-    HttpMessage *httpRequest = NULL;
-    HttpMessage *httpResponse = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(subscription, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        UpnpDevice *device = NULL;
-        const char *urlbase = NULL;
-        const char *eventSubUrl = NULL;
-        char sub_url[TINY_URL_LEN];
-        char cb_url[TINY_URL_LEN];
-
-        memset(sub_url, 0, TINY_URL_LEN);
-        memset(cb_url, 0, TINY_URL_LEN);
-
-        if (thiz->httpServer.running)
-        {
-            ret = TINY_RET_E_STARTED;
-            break;
-        }
-
-        ret = TcpServer_Start(&thiz->httpServer, 0, conn_listener, thiz);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        if (thiz->subscription != NULL)
-        {
-            ret = TINY_RET_E_UPNP_SUBSCRIBE_FAILED;
-            break;
-        }
-
-        device = (UpnpDevice *)UpnpService_GetParentDevice(subscription->service);
-        urlbase = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_URLBase);
-        eventSubUrl = UpnpService_GetPropertyValue(subscription->service, UPNP_SERVICE_EventSubURL);
-
-        tiny_snprintf(sub_url, TINY_URL_LEN, "%s%s", urlbase, eventSubUrl);
-
-        httpRequest = HttpMessage_New();
-        if (httpRequest == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
-
-        tiny_snprintf(cb_url, TINY_URL_LEN, "<http://%s:%d%s>",
-            "10.0.1.3",
-            TcpServer_GetListenPort(&thiz->httpServer),
-            eventSubUrl);
-
-        HttpMessage_SetRequest(httpRequest, "SUBSCRIBE", sub_url);
-        HttpMessage_SetHeader(httpRequest, "User-Agent", UPNP_STACK_INFO);
-        HttpMessage_SetHeader(httpRequest, "CALLBACK", cb_url);
-        HttpMessage_SetHeader(httpRequest, "NT", "upnp:event");
-        HttpMessage_SetHeader(httpRequest, "TIMEOUT", "Second-infinite");
-
-        client = HttpClient_New();
-        if (client == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
-
-        ret = HttpClient_Execute(client, httpRequest, httpResponse, UPNP_TIMEOUT);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        if (HttpMessage_GetStatusCode(httpResponse) != HTTP_STATUS_OK)
-        {
-            ret = TINY_RET_E_HTTP_STATUS;
-            error->code = HttpMessage_GetStatusCode(httpResponse);
-            break;
-        }
-
-        const char *value = HttpMessage_GetHeaderValue(httpResponse, "Timeout");
-        const char *sid = HttpMessage_GetHeaderValue(httpResponse, "SID");
-        if (value != NULL)
-        {
-            char v[16];
-            int ret = 0;
-
-            memset(v, 0, 16);
-            ret = str_get_value(value, strlen(value), "Second-", NULL, v, 16);
-            if (ret > 0)
-            {
-                subscription->timeout = atoi(v);
-            }
-        }
-
-        strncpy(subscription->subscribeId, sid, UPNP_UUID_LEN);
-
-        thiz->subscription = (UpnpSubscription *)tiny_malloc(sizeof(UpnpSubscription));
-        if (thiz->subscription == NULL)
-        {
-            ret = TINY_RET_E_OUT_OF_MEMORY;
-            break;
-        }
-
-        memcpy(thiz->subscription, subscription, sizeof(UpnpSubscription));
-    } while (0);
-
-    if (httpRequest != NULL)
-    {
-        HttpMessage_Delete(httpRequest);
-    }
-
-    if (httpResponse != NULL)
-    {
-        HttpMessage_Delete(httpResponse);
-    }
-    
-    if (client != NULL)
-    {
-        HttpClient_Delete(client);
-    }
-
-    LOG_TIME_END(TAG, UpnpSubscriber_Subscribe);
-
-    return ret;
+    UpnpSubscription *subscription = (UpnpSubscription *)data;
+    UpnpSubscription_Delete(subscription);
 }
 
-TinyRet UpnpSubscriber_Unsubscribe(UpnpSubscriber *thiz, UpnpError *error)
+static void notify_handler(UpnpHttpConnection *conn,
+    const char *uri,
+    const char *nt,
+    const char *nts,
+    const char *sid,
+    const char *seq,
+    const char *content,
+    void *ctx)
 {
-    LOG_TIME_BEGIN(TAG, UpnpSubscriber_Unsubscribe);
+    UpnpSubscriber *thiz = (UpnpSubscriber *)ctx;
+        
+    LOG_D(TAG, "notify_handler");
 
-    TinyRet ret = TINY_RET_OK;
-    HttpClient *client = NULL;
-    HttpMessage *httpRequest = NULL;
-    HttpMessage *httpResponse = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
+    TinyMutex_Lock(&thiz->mutex);
 
     do
     {
-        UpnpDevice *device = NULL;
-        const char *urlbase = NULL;
-        const char *eventSubUrl = NULL;
-        char sub_url[TINY_URL_LEN];
-        char cb_url[TINY_URL_LEN];
-
-        memset(sub_url, 0, TINY_URL_LEN);
-        memset(cb_url, 0, TINY_URL_LEN);
-
-        if (!thiz->httpServer.running)
+        UpnpSubscription *subscription = (UpnpSubscription *)TinyMap_GetValue(&thiz->map, uri);
+        if (subscription == NULL)
         {
+            UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
+            break;
+        }
+
+        do
+        {
+            UpnpEvent event;
+
+            if (RET_FAILED(UpnpEvent_Construct(&event)))
+            {
+                LOG_E(TAG, "UpnpEvent_Construct failed");
+                break;
+            }
+
+            if (RET_FAILED(UpnpEvent_Parse(&event, nt, nts, sid, seq, content)))
+            {
+                break;
+            }
+
+            subscription->listener(&event, subscription->ctx);
+        } while (0);
+
+        UpnpHttpConnection_SendOk(conn);
+    } while (0);  
+
+    TinyMutex_Unlock(&thiz->mutex);
+}
+
+TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz, 
+    UpnpService *service,
+    uint32_t timeout,
+    UpnpEventListener listener,
+    void *ctx,
+    UpnpError *error)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(listener, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
+
+    TinyMutex_Lock(&thiz->mutex);
+
+    do
+    {
+        UpnpSubscription *subscription = NULL;
+
+        if (!UpnpHttpServer_IsRunning(&thiz->http->server))
+        {
+            LOG_E(TAG, "UpnpHttpServer_IsRunning: false");
             ret = TINY_RET_E_STOPPED;
             break;
         }
 
-        ret = TcpServer_Stop(&thiz->httpServer);
+        subscription = UpnpSubscription_New(service,
+            UpnpHttpServer_GetListeningPort(&thiz->http->server),
+            timeout,
+            listener,
+            ctx);
+        if (subscription == NULL)
+        {
+            LOG_D(TAG, "UpnpSubscription_New failed");
+            break;
+        }
+
+        /**
+         * Service already subscribed
+         */
+        if (TinyMap_GetValue(&thiz->map, UpnpSubscription_GetCallBackUri(subscription)) != NULL)
+        {
+            LOG_D(TAG, "service already subscribed");
+            UpnpSubscription_Delete(subscription);
+            ret = TINY_RET_E_ITEM_EXIST;
+            break;
+        }
+
+        /**
+         * add subscription to list
+         */
+        ret = TinyMap_Insert(&thiz->map, UpnpSubscription_GetCallBackUri(subscription), subscription);
         if (RET_FAILED(ret))
         {
+            LOG_E(TAG, "TinyMap_Insert failed: %s", tiny_ret_to_str(ret));
+            UpnpSubscription_Delete(subscription);
             break;
         }
 
-        if (thiz->subscription == NULL)
-        {
-            ret = TINY_RET_E_UPNP_UNSUBSCRIBE_FAILED;
-            break;
-        }
-
-        device = (UpnpDevice *)UpnpService_GetParentDevice(thiz->subscription->service);
-        urlbase = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_URLBase);
-        eventSubUrl = UpnpService_GetPropertyValue(thiz->subscription->service, UPNP_SERVICE_EventSubURL);
-
-        tiny_snprintf(sub_url, TINY_URL_LEN, "%s%s", urlbase, eventSubUrl);
-
-        httpRequest = HttpMessage_New();
-        if (httpRequest == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
-
-        tiny_snprintf(cb_url, TINY_URL_LEN, "<http://%s:%d%s>",
-            "10.0.1.3",
-            TcpServer_GetListenPort(&thiz->httpServer),
-            eventSubUrl);
-
-        HttpMessage_SetRequest(httpRequest, "UNSUBSCRIBE", sub_url);
-        HttpMessage_SetHeader(httpRequest, "User-Agent", UPNP_STACK_INFO);
-        HttpMessage_SetHeader(httpRequest, "SID", thiz->subscription->subscribeId);
-
-        client = HttpClient_New();
-        if (client == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
-
-        ret = HttpClient_Execute(client, httpRequest, httpResponse, UPNP_TIMEOUT);
+        ret = UpnpHttpClient_Subscribe(&thiz->http->client, subscription, error, UPNP_TIMEOUT);
         if (RET_FAILED(ret))
         {
+            LOG_E(TAG, "UpnpHttpClient_Subscribe failed: %s", tiny_ret_to_str(ret));
+            TinyMap_Erase(&thiz->map, UpnpSubscription_GetCallBackUri(subscription));
             break;
         }
-
-        if (HttpMessage_GetStatusCode(httpResponse) != HTTP_STATUS_OK)
-        {
-            ret = TINY_RET_E_HTTP_STATUS;
-            error->code = HttpMessage_GetStatusCode(httpResponse);
-            break;
-        }
-
-        tiny_free(thiz->subscription);
-        thiz->subscription = NULL;
     } while (0);
 
-    if (httpRequest != NULL)
-    {
-        HttpMessage_Delete(httpRequest);
-    }
-
-    if (httpResponse != NULL)
-    {
-        HttpMessage_Delete(httpResponse);
-    }
-
-    if (client != NULL)
-    {
-        HttpClient_Delete(client);
-    }
-
-    LOG_TIME_END(TAG, UpnpSubscriber_Unsubscribe);
+    TinyMutex_Unlock(&thiz->mutex);
 
     return ret;
 }
 
-static void conn_listener(TcpConn *conn, void *ctx)
+TinyRet UpnpSubscriber_Unsubscribe(UpnpSubscriber *thiz, UpnpService *service, UpnpError *error)
 {
     TinyRet ret = TINY_RET_OK;
-    UpnpSubscriber *thiz = (UpnpSubscriber *)ctx;
-    HttpMessage *request = NULL;
-    UpnpEvent *event = NULL;
-
-    do
-    {
-        if (thiz->subscription == NULL)
-        {
-            break;
-        }
-
-        request = HttpMessage_New();
-        if (request == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            return;
-        }
-
-        ret = conn_recv_http_msg(thiz, conn, request, UPNP_TIMEOUT);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        event = UpnpEvent_New();
-        if (event == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
-
-        ret = UpnpEvent_Parse(event, request);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        thiz->subscription->listener(event, thiz->subscription->ctx);
-#if 0
-        {
-            char *bytes = NULL;
-            uint32_t size = 0;
-            ret = HttpMessage_ToBytes(&msg, &bytes, &size);
-            if (RET_SUSCEEDED(ret))
-            {
-                printf("------------ event -----------\n");
-                printf("%s", bytes);
-            }
-
-            if (bytes != NULL)
-            {
-                tiny_free(bytes);
-            }
-        }
-#endif
-
-    } while (0);
-
-    if (request != NULL)
-    {
-        HttpMessage_Delete(request);
-    }
-    
-    if (event != NULL)
-    {
-        UpnpEvent_Delete(event);
-    }
-}
-
-static TinyRet conn_recv_http_msg(UpnpSubscriber *thiz, TcpConn *conn, HttpMessage *msg, uint32_t timeout)
-{
-    LOG_TIME_BEGIN(TAG, conn_recv_http_msg);
-    TinyRet ret = TINY_RET_OK;
-    char *bytes = NULL;
-    uint32_t size = 0;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(conn, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(msg, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
+
+    TinyMutex_Lock(&thiz->mutex);
 
     do
     {
-        ret = TcpConn_Recv(conn, &bytes, &size, timeout);
-        if (RET_FAILED(ret))
+        const char *callbackUri = UpnpService_GetPropertyValue(service, UPNP_SERVICE_CallbackURI);
+        UpnpSubscription *subscription = NULL;
+
+        if (!UpnpHttpServer_IsRunning(&thiz->http->server))
         {
+            LOG_E(TAG, "UpnpHttpServer_IsRunning: false");
+            ret = TINY_RET_E_STOPPED;
             break;
         }
 
-        ret = HttpMessage_Parse(msg, bytes, size);
-        if (RET_FAILED(ret))
+        subscription = (UpnpSubscription *)TinyMap_GetValue(&thiz->map, callbackUri);
+        if (subscription == NULL)
         {
+            LOG_D(TAG, "service not subscribed");
+            ret = TINY_RET_E_NOT_FOUND;
             break;
         }
 
-        if (HttpMessage_GetContentSize(msg) == 0)
-        {
-            break;
-        }
-
-        if (HttpMessage_IsContentFull(msg))
-        {
-            break;
-        }
-
-        while (1)
-        {
-            tiny_free(bytes);
-            bytes = NULL;
-            size = 0;
-
-            ret = TcpConn_Recv(conn, &bytes, &size, timeout);
-            if (RET_FAILED(ret))
-            {
-                break;
-            }
-
-            ret = HttpMessage_AddContentObject(msg, bytes, size);
-            if (RET_FAILED(ret))
-            {
-                break;
-            }
-
-            if (HttpMessage_IsContentFull(msg))
-            {
-                break;
-            }
-        }
+        ret = UpnpHttpClient_Unsubscribe(&thiz->http->client, subscription, error, UPNP_TIMEOUT);
     } while (0);
 
-    if (bytes != NULL)
-    {
-        tiny_free(bytes);
-    }
-
-    LOG_TIME_END(TAG, conn_recv_http_msg);
+    TinyMutex_Unlock(&thiz->mutex);
 
     return ret;
 }

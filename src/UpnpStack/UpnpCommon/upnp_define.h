@@ -39,6 +39,7 @@ TINY_BEGIN_DECLS
 #define SCHEMAS_UPNP_ORG                        "schemas-upnp-org"
 
 
+
 TINY_END_DECLS
 
 #endif /* __UPNP_DEFINE_H__ */

@@ -20,5 +20,7 @@
 #define UPNP_SERVICE_EventSubURL             "eventSubURL"
 #define UPNP_SERVICE_SCPDURL                 "SCPDURL"
 
+#define UPNP_SERVICE_CallbackURI             "callbackURI"
+
 
 #endif /* __UPNP_SERVICE_DEFINITION_H__ */

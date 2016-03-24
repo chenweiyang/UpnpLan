@@ -17,59 +17,18 @@
 #include "tiny_url_split.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
-#include "HttpHeader.h"
-#include "HttpContent.h"
 
 #define TAG                 "HttpMessage"
 #define CONTENT_LENGTH      "Content-Length"
-#define PROTOCOL_LEN         8
 
 /* HTTP/1.1 0 X */
 #define HTTP_STATUS_LINE_MIN_LEN        14  /* strlen(HTTP/1.1 X 2\r\n) */
 #define HTTP_REQUEST_LINE_MIN_LEN       14  /* X * HTTP/1.1\r\n */
 #define HTTP_HEAD_LEN                   256
 #define HTTP_LINE_LEN                   256
-#define HTTP_METHOD_LEN                 32
-#define HTTP_URI_LEN                    256
-#define HTTP_STATUS_LEN                 256
 
 static uint32_t HttpMessage_LoadStatusLine(HttpMessage * thiz, const char *bytes, uint32_t len);
 static uint32_t HttpMessage_LoadRequestLine(HttpMessage * thiz, const char *bytes, uint32_t len);
-
-typedef struct _HttpRequestLine
-{
-    char method[HTTP_METHOD_LEN];
-    char uri[HTTP_URI_LEN];
-} HttpRequestLine;
-
-typedef struct _HttpStatusLine
-{
-    int code;
-    char status[HTTP_STATUS_LEN];
-} HttpStatusLine;
-
-typedef struct _HttpVersion
-{
-    int major;
-    int minor;
-} HttpVersion;
-
-struct _HttpMessage
-{
-    uint32_t            ref;
-    HttpType            type;
-    char                ip[TINY_IP_LEN];
-    uint16_t            port;
-    char                protocol_identifier[PROTOCOL_LEN];
-
-    HttpRequestLine     request_line;
-    HttpStatusLine      status_line;
-    HttpVersion         version;
-    uint32_t            content_length;
-
-    HttpHeader          header;
-    HttpContent         content;
-};
 
 HttpMessage * HttpMessage_New(void)
 {
@@ -375,6 +334,122 @@ TinyRet HttpMessage_ToBytes(HttpMessage *thiz, char **bytes, uint32_t *len)
     } while (0);
 
     return ret;
+}
+
+uint32_t HttpMessage_ToString(HttpMessage *thiz, char *string, uint32_t len)
+{
+    uint32_t used = 0;
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, 0);
+    RETURN_VAL_IF_FAIL(string, 0);
+
+    do
+    {
+        uint32_t unused = len;
+        uint32_t i = 0;
+        char *p = string;
+        char line[HTTP_LINE_LEN];
+        uint32_t content_length = 0;
+
+        if (thiz->type == HTTP_UNDEFINED)
+        {
+            ret = TINY_RET_E_HTTP_TYPE_INVALID;
+            break;
+        }
+
+        content_length = HttpContent_GetSize(&thiz->content);
+
+        // first line
+        memset(line, 0, HTTP_LINE_LEN);
+        if (thiz->type == HTTP_REQUEST)
+        {
+            tiny_snprintf(line,
+                HTTP_LINE_LEN,
+                "%s %s %s/%d.%d\r\n",
+                thiz->request_line.method,
+                thiz->request_line.uri,
+                thiz->protocol_identifier,
+                thiz->version.major,
+                thiz->version.minor);
+        }
+        else
+        {
+            // RESPONSE
+            tiny_snprintf(line,
+                HTTP_LINE_LEN,
+                "%s/%d.%d %d %s\r\n",
+                thiz->protocol_identifier,
+                thiz->version.major,
+                thiz->version.minor,
+                thiz->status_line.code,
+                thiz->status_line.status);
+        }
+        line[HTTP_LINE_LEN - 1] = 0;
+
+        strncpy(p, line, unused);
+        p += strlen(line);
+        used = p - string;
+        unused = len - used;
+        if (unused <= 0)
+        {
+            break;
+        }
+
+        // headers
+        for (i = 0; i < HttpHeader_GetCount(&thiz->header); ++i)
+        {
+            const char * name = HttpHeader_GetNameAt(&thiz->header, i);
+            const char * value = HttpHeader_GetValueAt(&thiz->header, i);
+
+            memset(line, 0, HTTP_LINE_LEN);
+            tiny_snprintf(line, HTTP_LINE_LEN, "%s: %s\r\n", name, value);
+            line[HTTP_LINE_LEN - 1] = 0;
+
+            strncpy(p, line, unused);
+            p += strlen(line);
+            used = p - string;
+            unused = len - used;
+            if (unused <= 0)
+            {
+                break;
+            }
+        }
+
+        // \r\n
+        memset(line, 0, HTTP_LINE_LEN);
+        tiny_snprintf(line, HTTP_LINE_LEN, "\r\n");
+        line[HTTP_LINE_LEN - 1] = 0;
+
+        strncpy(p, line, unused);
+        p += strlen(line);
+        used = p - string;
+        unused = len - used;
+        if (unused <= 0)
+        {
+            break;
+        }
+
+        // content
+        if (content_length == 0)
+        {
+            break;
+        }
+
+        if (content_length > unused)
+        {
+            used = 0;
+            unused = len;
+            break;
+        }
+
+        strncpy(p, HttpContent_GetObject(&thiz->content), unused);
+        p += content_length;
+        used = p - string;
+        unused = len - used;
+    } while (0);
+
+    return used;
 }
 
 void HttpMessage_SetType(HttpMessage * thiz, HttpType type)

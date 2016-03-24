@@ -11,7 +11,7 @@ SET(Base_Header
     Base/tiny_api.h
     Base/tiny_base.h
     Base/tiny_define.h
-	Base/tiny_debug.h
+    Base/tiny_debug.h
     Base/tiny_ret.h
     Base/tiny_time.h
     Base/tiny_typedef.h
@@ -107,6 +107,20 @@ SOURCE_GROUP(TinyTimer\\headers            FILES   ${Timer_Header})
 SOURCE_GROUP(TinyTimer\\sources            FILES   ${Timer_Source})
 
 #-----------------------
+# Net
+#-----------------------
+SET(Net_Header
+    Net/tiny_net_util.h
+    )
+
+SET(Net_Source
+    Net/tiny_net_util.c
+    )
+
+SOURCE_GROUP(TinyNet\\headers              FILES   ${Net_Header})
+SOURCE_GROUP(TinyNet\\sources              FILES   ${Net_Source})
+
+#-----------------------
 # Uuid
 #-----------------------
 SET(Uuid_Header
@@ -119,6 +133,20 @@ SET(Uuid_Source
 
 SOURCE_GROUP(TinyUuid\\headers            FILES   ${Uuid_Header})
 SOURCE_GROUP(TinyUuid\\sources            FILES   ${Uuid_Source})
+
+#-----------------------
+# Md5
+#-----------------------
+SET(Md5_Header
+    Md5/tiny_md5.h
+    )
+
+SET(Md5_Source
+    Md5/tiny_md5.c
+    )
+
+SOURCE_GROUP(TinyMd5\\headers            FILES   ${Md5_Header})
+SOURCE_GROUP(TinyMd5\\sources            FILES   ${Md5_Source})
 
 #-----------------------
 # Container 
@@ -249,12 +277,16 @@ SET(SRC
     ${Thread_Source}
     ${Timer_Header}
     ${Timer_Source}
+    ${Net_Header}
+    ${Net_Source}
     ${Uuid_Header}
     ${Uuid_Source}
     ${Worker_Header}
     ${Worker_Source}
     ${Xml_Header}
     ${Xml_Source}
+    ${Md5_Header}
+    ${Md5_Source}
     )
 
 #----------------------------------------------------------------------------

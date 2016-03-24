@@ -25,6 +25,7 @@
 #define UPNP_DEVICE_ModelURL                "modelURL"
 #define UPNP_DEVICE_SerialNumber            "serialNumber"
 #define UPNP_DEVICE_URLBase                 "URLBase"
+#define UPNP_DEVICE_Address                 "address"
 
 
 #endif /* __UPNP_DEVICE_DEFINITION_H__ */

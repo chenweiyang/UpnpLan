@@ -76,6 +76,7 @@ UPNP_API TinyRet UpnpUri_Parse(UpnpUri *thiz, const char *string, bool strict_uu
 UPNP_API bool UpnpUri_IsEqual(UpnpUri *thiz, const char *string);
 
 
+
 TINY_END_DECLS
 
 #endif /* __UPNP_URI_H__ */

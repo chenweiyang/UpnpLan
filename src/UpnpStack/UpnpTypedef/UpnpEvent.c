@@ -18,19 +18,12 @@
 
 #define TAG         "UpnpEvent"
 
-static TinyRet UpnpEvent_Construct(UpnpEvent *thiz);
-static void UpnpEvent_Dispose(UpnpEvent *thiz);
 static TinyRet UpnpEvent_Initialize(UpnpEvent *thiz);
 
 static TinyRet load_content(UpnpEvent *thiz, const char *bytes, uint32_t len);
 static TinyRet load_xml(UpnpEvent *thiz, TinyXml *xml);
 static TinyRet load_propertyset(UpnpEvent *thiz, TinyXmlNode *root);
 
-struct _UpnpEvent
-{
-    PropertyList * propertyList;
-    PropertyList * argumentList;
-};
 
 UpnpEvent * UpnpEvent_New(void)
 {
@@ -66,15 +59,7 @@ UpnpEvent * UpnpEvent_New(void)
     return thiz;
 }
 
-void UpnpEvent_Delete(UpnpEvent *thiz)
-{
-    RETURN_IF_FAIL(thiz);
-
-    UpnpEvent_Dispose(thiz);
-    tiny_free(thiz);
-}
-
-static TinyRet UpnpEvent_Construct(UpnpEvent *thiz)
+TinyRet UpnpEvent_Construct(UpnpEvent *thiz)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -102,12 +87,20 @@ static TinyRet UpnpEvent_Construct(UpnpEvent *thiz)
     return ret;
 }
 
-static void UpnpEvent_Dispose(UpnpEvent *thiz)
+void UpnpEvent_Dispose(UpnpEvent *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
     PropertyList_Delete(thiz->propertyList);
     PropertyList_Delete(thiz->argumentList);
+}
+
+void UpnpEvent_Delete(UpnpEvent *thiz)
+{
+    RETURN_IF_FAIL(thiz);
+
+    UpnpEvent_Dispose(thiz);
+    tiny_free(thiz);
 }
 
 static TinyRet UpnpEvent_Initialize(UpnpEvent *thiz)
@@ -265,58 +258,26 @@ InstanceID&gt;&lt;/Event&gt;
 </e:property>
 </e:propertyset>
 */
-TinyRet UpnpEvent_Parse(UpnpEvent *thiz, HttpMessage *request)
+
+TinyRet UpnpEvent_Parse(UpnpEvent *thiz, const char *nt, const char *nts, const char *sid, const char *seq, const char *content)
 {
     TinyRet ret = TINY_RET_OK;
 
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(nt, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(nts, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(sid, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(seq, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(content, TINY_RET_E_ARG_NULL);
+
     do
     {
-        const char *connection = NULL;
-        const char *content_type = NULL;
-        const char *nt = NULL;
-        const char *nts = NULL;
-        const char *sid = NULL;
-        const char *seq = NULL;
+        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Nt, nt);
+        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Nts, nts);
+        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Sid, sid);
+        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Seq, seq);
 
-        if (HttpMessage_GetType(request) != HTTP_REQUEST)
-        {
-            ret = TINY_RET_E_HTTP_TYPE_INVALID;
-            break;
-        }
-
-        connection = HttpMessage_GetHeaderValue(request, "Connection");
-        content_type = HttpMessage_GetHeaderValue(request, "Content-Type");
-        nt = HttpMessage_GetHeaderValue(request, "NT");
-        nts = HttpMessage_GetHeaderValue(request, "NTS");
-        sid = HttpMessage_GetHeaderValue(request, "SID");
-        seq = HttpMessage_GetHeaderValue(request, "SEQ");
-
-        if (connection != NULL)
-        {
-            UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Connection, connection);
-        }
-
-        if (nt != NULL)
-        {
-            UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Nt, nt);
-        }
-
-        if (nts != NULL)
-        {
-            UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Nts, nts);
-        }
-
-        if (sid != NULL)
-        {
-            UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Sid, sid);
-        }
-
-        if (seq != NULL)
-        {
-            UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Seq, seq);
-        }
-
-        ret = load_content(thiz, HttpMessage_GetContentObject(request), HttpMessage_GetContentSize(request));
+        ret = load_content(thiz, content, strlen(content));
         if (RET_FAILED(ret))
         {
             break;

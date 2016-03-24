@@ -41,8 +41,8 @@ struct _TcpConn
     char                client_ip[TINY_IP_LEN];
     uint16_t            client_port;
 
-    TinyThread            thread;
-    TcpConnListener   listener;
+    TinyThread          thread;
+    TcpConnListener     listener;
     void              * ctx;
 };
 

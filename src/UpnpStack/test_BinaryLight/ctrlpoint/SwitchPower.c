@@ -15,6 +15,7 @@
 #include "tiny_str_equal.h"
 #include "tiny_log.h"
 #include "UpnpCode.h"
+#include "UpnpEvent.h"
 #include "UpnpServiceDefinition.h"
 
 #define TAG             "SwitchPower"
@@ -24,7 +25,7 @@ static const char * _SERVICE_TYPE = "urn:schemas-upnp-org:service:SwitchPower:1"
 //-------------------------------------------------------
 // action names (3)
 //-------------------------------------------------------
-static const char * ACTION_GetTarget = "gettarget";
+static const char * ACTION_GetTarget = "GetTarget";
 static const char * _GetTarget_ARG_RetTargetValue = "RetTargetValue";
 static const char * ACTION_SetTarget = "SetTarget";
 static const char * _SetTarget_ARG_newTargetValue = "newTargetValue";
@@ -105,7 +106,7 @@ TinyRet SwitchPower_GetTarget(SwitchPower *thiz, SwitchPower_GetTargetResult *re
         UpnpAction *action = UpnpActionList_GetAction(list, ACTION_GetTarget);
         if (action == NULL)
         {
-            ret = TINY_RET_E_ARG_INVALID;
+            ret = TINY_RET_E_UPNP_ACTION_NOT_FOUND;
             break;
         }
 
@@ -251,22 +252,14 @@ TinyRet SwitchPower_Subscribe(SwitchPower *thiz, SwitchPower_EventListener *list
 
     do
     {
-        UpnpSubscription sub;
-        memset(&sub, 0, sizeof(UpnpSubscription));
-        sub.service = thiz->service;
-        sub.listener = event_listener;
-        sub.ctx = thiz;
-        sub.timeout = 0;
-
+        thiz->ctx = ctx;
         thiz->listener = listener;
 
-        ret = UpnpRuntime_Subscribe(thiz->runtime, &sub, error);
+        ret = UpnpRuntime_Subscribe(thiz->runtime, thiz->service, 0, event_listener, thiz, error);
         if (RET_FAILED(ret))
         {
             break;
         }
-
-        strncpy(thiz->subscriptionId, sub.subscribeId, UPNP_UUID_LEN);
     } while (0);
 
     return ret;
@@ -279,21 +272,13 @@ TinyRet SwitchPower_Unsubscribe(SwitchPower *thiz, UpnpError *error)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
 
-    do
+    ret = UpnpRuntime_Unsubscribe(thiz->runtime, thiz->service, error);
+    if (RET_SUCCEEDED(ret))
     {
-        UpnpSubscription sub;
-        memset(&sub, 0, sizeof(UpnpSubscription));
-        sub.service = thiz->service;
-        strncpy(sub.subscribeId, thiz->subscriptionId, UPNP_UUID_LEN);
-        sub.ctx = thiz;
+        thiz->listener = NULL;
+        thiz->ctx = NULL;
+    }
 
-        ret = UpnpRuntime_Unsubscribe(thiz->runtime, &sub, error);
-        if (RET_SUCCEEDED(ret))
-        {
-            memset(thiz->subscriptionId, 0, UPNP_UUID_LEN);
-        }
-    } while (0);
-    
     return ret;
 }
 

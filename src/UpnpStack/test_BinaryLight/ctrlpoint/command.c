@@ -36,6 +36,8 @@ static void cmd_help(void)
     fprintf(stdout, "stop       --  stop\n");
     fprintf(stdout, "discover   --  discover\n");
     fprintf(stdout, "sd         --  stop discovery\n");
+    fprintf(stdout, "sub        --  subscribe event\n");
+    fprintf(stdout, "unsub      --  unsubscribe event\n");
     fprintf(stdout, "gett       --  BinaryLigth.SwitchPower.GetTarget\n");
     fprintf(stdout, "sett       --  BinaryLigth.SwitchPower.SetTarget\n");
     fprintf(stdout, "gets       --  BinaryLigth.SwitchPower.GetStatus\n");
@@ -45,7 +47,7 @@ static bool device_filter(UpnpUri *uri, void *ctx)
 {
     bool result = false;
 
-    // printf("device_filter: schemas:[%s] deviceType:[%s]\n", schemas, deviceType);
+    printf("device_filter: schemas:[%s] deviceType:[%s]\n", uri->domain_name, uri->device_type);
 
     do
     {
@@ -137,6 +139,33 @@ static void cmd_discover(void)
 static void cmd_stopDiscovery(void)
 {
     LOG("UpnpRuntime_StopScan", UpnpRuntime_StopScan(gRuntime));
+}
+
+static void OnSubscriptionExpired(void *ctx)
+{
+    printf("OnSubscriptionExpired\n");
+}
+
+static void OnStatusChanged(bool currentValue, void *ctx)
+{
+    printf("OnStatusChanged: %s\n", currentValue ? "ON" : "OFF");
+}
+
+static void cmd_Subscribe(void)
+{
+    UpnpError error;
+    SwitchPower_EventListener event_listener;
+    event_listener.onStatusChanged = NULL;
+    event_listener.onSubscriptionExpired = NULL;
+
+    LOG("SwitchPower_Subscribe", SwitchPower_Subscribe(BinaryLight_GetSwitchPower(binaryLight), &event_listener, &error, NULL));
+}
+
+static void cmd_UnSubscribe(void)
+{
+    UpnpError error;
+
+    LOG("SwitchPower_Subscribe", SwitchPower_Unsubscribe(BinaryLight_GetSwitchPower(binaryLight), &error));
 }
 
 static void cmd_GetTarget(void)
@@ -258,6 +287,8 @@ struct _cmd_exec cmd_exec[] = {
         { "stop", cmd_stop },
         { "discover", cmd_discover },
         { "sd", cmd_stopDiscovery },
+        { "sub", cmd_Subscribe },
+        { "unsub", cmd_UnSubscribe },
         { "gett", cmd_GetTarget },
         { "sett", cmd_SetTarget },
         { "gets", cmd_GetStatus },

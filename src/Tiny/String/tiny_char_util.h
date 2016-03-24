@@ -4,7 +4,7 @@
  * @author jxfengzi@gmail.com
  * @date   2013-11-19
  *
- * @file   char_util.h
+ * @file   tiny_char_util.h
  *
  * @remark
  *		set tabstop=4
@@ -14,8 +14,8 @@
 
 #include "tiny_base.h"
 
-#ifndef __char_util_H__
-#define __char_util_H__
+#ifndef __TINY_CHAR_UTIL_H__
+#define __TINY_CHAR_UTIL_H__
 
 
 TINY_BEGIN_DECLS
@@ -29,4 +29,4 @@ int is_digit(int c);
 
 TINY_END_DECLS
 
-#endif /* __char_util_H__ */
+#endif /* __TINY_CHAR_UTIL_H__ */

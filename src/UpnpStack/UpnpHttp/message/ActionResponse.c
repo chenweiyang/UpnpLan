@@ -4,89 +4,61 @@
 * @author jxfengzi@gmail.com
 * @date   2013-11-19
 *
-* @file   UpnpSoapHelper.c
+* @file   ActionResponse.c
 *
 * @remark
 *
 */
 
-#include "UpnpSoapHelper.h"
+#include "ActionResponse.h"
 #include "UpnpDevice.h"
 #include "UpnpService.h"
 #include "UpnpDeviceDefinition.h"
 #include "UpnpServiceDefinition.h"
 #include "UpnpActionDefinition.h"
-#include "SoapDefinition.h"
+#include "soap/SoapDefinition.h"
+#include "soap/SoapMessage.h"
 #include "tiny_log.h"
 #include "UpnpCode.h"
+#include "UpnpError.h"
 
-#define TAG             "UpnpSoapHelper"
+#define TAG             "ActionResponse"
 
-TinyRet ActionToSoapMessage(UpnpAction *action, SoapMessage *soap)
+static TinyRet SoapResponseToActionResult(SoapMessage *soap, UpnpAction *action, UpnpError *error);
+
+TinyRet ActionFromResponse(UpnpAction *action, UpnpError *error, HttpMessage *response)
 {
     TinyRet ret = TINY_RET_OK;
 
-    RETURN_VAL_IF_FAIL(action, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(soap, TINY_RET_E_ARG_NULL);
-
     do
     {
-        PropertyList *actionArguments = NULL;
-        PropertyList *soapArguments = NULL;
-        UpnpDevice *device = NULL;
-        UpnpService *service = NULL;
-        const char *ctrlUrl = NULL;
-        const char *urlBase = NULL;
-        char url[TINY_URL_LEN];
-
-        memset(url, 0, TINY_URL_LEN);
-
-        service = (UpnpService *)UpnpAction_GetParentService(action);
-        if (service == NULL)
+        SoapMessage *soap = SoapMessage_New();
+        if (soap == NULL)
         {
-            ret = TINY_RET_E_UPNP_SERVICE_NOT_FOUND;
+            LOG_E(TAG, "SoapMessage_New failed");
+            ret = TINY_RET_E_NEW;
             break;
         }
 
-        device = (UpnpDevice *)UpnpService_GetParentDevice(service);
-        if (service == NULL)
+        do
         {
-            ret = TINY_RET_E_UPNP_DEVICE_NOT_FOUND;
-            break;
-        }
+            ret = SoapMessage_Parse(soap, HttpMessage_GetContentObject(response), HttpMessage_GetContentSize(response));
+            if (RET_FAILED(ret))
+            {
+                LOG_D(TAG, "SoapMessage_Parse failed: %s", tiny_ret_to_str(ret));
+                break;
+            }
 
-        ctrlUrl = UpnpService_GetPropertyValue(service, UPNP_SERVICE_ControlURL);
-        urlBase = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_URLBase);
+            ret = SoapResponseToActionResult(soap, action, error);
+        } while (0);
 
-        tiny_snprintf(url, TINY_URL_LEN, "%s%s", urlBase, ctrlUrl);
-
-        ret = SoapMessage_SetPropertyValue(soap, SOAP_ServerURL, url);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = SoapMessage_SetPropertyValue(soap, SOAP_ActionName, UpnpAction_GetPropertyValue(action, UPNP_ACTION_Name));
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = SoapMessage_SetPropertyValue(soap, SOAP_ActionXmlns, UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceType));
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        soapArguments = SoapMessage_GetArgumentList(soap);
-        actionArguments = UpnpAction_GetArgumentList(action);
-        PropertyList_Copy(soapArguments, actionArguments);
+        SoapMessage_Delete(soap);
     } while (0);
 
     return ret;
 }
 
-TinyRet SoapMessageToActionResult(SoapMessage *soap, UpnpAction *action, UpnpError *error)
+TinyRet SoapResponseToActionResult(SoapMessage *soap, UpnpAction *action, UpnpError *error)
 {
     TinyRet ret = TINY_RET_OK;
 
