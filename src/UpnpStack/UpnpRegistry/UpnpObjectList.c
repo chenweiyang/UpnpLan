@@ -101,9 +101,7 @@ void UpnpObjectList_Unlock(UpnpObjectList *thiz)
 
 void UpnpObjectList_Clear(UpnpObjectList *thiz)
 {
-    TinyMutex_Lock(&thiz->mutex);
     TinyMap_Clear(&thiz->objects);
-    TinyMutex_Unlock(&thiz->mutex);
 }
 
 UpnpObject * UpnpObjectList_GetObject(UpnpObjectList *thiz, const char *usn)

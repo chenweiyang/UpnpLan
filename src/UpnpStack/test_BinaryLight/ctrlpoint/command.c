@@ -154,11 +154,13 @@ static void OnStatusChanged(bool currentValue, void *ctx)
 static void cmd_Subscribe(void)
 {
     UpnpError error;
-    SwitchPower_EventListener event_listener;
-    event_listener.onStatusChanged = OnStatusChanged;
-    event_listener.onSubscriptionExpired = OnSubscriptionExpired;
 
-    LOG("SwitchPower_Subscribe", SwitchPower_Subscribe(BinaryLight_GetSwitchPower(binaryLight), &event_listener, &error, NULL));
+    LOG("SwitchPower_Subscribe", 
+        SwitchPower_Subscribe(BinaryLight_GetSwitchPower(binaryLight), 
+            OnSubscriptionExpired,
+            OnStatusChanged,
+            &error,
+            NULL));
 }
 
 static void cmd_UnSubscribe(void)

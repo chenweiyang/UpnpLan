@@ -179,6 +179,7 @@ TinyRet SwitchPower_SendEvents(SwitchPower *thiz)
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
+    // UpnpService_SendEvents(thiz->service);
     return ret;  
 }
 

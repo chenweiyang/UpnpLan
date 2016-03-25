@@ -19,8 +19,8 @@
 #include "UpnpUsn.h"
 #include "UpnpObject.h"
 #include "UpnpObjectList.h"
-#include "UpnpDevice.h"
 #include "UpnpValidator.h"
+#include "UpnpProvider.h"
 
 TINY_BEGIN_DECLS
 
@@ -28,6 +28,7 @@ typedef void(*UpnpObjectListener)(UpnpObject *object, bool alive, void *ctx);
 
 typedef struct _UpnpRegistry
 {
+    UpnpProvider              * provider;
     Ssdp                        ssdp;
     UpnpObjectListener          listener;
     void                      * ctx;
@@ -35,17 +36,14 @@ typedef struct _UpnpRegistry
     UpnpObjectList              foundObjects;
 } UpnpRegistry;
 
-UpnpRegistry * UpnpRegistry_New(void);
-TinyRet UpnpRegistry_Construct(UpnpRegistry *thiz);
+UpnpRegistry * UpnpRegistry_New(UpnpProvider *provider);
+TinyRet UpnpRegistry_Construct(UpnpRegistry *thiz, UpnpProvider *provider);
 void UpnpRegistry_Dispose(UpnpRegistry *thiz);
 void UpnpRegistry_Delete(UpnpRegistry *thiz);
-
 TinyRet UpnpRegistry_Start(UpnpRegistry *thiz);
 TinyRet UpnpRegistry_Stop(UpnpRegistry *thiz);
 TinyRet UpnpRegistry_Discover(UpnpRegistry *thiz, bool strictedUuid, UpnpObjectListener listener, UpnpObjectFilter filter, void *ctx);
 TinyRet UpnpRegistry_StopDiscovery(UpnpRegistry *thiz);
-TinyRet UpnpRegistry_Register(UpnpRegistry *thiz, UpnpDevice *device);
-TinyRet UpnpRegistry_UnRegister(UpnpRegistry *thiz, UpnpDevice *device);
 
 
 TINY_END_DECLS

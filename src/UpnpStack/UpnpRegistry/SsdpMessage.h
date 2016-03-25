@@ -16,6 +16,8 @@
 #define __SSDP_MESSAGE_H__
 
 #include "tiny_base.h"
+#include "UpnpDevice.h"
+#include "UpnpService.h"
 
 TINY_BEGIN_DECLS
 
@@ -171,8 +173,12 @@ typedef struct _SsdpMessage
 } SsdpMessage;
 
 TinyRet SsdpMessage_Construct(SsdpMessage *message, const char *ip, uint16_t port, const char *buf, uint32_t len);
-TinyRet SsdpMessage_ConstructAlive(SsdpMessage *thiz);
-TinyRet SsdpMessage_ConstructByebye(SsdpMessage *thiz);
+TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device);
+TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device);
+TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service);
+TinyRet SsdpMessage_ConstructByebye_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device);
+TinyRet SsdpMessage_ConstructByebye_DEVICE(SsdpMessage *thiz, UpnpDevice *device);
+TinyRet SsdpMessage_ConstructByebye_SERVICE(SsdpMessage *thiz, UpnpService *service);
 TinyRet SsdpMessage_ConstructRequest(SsdpMessage *thiz, const char *target);
 TinyRet SsdpMessage_ConstructResponse(SsdpMessage *thiz);
 void SsdpMessage_Dispose(SsdpMessage *thiz);

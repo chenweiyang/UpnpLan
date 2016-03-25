@@ -118,6 +118,11 @@ void TinyMap_SetDeleteListener(TinyMap * thiz, TinyContainerItemDeleteListener l
     thiz->data_delete_listener_ctx = ctx;
 }
 
+int TinyMap_Foreach(TinyMap * thiz, TinyContainerItemVisit visit, void * ctx)
+{
+    return TinyList_Foreach(&thiz->list, visit, ctx);
+}
+
 uint32_t TinyMap_GetSize(TinyMap *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, 0);

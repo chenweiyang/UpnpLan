@@ -49,7 +49,8 @@ struct _SwitchPower
     UpnpService *service;
     UpnpRuntime *runtime;
     char subscriptionId[UPNP_UUID_LEN];
-    SwitchPower_EventListener *listener;
+    SwitchPower_SubscriptionExpired onSubscriptionExpired;
+    SwitchPower_StatusChanged onStatusChanged;
     void *ctx;
 };
 
@@ -242,18 +243,23 @@ TinyRet SwitchPower_GetStatus(SwitchPower *thiz, SwitchPower_GetStatusResult *re
     return ret;
 }
 
-TinyRet SwitchPower_Subscribe(SwitchPower *thiz, SwitchPower_EventListener *listener, UpnpError *error, void *ctx)
+TinyRet SwitchPower_Subscribe(SwitchPower *thiz, 
+    SwitchPower_SubscriptionExpired onSubscriptionExpired,
+    SwitchPower_StatusChanged onStatusChanged,
+    UpnpError *error,
+    void *ctx)
 {
     TinyRet ret = TINY_RET_OK;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(listener, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
 
     do
     {
         thiz->ctx = ctx;
-        thiz->listener = listener;
+        thiz->onSubscriptionExpired = onSubscriptionExpired;
+        thiz->onStatusChanged = onStatusChanged;
+        thiz->ctx = ctx;
 
         ret = UpnpRuntime_Subscribe(thiz->runtime, thiz->service, 0, event_listener, thiz, error);
         if (RET_FAILED(ret))
@@ -275,7 +281,8 @@ TinyRet SwitchPower_Unsubscribe(SwitchPower *thiz, UpnpError *error)
     ret = UpnpRuntime_Unsubscribe(thiz->runtime, thiz->service, error);
     if (RET_SUCCEEDED(ret))
     {
-        thiz->listener = NULL;
+        thiz->onSubscriptionExpired = NULL;
+        thiz->onStatusChanged = NULL;
         thiz->ctx = NULL;
     }
 
@@ -293,7 +300,10 @@ static void event_listener(UpnpEvent *event, void *ctx)
         const char * _status = UpnpEvent_GetArgumentValue(event, PROPERTY_Status);
         if (_status != NULL)
         {
-            thiz->listener->onStatusChanged(ObjectType_StringToBoolean(_status), thiz->ctx);
+            if (thiz->onStatusChanged != NULL)
+            {
+                thiz->onStatusChanged(ObjectType_StringToBoolean(_status), thiz->ctx);
+            }
         }
     } while (0);
 }

@@ -15,8 +15,8 @@
  *      set expandtab
  */
 
-#ifndef __TINY_CONTAINER_DEFINE_H__
-#define __TINY_CONTAINER_DEFINE_H__
+#ifndef __TINY_CONTAINER_LISTENER_H__
+#define __TINY_CONTAINER_LISTENER_H__
 
 #include "tiny_base.h"
 
@@ -24,9 +24,10 @@ TINY_BEGIN_DECLS
 
 
 typedef void(*TinyContainerItemDeleteListener) (void * data, void *ctx);
+typedef bool(*TinyContainerItemVisit) (void * data, void * ctx);
 
 
 TINY_END_DECLS
 
 
-#endif /* __TINY_CONTAINER_DEFINE_H__ */
+#endif /* __TINY_CONTAINER_LISTENER_H__ */

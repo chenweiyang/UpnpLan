@@ -13,6 +13,7 @@
 #include "BinaryLight.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
+#include "UpnpDeviceDefinition.h"
 
 #define TAG "BinaryLight"
 
@@ -136,7 +137,7 @@ TinyRet BinaryLight_Stop(BinaryLight *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return UpnpRuntime_Unregister(thiz->runtime, thiz->device);
+    return UpnpRuntime_Unregister(thiz->runtime, UpnpDevice_GetPropertyValue(thiz->device, UPNP_DEVICE_UDN));
 }
 
 static uint32_t action_handler(UpnpAction *action, void *ctx)

@@ -119,7 +119,7 @@ TinyList * TinyList_Clone(TinyList *other)
     return NULL;
 }
 
-int TinyList_Foreach(TinyList * thiz, TinyListVisit visit, void * ctx)
+int TinyList_Foreach(TinyList * thiz, TinyContainerItemVisit visit, void * ctx)
 {
     int i = 0;
     TinyNode * iter = NULL;

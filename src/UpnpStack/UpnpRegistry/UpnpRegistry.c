@@ -18,13 +18,23 @@
 
 #define TAG                 "UpnpRegistry"
 
+/**
+ * for Ssdp
+ */
 static void UpnpRegistry_MessageHandler(SsdpMessage *message, void *ctx);
 static void UpnpRegistry_OnAlive(UpnpRegistry *thiz, SsdpAlive *alive, const char *ip);
 static void UpnpRegistry_OnByebye(UpnpRegistry *thiz, SsdpByebye *byebye, const char *ip);
 static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, const char *ip, uint16_t port);
 static void UpnpRegistry_OnResponse(UpnpRegistry *thiz, SsdpResponse *response, const char *ip);
 
-UpnpRegistry * UpnpRegistry_New(void)
+/**
+ * for UpnpProvider
+ */
+static void OnDeviceAdded(UpnpDevice *device, void *ctx);
+static void OnDeviceRemoved(UpnpDevice *device, void *ctx);
+static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx);
+
+UpnpRegistry * UpnpRegistry_New(UpnpProvider *provider)
 {
     UpnpRegistry *thiz = NULL;
 
@@ -38,7 +48,7 @@ UpnpRegistry * UpnpRegistry_New(void)
             break;
         }
 
-        ret = UpnpRegistry_Construct(thiz);
+        ret = UpnpRegistry_Construct(thiz, provider);
         if (RET_FAILED(ret))
         {
             UpnpRegistry_Delete(thiz);
@@ -50,7 +60,7 @@ UpnpRegistry * UpnpRegistry_New(void)
     return thiz;
 }
 
-TinyRet UpnpRegistry_Construct(UpnpRegistry *thiz)
+TinyRet UpnpRegistry_Construct(UpnpRegistry *thiz, UpnpProvider *provider)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -59,6 +69,7 @@ TinyRet UpnpRegistry_Construct(UpnpRegistry *thiz)
     do
     {
         memset(thiz, 0, sizeof(UpnpRegistry));
+        thiz->provider = provider;
         thiz->listener = NULL;
         thiz->ctx = NULL;
 
@@ -117,16 +128,62 @@ void UpnpRegistry_Delete(UpnpRegistry *thiz)
 
 TinyRet UpnpRegistry_Start(UpnpRegistry *thiz)
 {
+    TinyRet ret = TINY_RET_OK;
+
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return Ssdp_Start(&thiz->ssdp);
+    UpnpProvider_Lock(thiz->provider);
+
+    do
+    {
+        ret = Ssdp_Start(&thiz->ssdp);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "Ssdp_Start failed");
+            break;
+        }
+
+        ret = UpnpProvider_AddObserver(thiz->provider, "Registry", OnDeviceAdded, OnDeviceRemoved, NULL, thiz);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "UpnpProvider_AddObserver failed");
+            break;
+        }
+    } while (0);
+
+    UpnpProvider_Unlock(thiz->provider);
+
+    return ret;
 }
 
 TinyRet UpnpRegistry_Stop(UpnpRegistry *thiz)
 {
+    TinyRet ret = TINY_RET_OK;
+
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return Ssdp_Stop(&thiz->ssdp);
+    UpnpProvider_Lock(thiz->provider);
+
+    do
+    {
+        ret = UpnpProvider_RemoveObserver(thiz->provider, "Registry");
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "UpnpProvider_RemoveObserver failed");
+            break;
+        }
+
+        ret = Ssdp_Stop(&thiz->ssdp);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "Ssdp_Stop failed");
+            break;
+        }
+    } while (0);
+
+    UpnpProvider_Unlock(thiz->provider);
+
+    return ret;
 }
 
 TinyRet UpnpRegistry_Discover(UpnpRegistry *thiz, bool strictedUuid, UpnpObjectListener listener, UpnpObjectFilter filter, void *ctx)
@@ -166,26 +223,6 @@ TinyRet UpnpRegistry_StopDiscovery(UpnpRegistry *thiz)
     thiz->listener = NULL;
 
     return TINY_RET_OK;
-}
-
-TinyRet UpnpRegistry_Register(UpnpRegistry *thiz, UpnpDevice *device)
-{
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
-
-
-
-    return TINY_RET_E_NOT_IMPLEMENTED;
-}
-
-TinyRet UpnpRegistry_UnRegister(UpnpRegistry *thiz, UpnpDevice *device)
-{
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
-
-
-
-    return TINY_RET_E_NOT_IMPLEMENTED;
 }
 
 static void UpnpRegistry_MessageHandler(SsdpMessage *message, void *ctx)
@@ -285,9 +322,38 @@ static void UpnpRegistry_OnByebye(UpnpRegistry *thiz, SsdpByebye *byebye, const 
     UpnpObjectList_Unlock(&thiz->foundObjects);
 }
 
+typedef struct _OnRequestContext
+{
+    UpnpRegistry *registry;
+    SsdpRequest *request;
+    const char *ip;
+    uint16_t port;
+} OnRequestContext;
+
+static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
+{
+    OnRequestContext *c = (OnRequestContext *)ctx;
+
+    LOG_D(TAG, "OnRequestDeviceVisit");
+
+    // TODO: Send SsdpResponse
+}
+
 static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, const char *ip, uint16_t port)
 {
     LOG_D(TAG, "OnRequest");
+
+    UpnpProvider_Lock(thiz->provider);
+    {
+        OnRequestContext ctx;
+        ctx.registry = thiz;
+        ctx.request = request;
+        ctx.ip = ip;
+        ctx.port = port;
+
+        UpnpProvider_Foreach(thiz->provider, request->st, OnRequestDeviceVisit, &ctx);
+    }
+    UpnpProvider_Unlock(thiz->provider);
 }
 
 static void UpnpRegistry_OnResponse(UpnpRegistry *thiz, SsdpResponse *response, const char *ip)
@@ -328,4 +394,102 @@ static void UpnpRegistry_OnResponse(UpnpRegistry *thiz, SsdpResponse *response, 
     } while (0);
 
     UpnpObjectList_Unlock(&thiz->foundObjects);
+}
+
+static void OnDeviceAdded(UpnpDevice *device, void *ctx)
+{
+    UpnpRegistry *thiz = (UpnpRegistry *)ctx;
+
+    LOG_D(TAG, "OnDeviceAdded");
+
+    do
+    {
+        SsdpMessage message;
+        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
+        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t i = 0;
+
+        /**
+         * root
+         */
+        if (RET_SUCCEEDED(SsdpMessage_ConstructAlive_ROOTDEVICE(&message, device)))
+        {
+            Ssdp_SendMessage(&thiz->ssdp, &message);
+            SsdpMessage_Dispose(&message);
+            break;
+        }
+
+        /**
+         * device
+         */
+        if (RET_SUCCEEDED(SsdpMessage_ConstructAlive_DEVICE(&message, device)))
+        {
+            Ssdp_SendMessage(&thiz->ssdp, &message);
+            SsdpMessage_Dispose(&message);
+            break;
+        }
+
+        /**
+         * services
+         */
+        for (i = 0; i < count; ++i)
+        {
+            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            if (RET_SUCCEEDED(SsdpMessage_ConstructAlive_SERVICE(&message, service)))
+            {
+                Ssdp_SendMessage(&thiz->ssdp, &message);
+                SsdpMessage_Dispose(&message);
+                break;
+            }
+        }
+    } while (0);
+}
+
+static void OnDeviceRemoved(UpnpDevice *device, void *ctx)
+{
+    UpnpRegistry *thiz = (UpnpRegistry *)ctx;
+
+    LOG_D(TAG, "OnDeviceAdded");
+
+    do
+    {
+        SsdpMessage message;
+        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
+        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t i = 0;
+
+        /**
+         * services
+         */
+        for (i = 0; i < count; ++i)
+        {
+            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            if (RET_SUCCEEDED(SsdpMessage_ConstructByebye_SERVICE(&message, service)))
+            {
+                Ssdp_SendMessage(&thiz->ssdp, &message);
+                SsdpMessage_Dispose(&message);
+                break;
+            }
+        }
+
+        /**
+         * device
+         */
+        if (RET_SUCCEEDED(SsdpMessage_ConstructByebye_DEVICE(&message, device)))
+        {
+            Ssdp_SendMessage(&thiz->ssdp, &message);
+            SsdpMessage_Dispose(&message);
+            break;
+        }
+
+        /**
+         * root
+         */
+        if (RET_SUCCEEDED(SsdpMessage_ConstructByebye_ROOTDEVICE(&message, device)))
+        {
+            Ssdp_SendMessage(&thiz->ssdp, &message);
+            SsdpMessage_Dispose(&message);
+            break;
+        }
+    } while (0);
 }

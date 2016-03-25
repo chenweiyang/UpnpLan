@@ -45,8 +45,7 @@ UPNP_API TinyRet UpnpRuntime_Unsubscribe(UpnpRuntime *thiz, UpnpService *service
 * for UpnpDeviceHost
 */
 UPNP_API TinyRet UpnpRuntime_Register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHandler handler, void *ctx);
-UPNP_API TinyRet UpnpRuntime_Unregister(UpnpRuntime *thiz, UpnpDevice *device);
-UPNP_API TinyRet UpnpRuntime_SendEvents(UpnpRuntime *thiz, UpnpService *service);
+UPNP_API TinyRet UpnpRuntime_Unregister(UpnpRuntime *thiz, const char *deviceId);
 
 
 TINY_END_DECLS

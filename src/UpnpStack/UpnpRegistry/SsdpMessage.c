@@ -13,6 +13,8 @@
 #include "SsdpMessage.h"
 #include "HttpMessage.h"
 #include "tiny_log.h"
+#include "UpnpDeviceDefinition.h"
+#include "UpnpServiceDefinition.h"
 
 #define TAG     "SsdpMessage"
 
@@ -357,18 +359,52 @@ TinyRet SsdpMessage_Construct(SsdpMessage *thiz, const char *ip, uint16_t port, 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive(SsdpMessage *thiz)
+TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_OK;
+    return TINY_RET_E_NOT_IMPLEMENTED;
 }
 
-TinyRet SsdpMessage_ConstructByebye(SsdpMessage *thiz)
+TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return TINY_RET_OK;
+    return TINY_RET_E_NOT_IMPLEMENTED;
+}
+
+TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TINY_RET_E_NOT_IMPLEMENTED;
+}
+
+TinyRet SsdpMessage_ConstructByebye_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TINY_RET_E_NOT_IMPLEMENTED;
+}
+
+TinyRet SsdpMessage_ConstructByebye_DEVICE(SsdpMessage *thiz, UpnpDevice *device)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TINY_RET_E_NOT_IMPLEMENTED;
+}
+
+TinyRet SsdpMessage_ConstructByebye_SERVICE(SsdpMessage *thiz, UpnpService *service)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TINY_RET_E_NOT_IMPLEMENTED;
 }
 
 TinyRet SsdpMessage_ConstructRequest(SsdpMessage *thiz, const char *target)

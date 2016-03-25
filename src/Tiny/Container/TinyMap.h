@@ -37,6 +37,7 @@ TinyRet TinyMap_Construct(TinyMap *thiz);
 TinyRet TinyMap_Dispose(TinyMap *thiz);
 void TinyMap_Delete(TinyMap *thiz);
 
+int TinyMap_Foreach(TinyMap * thiz, TinyContainerItemVisit visit, void * ctx);
 void TinyMap_SetDeleteListener(TinyMap * thiz, TinyContainerItemDeleteListener listener, void *ctx);
 
 uint32_t TinyMap_GetSize(TinyMap *thiz);

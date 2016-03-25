@@ -67,7 +67,12 @@ typedef struct _SwitchPower_EventListener
     SwitchPower_StatusChanged           onStatusChanged;
 } SwitchPower_EventListener;
 
-TinyRet SwitchPower_Subscribe(SwitchPower *thiz, SwitchPower_EventListener *listener, UpnpError *error, void *ctx);
+TinyRet SwitchPower_Subscribe(SwitchPower *thiz,
+    SwitchPower_SubscriptionExpired onSubscriptionExpired,
+    SwitchPower_StatusChanged onStatusChanged,
+    UpnpError *error, 
+    void *ctx);
+
 TinyRet SwitchPower_Unsubscribe(SwitchPower *thiz, UpnpError *error);
 
 

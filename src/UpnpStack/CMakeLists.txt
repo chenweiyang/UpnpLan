@@ -129,6 +129,22 @@ SOURCE_GROUP(UpnpHttp\\headers        FILES     ${UpnpHttp_Header})
 SOURCE_GROUP(UpnpHttp\\sources        FILES     ${UpnpHttp_Source})
 
 #-----------------------
+# UpnpProvider
+#-----------------------
+SET(UpnpProvider_Header
+    UpnpProvider/UpnpProvider.h
+    UpnpProvider/UpnpObserver.h
+    )
+
+SET(UpnpProvider_Source
+    UpnpProvider/UpnpProvider.c
+    UpnpProvider/UpnpObserver.c
+    )
+
+SOURCE_GROUP(UpnpProvider\\headers           FILES     ${UpnpProvider_Header})
+SOURCE_GROUP(UpnpProvider\\sources           FILES     ${UpnpProvider_Source})
+
+#-----------------------
 # UpnpRegistry
 #-----------------------
 SET(UpnpRegistry_Header
@@ -222,6 +238,8 @@ SET(SRC
     ${UpnpTypedef_Source}
     ${UpnpHttp_Header}
     ${UpnpHttp_Source}
+    ${UpnpProvider_Header}
+    ${UpnpProvider_Source}
     ${UpnpRegistry_Header}
     ${UpnpRegistry_Source}
     ${UpnpCtrlPoint_Header}

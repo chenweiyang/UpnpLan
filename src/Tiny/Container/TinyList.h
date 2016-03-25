@@ -42,9 +42,7 @@ TinyRet TinyList_AddRef(TinyList *thiz);
 TinyRet TinyList_Release(TinyList *thiz);
 TinyList * TinyList_Clone(TinyList *other);
 
-typedef bool(*TinyListVisit) (void * data, void * ctx);
-int TinyList_Foreach(TinyList * thiz, TinyListVisit visit, void * ctx);
-
+int TinyList_Foreach(TinyList * thiz, TinyContainerItemVisit visit, void * ctx);
 void TinyList_SetDeleteListener(TinyList * thiz, TinyContainerItemDeleteListener listener, void *ctx);
 
 void * TinyList_GetHead(TinyList * thiz);
