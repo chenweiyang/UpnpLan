@@ -13,6 +13,7 @@
 */
 
 #include "tiny_base.h"
+#include "upnp_api.h"
 
 #ifndef __UPNP_NET_UTIL_H__
 #define __UPNP_NET_UTIL_H__
@@ -20,7 +21,7 @@
 TINY_BEGIN_DECLS
 
 
-TinyRet upnp_net_get_ip(const char *remoteIp, char *selfIp, size_t len);
+UPNP_API TinyRet upnp_net_get_ip(const char *remoteIp, char *selfIp, size_t len);
 
 
 TINY_END_DECLS

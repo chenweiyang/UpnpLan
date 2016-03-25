@@ -27,10 +27,12 @@ SET(UpnpCommon_Header
     UpnpCommon/UpnpCode.h
     UpnpCommon/UpnpError.h
     UpnpCommon/upnp_net_util.h
+    UpnpCommon/upnp_timeout_util.h
     )
 
 SET(UpnpCommon_Source
     UpnpCommon/upnp_net_util.c
+    UpnpCommon/upnp_timeout_util.c
     )
 
 SOURCE_GROUP(UpnpCommon\\headers        FILES     ${UpnpCommon_Header})

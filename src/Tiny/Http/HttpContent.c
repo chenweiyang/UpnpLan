@@ -122,6 +122,8 @@ TinyRet HttpContent_SetSize(HttpContent *thiz, uint32_t size)
             break;
         }
 
+        memset(thiz->buf, 0, size);
+
         thiz->buf_size = size;
     } while (0);
 

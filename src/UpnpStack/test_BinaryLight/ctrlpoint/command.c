@@ -155,8 +155,8 @@ static void cmd_Subscribe(void)
 {
     UpnpError error;
     SwitchPower_EventListener event_listener;
-    event_listener.onStatusChanged = NULL;
-    event_listener.onSubscriptionExpired = NULL;
+    event_listener.onStatusChanged = OnStatusChanged;
+    event_listener.onSubscriptionExpired = OnSubscriptionExpired;
 
     LOG("SwitchPower_Subscribe", SwitchPower_Subscribe(BinaryLight_GetSwitchPower(binaryLight), &event_listener, &error, NULL));
 }

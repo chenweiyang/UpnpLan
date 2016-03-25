@@ -259,7 +259,7 @@ InstanceID&gt;&lt;/Event&gt;
 </e:propertyset>
 */
 
-TinyRet UpnpEvent_Parse(UpnpEvent *thiz, const char *nt, const char *nts, const char *sid, const char *seq, const char *content)
+TinyRet UpnpEvent_Parse(UpnpEvent *thiz, const char *nt, const char *nts, const char *sid, const char *seq, const char *content, uint32_t contentLength)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -277,7 +277,7 @@ TinyRet UpnpEvent_Parse(UpnpEvent *thiz, const char *nt, const char *nts, const 
         UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Sid, sid);
         UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Seq, seq);
 
-        ret = load_content(thiz, content, strlen(content));
+        ret = load_content(thiz, content, contentLength);
         if (RET_FAILED(ret))
         {
             break;
@@ -403,6 +403,14 @@ static TinyRet load_propertyset(UpnpEvent *thiz, TinyXmlNode *root)
             {
                 const char *name = TinyXmlNode_GetName(child);
                 const char *value = TinyXmlNode_GetContent(child);
+
+                /**
+                 * MUST init property
+                 */
+                ObjectType type;
+                ObjectType_SetType(&type, CLAZZ_STRING);
+
+                PropertyList_InitProperty(thiz->argumentList, name, &type);
 
                 if (value == NULL)
                 {

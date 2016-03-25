@@ -33,6 +33,7 @@ static bool visitor(const char *ip, void *ctx)
 
     if ((remoteIp & 0x00FFFFFF) == (selfIp & 0x00FFFFFF))
     {
+        strncpy(c->selfIp, ip, c->len);
         return true;
     }
 

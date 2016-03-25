@@ -3,7 +3,7 @@
 #include "BinaryLight.h"
 #include "command.h"
 
-//#include "upnp_net_util.h"
+#include "upnp_net_util.h"
 
 int main(void)
 {
@@ -18,7 +18,17 @@ int main(void)
         char selfIp[32];
         
         memset(selfIp, 0, 32);
-        printf("upnp_net_get_ip: %d\n", upnp_net_get_ip(remoteIp, selfIp, 32));
+        
+        if (RET_SUCCEEDED(upnp_net_get_ip(remoteIp, selfIp, 32)))
+        {
+            printf("upnp_net_get_ip: OK, self ip: %s\n", selfIp);
+        }
+        else
+        {
+            printf("upnp_net_get_ip: failed\n");
+        }
+
+        return 0;
 #endif 
 
         runtime = UpnpRuntime_New();

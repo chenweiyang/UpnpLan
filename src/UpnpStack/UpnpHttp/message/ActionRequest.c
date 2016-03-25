@@ -117,7 +117,7 @@ static TinyRet ActionToSoapRequest(UpnpAction *action, SoapMessage *soap)
     return ret;
 }
 
-static  TinyRet SoapRequestToHttpRequest(SoapMessage *soap, HttpMessage *request)
+static TinyRet SoapRequestToHttpRequest(SoapMessage *soap, HttpMessage *request)
 {
     TinyRet ret = TINY_RET_OK;
 

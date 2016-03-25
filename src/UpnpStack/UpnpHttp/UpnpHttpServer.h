@@ -30,6 +30,7 @@ typedef void(*UpnpPostHandler)(UpnpHttpConnection *conn,
     const char *uri,
     const char *soapAction,
     const char *content,
+    uint32_t contentLength,
     void *ctx);
 
 typedef void(*UpnpNotifyHandler)(UpnpHttpConnection *conn,
@@ -39,6 +40,7 @@ typedef void(*UpnpNotifyHandler)(UpnpHttpConnection *conn,
     const char *sid,
     const char *seq,
     const char *content,
+    uint32_t contentLength,
     void *ctx);
 
 typedef void(*UpnpSubscribeHandler)(UpnpHttpConnection *conn,

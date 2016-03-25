@@ -34,6 +34,7 @@ static void notify_handler(UpnpHttpConnection *conn,
     const char *sid,
     const char *seq,
     const char *content,
+    uint32_t contentLength,
     void *ctx);
 
 UpnpSubscriber * UpnpSubscriber_New(UpnpHttpManager *http)
@@ -129,16 +130,25 @@ static void notify_handler(UpnpHttpConnection *conn,
     const char *sid,
     const char *seq,
     const char *content,
+    uint32_t contentLength,
     void *ctx)
 {
     UpnpSubscriber *thiz = (UpnpSubscriber *)ctx;
         
     LOG_D(TAG, "notify_handler");
 
+    printf("uri: %s\n", uri);
+    printf("nt: %s\n", nt);
+    printf("nts: %s\n", nts);
+    printf("sid: %s\n", sid);
+    printf("seq: %s\n", seq);
+    printf("content: %s\n", content);
+
     TinyMutex_Lock(&thiz->mutex);
 
     do
     {
+        UpnpEvent event;
         UpnpSubscription *subscription = (UpnpSubscription *)TinyMap_GetValue(&thiz->map, uri);
         if (subscription == NULL)
         {
@@ -146,24 +156,23 @@ static void notify_handler(UpnpHttpConnection *conn,
             break;
         }
 
-        do
+        if (RET_FAILED(UpnpEvent_Construct(&event)))
         {
-            UpnpEvent event;
+            LOG_E(TAG, "UpnpEvent_Construct failed");
+            break;
+        }
 
-            if (RET_FAILED(UpnpEvent_Construct(&event)))
+        do {
+            if (RET_FAILED(UpnpEvent_Parse(&event, nt, nts, sid, seq, content, contentLength)))
             {
-                LOG_E(TAG, "UpnpEvent_Construct failed");
-                break;
-            }
-
-            if (RET_FAILED(UpnpEvent_Parse(&event, nt, nts, sid, seq, content)))
-            {
+                UpnpEvent_Dispose(&event);
                 break;
             }
 
             subscription->listener(&event, subscription->ctx);
         } while (0);
 
+        UpnpEvent_Dispose(&event);
         UpnpHttpConnection_SendOk(conn);
     } while (0);  
 
@@ -237,6 +246,8 @@ TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz,
             TinyMap_Erase(&thiz->map, UpnpSubscription_GetCallBackUri(subscription));
             break;
         }
+
+        UpnpService_SetPropertyValue(service, UPNP_SERVICE_CallbackURI, UpnpSubscription_GetCallBackUri(subscription));
     } while (0);
 
     TinyMutex_Unlock(&thiz->mutex);

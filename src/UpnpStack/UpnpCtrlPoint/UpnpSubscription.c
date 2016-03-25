@@ -97,7 +97,7 @@ const char * UpnpSubscription_GetCallBackUri(UpnpSubscription *thiz)
         memset(md5, 0, TINY_MD5_LEN);
 
         tiny_md5_encode(serviceId, md5);
-        tiny_snprintf(thiz->callbackUri, TINY_URL_LEN, "/upnp/callback/%s/%s>", deviceId, md5);
+        tiny_snprintf(thiz->callbackUri, TINY_URL_LEN, "/upnp/callback/%s/%s", deviceId, md5);
     }
 
     return thiz->callbackUri;
@@ -125,7 +125,7 @@ const char * UpnpSubscription_GetFullCallBack(UpnpSubscription *thiz)
                 break;
             }
 
-            tiny_snprintf(thiz->callbackFull, TINY_URL_LEN, "<http://%s:%d%s", selfAddress, thiz->port, thiz->callbackUri);
+            tiny_snprintf(thiz->callbackFull, TINY_URL_LEN, "<http://%s:%d%s>", selfAddress, thiz->port, thiz->callbackUri);
         } while (0);
     }
 

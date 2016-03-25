@@ -20,7 +20,6 @@
 #include "soap/SoapMessage.h"
 #include "tiny_log.h"
 #include "UpnpCode.h"
-#include "UpnpError.h"
 
 #define TAG             "ActionResponse"
 
@@ -32,6 +31,16 @@ TinyRet ActionFromResponse(UpnpAction *action, UpnpError *error, HttpMessage *re
 
     do
     {
+        error->code = HttpMessage_GetStatusCode(response);
+        strncpy(error->description, HttpMessage_GetStatus(response), UPNP_ERR_DESCRIPTION_LEN);
+
+        if (error->code != HTTP_STATUS_OK)
+        {
+            LOG_D(TAG, "Action Execute failed: %d %s", error->code, error->description);
+            ret = TINY_RET_E_UPNP_INVOKE_FAILED;
+            break;
+        }
+
         SoapMessage *soap = SoapMessage_New();
         if (soap == NULL)
         {

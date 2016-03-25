@@ -138,15 +138,6 @@ TinyRet UpnpHttpClient_Post(UpnpHttpClient *thiz, UpnpAction *action, UpnpError 
             break;
         }
 
-        if (HttpMessage_GetStatusCode(response) != HTTP_STATUS_OK)
-        {
-            LOG_D(TAG, "HttpClient_Execute failed: %d %s",
-                HttpMessage_GetStatusCode(response),
-                HttpMessage_GetStatus(response));
-            ret = TINY_RET_E_UPNP_INVOKE_FAILED;
-            break;
-        }
-
         /**
          * HttpResponse -> UpnpAction
          */

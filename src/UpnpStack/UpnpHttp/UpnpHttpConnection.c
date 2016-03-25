@@ -84,44 +84,41 @@ TinyRet UpnpHttpConnection_SendOk(UpnpHttpConnection *thiz)
 TinyRet UpnpHttpConnection_SendError(UpnpHttpConnection *thiz, int code, const char *status)
 {
     TinyRet ret = TINY_RET_OK;
-    HttpMessage *response = NULL;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     do
     {
-        char *bytes = NULL;
-        uint32_t size = 0;
+        HttpMessage response;
+        char string[1024];
+        uint32_t len;
 
-        response = HttpMessage_New();
-        if (response == NULL)
+        ret = HttpMessage_Construct(&response);
+        if (RET_FAILED(ret))
         {
-            LOG_E(TAG, "HttpMessage_New failed");
+            LOG_E(TAG, "HttpMessage_Construct failed");
             ret = TINY_RET_E_NEW;
             break;
         }
 
-        HttpMessage_SetType(response, HTTP_RESPONSE);
-        HttpMessage_SetResponse(response, code, status);
-
-        ret = HttpMessage_ToBytes(response, &bytes, &size);
-        if (RET_FAILED(ret))
+        do
         {
-            LOG_E(TAG, "HttpMessage_ToBytes failed");
-            break;
-        }
+            HttpMessage_SetType(&response, HTTP_RESPONSE);
+            HttpMessage_SetVersion(&response, 1, 1);
+            HttpMessage_SetResponse(&response, code, status);
 
-        ret = TcpConn_Send(thiz->conn, bytes, size, UPNP_TIMEOUT);
+            len = HttpMessage_ToString(&response, string, 1024);
+            if (len == 0)
+            {
+                LOG_E(TAG, "HttpMessage_ToString failed");
+                break;
+            }
 
-        tiny_free(bytes);
-        bytes = NULL;
-        size = 0;
+            ret = TcpConn_Send(thiz->conn, string, len, UPNP_TIMEOUT);
+        } while (0);
+
+        HttpMessage_Dispose(&response);
     } while (0);
-
-    if (response != NULL)
-    {
-        HttpMessage_Delete(response);
-    }
 
     return ret;
 }

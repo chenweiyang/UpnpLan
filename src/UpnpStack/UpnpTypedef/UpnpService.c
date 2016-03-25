@@ -157,6 +157,12 @@ static TinyRet UpnpService_Initialize(UpnpService *thiz)
         {
             break;
         }
+
+        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_SERVICE_CallbackURI, &type);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
     } while (0);
     
     ObjectType_Dispose(&type);

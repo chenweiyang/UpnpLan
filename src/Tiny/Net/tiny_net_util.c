@@ -29,36 +29,41 @@ TinyRet tiny_net_for_each_ip(IpVisitor visitor, void *ctx)
 
     RETURN_VAL_IF_FAIL(visitor, TINY_RET_E_ARG_NULL);
 
-    IP_ADAPTER_INFO * IpAdaptersInfo = NULL;
-    IP_ADAPTER_INFO * IpAdaptersInfoHead = NULL;
+    IP_ADAPTER_INFO * pInfo = NULL;
+    IP_ADAPTER_INFO * pInfoHead = NULL;
     ULONG ulOutBufLen = 0;
     DWORD dwRetVal = 0;
 
     do
     {
-        IpAdaptersInfo = (IP_ADAPTER_INFO *)GlobalAlloc(GPTR, sizeof(IP_ADAPTER_INFO));
+        pInfo = (IP_ADAPTER_INFO *)GlobalAlloc(GPTR, sizeof(IP_ADAPTER_INFO));
         ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 
-        if (ERROR_BUFFER_OVERFLOW == GetAdaptersInfo(IpAdaptersInfo, &ulOutBufLen))
+        if (ERROR_BUFFER_OVERFLOW == GetAdaptersInfo(pInfo, &ulOutBufLen))
         {
-            GlobalFree(IpAdaptersInfo);
-            IpAdaptersInfo = (IP_ADAPTER_INFO *)GlobalAlloc(GPTR, ulOutBufLen);
+            GlobalFree(pInfo);
+            pInfo = (IP_ADAPTER_INFO *)GlobalAlloc(GPTR, ulOutBufLen);
         }
 
-        if (dwRetVal = GetAdaptersInfo(IpAdaptersInfo, &ulOutBufLen))
+        if (pInfo == NULL)
         {
-            LOG_E(TAG, "Call to GetAdaptersInfo failed. Return Value: %08x\r\n", dwRetVal);
-            GlobalFree(IpAdaptersInfoHead);
             break;
         }
 
-        IpAdaptersInfoHead = IpAdaptersInfo;
+        if (dwRetVal = GetAdaptersInfo(pInfo, &ulOutBufLen))
+        {
+            LOG_E(TAG, "Call to GetAdaptersInfo failed. Return Value: %08x\r\n", dwRetVal);
+            GlobalFree(pInfo);
+            break;
+        }
+
+        pInfoHead = pInfo;
 
         do
         {
-            PIP_ADDR_STRING p = &IpAdaptersInfo->IpAddressList;
+            PIP_ADDR_STRING p = &pInfoHead->IpAddressList;
 
-            while (p)
+            while (p != NULL)
             {
                 if (visitor(p->IpAddress.String, ctx))
                 {
@@ -74,10 +79,10 @@ TinyRet tiny_net_for_each_ip(IpVisitor visitor, void *ctx)
                 break;
             }
 
-            IpAdaptersInfo = IpAdaptersInfo->Next;
-        } while (IpAdaptersInfo);
+            pInfo = pInfo->Next;
+        } while (pInfo);
     
-        GlobalFree(IpAdaptersInfoHead);
+        GlobalFree(pInfoHead);
     } while (0);
 
     return ret;

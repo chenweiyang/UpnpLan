@@ -272,6 +272,7 @@ TinyRet TcpConn_Recv(TcpConn *thiz, char **bytes, uint32_t *size, uint32_t timeo
         if (*size <= 0)
         {
             tiny_free(*bytes);
+            *bytes = NULL;
             ret = TINY_RET_E_SOCKET_READ;
             break;
         }

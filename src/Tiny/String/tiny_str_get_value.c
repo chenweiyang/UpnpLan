@@ -4,7 +4,7 @@
 * @author jxfengzi@gmail.com
 * @date   2013-11-19
 *
-* @file   str_equal.c
+* @file   tiny_str_equal.c
 *
 * @remark
 *		set tabstop=4

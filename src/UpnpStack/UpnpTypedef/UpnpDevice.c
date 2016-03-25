@@ -176,6 +176,11 @@ static TinyRet UpnpDevice_Initialize(UpnpDevice *thiz)
             break;
         }
 
+        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_DEVICE_Address, &type);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
     } while (0);
 
     ObjectType_Dispose(&type);

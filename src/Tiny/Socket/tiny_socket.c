@@ -30,7 +30,7 @@
 #include <net/if.h>
 #endif // _WIN32
 
-#define TAG "ct_socket"
+#define TAG "tiny_socket"
 
 static TinyRet udp_join_multicast_group(int fd, const char *group, uint16_t port);
 static TinyRet udp_join_multicast_group_with_all_ip(int fd, const char *group);

@@ -44,7 +44,8 @@ UPNP_API TinyRet UpnpEvent_Parse(UpnpEvent *thiz,
     const char *nts,
     const char *sid,
     const char *seq,
-    const char *content);
+    const char *content,
+    uint32_t contentLength);
 
 UPNP_API TinyRet UpnpEvent_ToString(UpnpEvent *thiz, char *bytes, uint32_t len);
 

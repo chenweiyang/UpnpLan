@@ -321,6 +321,8 @@ static TinyRet conn_recv_once(UpnpHttpServer *thiz, TcpConn *conn)
         HttpMessage_Delete(request);
     } while (0);
 
+    TcpConn_Disconnect(conn);
+
     return ret;
 }
 
@@ -422,6 +424,7 @@ static void doPost(UpnpHttpServer *thiz, UpnpHttpConnection *conn, HttpMessage *
             HttpMessage_GetUri(request),
             HttpMessage_GetHeaderValue(request, "Soapaction"),
             HttpMessage_GetContentObject(request),
+            HttpMessage_GetContentSize(request),
             thiz->OnPostCtx);
     } while (0);
 }
@@ -443,6 +446,7 @@ static void doNotify(UpnpHttpServer *thiz, UpnpHttpConnection *conn, HttpMessage
             HttpMessage_GetHeaderValue(request, "SID"),
             HttpMessage_GetHeaderValue(request, "SEQ"),
             HttpMessage_GetContentObject(request),
+            HttpMessage_GetContentSize(request),
             thiz->OnNotifyCtx);
     } while (0);
 }
@@ -462,7 +466,7 @@ static void doSubscribe(UpnpHttpServer *thiz, UpnpHttpConnection *conn, HttpMess
             HttpMessage_GetHeaderValue(request, "CALLBACK"),
             HttpMessage_GetHeaderValue(request, "NT"),
             HttpMessage_GetHeaderValue(request, "TIMEOUT"),
-            thiz->OnNotifyCtx);
+            thiz->OnSubscribeCtx);
     } while (0);
 }
 
@@ -479,6 +483,6 @@ static void doUnsubscribe(UpnpHttpServer *thiz, UpnpHttpConnection *conn, HttpMe
         thiz->OnUnsubscribe(conn,
             HttpMessage_GetUri(request),
             HttpMessage_GetHeaderValue(request, "SID"),
-            thiz->OnNotifyCtx);
+            thiz->OnUnsubscribeCtx);
     } while (0);
 }
