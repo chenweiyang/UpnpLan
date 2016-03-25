@@ -246,6 +246,9 @@ static void UpnpRegistry_MessageHandler(SsdpMessage *message, void *ctx)
     case SSDP_MSEARCH_RESPONSE:
         UpnpRegistry_OnResponse(thiz, &message->v.response, message->ip);
         break;
+
+    default:
+        break;
     }
 }
 

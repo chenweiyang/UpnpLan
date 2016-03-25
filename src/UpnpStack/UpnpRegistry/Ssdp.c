@@ -251,6 +251,9 @@ TinyRet Ssdp_SendMessage(Ssdp *thiz, SsdpMessage *message)
         case SSDP_MSEARCH_RESPONSE:
             ret = Ssdp_Send(thiz, string, len, thiz->group_fd, message->ip, message->port);
             break;
+
+        default:
+            break;
         }
     } while (0);
 

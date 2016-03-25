@@ -474,6 +474,9 @@ uint32_t SsdpMessage_ToString(SsdpMessage *thiz, char string[], uint32_t len)
 
         case SSDP_MSEARCH_RESPONSE:
             break;
+
+        default:
+            break;
         }
 
         ret = HttpMessage_ToString(&msg, string, len);
