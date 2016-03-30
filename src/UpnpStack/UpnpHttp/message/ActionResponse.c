@@ -13,10 +13,6 @@
 #include "ActionResponse.h"
 #include "UpnpDevice.h"
 #include "UpnpService.h"
-#include "UpnpDeviceDefinition.h"
-#include "UpnpServiceDefinition.h"
-#include "UpnpActionDefinition.h"
-#include "soap/SoapDefinition.h"
 #include "soap/SoapMessage.h"
 #include "tiny_log.h"
 #include "UpnpCode.h"
@@ -71,13 +67,10 @@ TinyRet SoapResponseToActionResult(SoapMessage *soap, UpnpAction *action, UpnpEr
 {
     TinyRet ret = TINY_RET_OK;
 
-    PropertyList *fault = SoapMessage_GetFault(soap);
-    if (fault != NULL)
+    if (SoapMessage_IsFault(soap))
     {
-        const char * errorCode = SoapMessage_GetFaultValue(soap, SOAP_FAULT_ErrorCode);
-        const char * errorDesc = SoapMessage_GetFaultValue(soap, SOAP_FAULT_ErrorDescription);
-        error->code = atoi(errorCode);
-        strncpy(error->description, errorDesc, UPNP_ERR_DESCRIPTION_LEN);
+        error->code = SoapMessage_GetErrorCode(soap);
+        strncpy(error->description, SoapMessage_GetErrorDescription(soap), UPNP_ERR_DESCRIPTION_LEN);
         ret = TINY_RET_E_UPNP_INVOKE_FAILED;
     }
     else

@@ -52,21 +52,17 @@ SET(UpnpTypedef_Header
     UpnpTypedef/PropertyList.h
     UpnpTypedef/AllowedValueList.h
     UpnpTypedef/AllowedValueRange.h
-    UpnpTypedef/UpnpActionDefinition.h
     UpnpTypedef/UpnpAction.h
     UpnpTypedef/UpnpActionList.h
     UpnpTypedef/UpnpState.h
     UpnpTypedef/UpnpStateList.h
-    UpnpTypedef/UpnpServiceDefinition.h
     UpnpTypedef/UpnpService.h
     UpnpTypedef/UpnpServiceList.h
-    UpnpTypedef/UpnpDeviceDefinition.h
     UpnpTypedef/UpnpDevice.h
     UpnpTypedef/UpnpDeviceSummary.h
     UpnpTypedef/UpnpUri.h
     UpnpTypedef/UpnpUsn.h
     UpnpTypedef/UpnpEvent.h
-    UpnpTypedef/UpnpEventDefinition.h
     )
 
 SET(UpnpTypedef_Source
@@ -98,7 +94,6 @@ SOURCE_GROUP(UpnpTypedef\\sources        FILES     ${UpnpTypedef_Source})
 #-----------------------
 SET(UpnpHttp_Header
     UpnpHttp/message/soap/SoapMessage.h
-    UpnpHttp/message/soap/SoapDefinition.h
     UpnpHttp/message/ActionRequest.h
     UpnpHttp/message/ActionResponse.h
     UpnpHttp/message/ServiceSubRequest.h
@@ -213,6 +208,7 @@ SET(UpnpRuntime_Header
     UpnpRuntime/UpnpDeviceFactory.h
     UpnpRuntime/UpnpDeviceParser.h
     UpnpRuntime/UpnpServiceParser.h
+    UpnpRuntime/UpnpServiceHelper.h
     )
 
 SET(UpnpRuntime_Source
@@ -221,6 +217,7 @@ SET(UpnpRuntime_Source
     UpnpRuntime/UpnpDeviceFactory.c
     UpnpRuntime/UpnpDeviceParser.c
     UpnpRuntime/UpnpServiceParser.c
+    UpnpRuntime/UpnpServiceHelper.c
     )
 
 SOURCE_GROUP(UpnpRuntime\\headers           FILES     ${UpnpRuntime_Header})

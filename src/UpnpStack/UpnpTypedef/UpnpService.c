@@ -11,7 +11,6 @@
 */
 
 #include "UpnpService.h"
-#include "UpnpServiceDefinition.h"
 #include "PropertyList.h"
 #include "UpnpActionList.h"
 #include "UpnpStateList.h"
@@ -19,14 +18,24 @@
 
 static TinyRet UpnpService_Construct(UpnpService *thiz);
 static void UpnpService_Dispose(UpnpService *thiz);
-static TinyRet UpnpService_Initialize(UpnpService *thiz);
+
+#define SERVICE_TYPE_LEN    128
+#define SERVICE_ID_LEN      128
 
 struct _UpnpService
 {
+    char serviceType[SERVICE_TYPE_LEN];
+    char serviceId[SERVICE_ID_LEN];
+    char controlURL[TINY_URL_LEN];
+    char eventSubURL[TINY_URL_LEN];
+    char SCPDURL[TINY_URL_LEN];
+    char callbackURI[TINY_URI_LEN];
+
     void * device;
-    PropertyList * propertyList;
-    UpnpActionList * actionList;
     UpnpStateList * stateList;
+    UpnpActionList * actionList;
+    UpnpServiceChangedListener changedListener;
+    void * changedCtx;
 };
 
 UpnpService * UpnpService_New(void)
@@ -44,14 +53,6 @@ UpnpService * UpnpService_New(void)
         }
 
         ret = UpnpService_Construct(thiz);
-        if (RET_FAILED(ret))
-        {
-            UpnpService_Delete(thiz);
-            thiz = NULL;
-            break;
-        }
-
-        ret = UpnpService_Initialize(thiz);
         if (RET_FAILED(ret))
         {
             UpnpService_Delete(thiz);
@@ -80,13 +81,9 @@ static TinyRet UpnpService_Construct(UpnpService *thiz)
     do
     {
         memset(thiz, 0, sizeof(UpnpService));
-
-        thiz->propertyList = PropertyList_New();
-        if (thiz->propertyList == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
+        thiz->device = NULL;
+        thiz->changedListener = NULL;
+        thiz->changedCtx = NULL;
 
         thiz->actionList = UpnpActionList_New();
         if (thiz->actionList == NULL)
@@ -110,64 +107,8 @@ static void UpnpService_Dispose(UpnpService *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    PropertyList_Delete(thiz->propertyList);
     UpnpActionList_Delete(thiz->actionList);
     UpnpStateList_Delete(thiz->stateList);
-}
-
-static TinyRet UpnpService_Initialize(UpnpService *thiz)
-{
-    TinyRet ret = TINY_RET_OK;
-    ObjectType type;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-
-    ObjectType_Construct(&type);
-
-    do
-    {
-        ObjectType_SetType(&type, CLAZZ_STRING);
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_SERVICE_ServiceType, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_SERVICE_ServiceId, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_SERVICE_ControlURL, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_SERVICE_EventSubURL, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_SERVICE_SCPDURL, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_SERVICE_CallbackURI, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-    } while (0);
-    
-    ObjectType_Dispose(&type);
-
-    return ret;
 }
 
 void UpnpService_SetParentDevice(UpnpService *thiz, void *device)
@@ -185,6 +126,32 @@ void * UpnpService_GetParentDevice(UpnpService *thiz)
     return thiz->device;
 }
 
+void UpnpService_SetChangedListener(UpnpService *thiz, UpnpServiceChangedListener listener, void *ctx)
+{
+    RETURN_IF_FAIL(thiz);
+
+    thiz->changedListener = listener;
+    thiz->changedCtx = ctx;
+}
+
+TinyRet UpnpService_SendEvents(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        if (thiz->changedListener == NULL)
+        {
+            break;
+        }
+
+        // TODO ...
+
+    } while (0);
+
+    return TINY_RET_E_NOT_IMPLEMENTED;
+}
+
 UpnpActionList * UpnpService_GetActionList(UpnpService *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
@@ -199,6 +166,7 @@ UpnpStateList * UpnpService_GetStateList(UpnpService *thiz)
     return thiz->stateList;
 }
 
+#if 0
 PropertyList * UpnpService_GetPropertyList(UpnpService *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
@@ -240,4 +208,107 @@ const char * UpnpService_GetPropertyValue(UpnpService *thiz, const char *propert
     }
 
     return value;
+}
+#endif
+
+TinyRet UpnpService_SetServiceType(UpnpService *thiz, const char *serviceType)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(serviceType, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->serviceType, serviceType, SERVICE_TYPE_LEN);
+
+    return TINY_RET_OK;
+}
+
+TinyRet UpnpService_SetServiceId(UpnpService *thiz, const char *serviceId)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(serviceId, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->serviceId, serviceId, SERVICE_ID_LEN);
+
+    return TINY_RET_OK;
+}
+
+TinyRet UpnpService_SetControlURL(UpnpService *thiz, const char *controlURL)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(controlURL, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->controlURL, controlURL, TINY_URL_LEN);
+
+    return TINY_RET_OK;
+}
+
+TinyRet UpnpService_SetEventSubURL(UpnpService *thiz, const char *eventSubURL)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(eventSubURL, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->eventSubURL, eventSubURL, TINY_URL_LEN);
+
+    return TINY_RET_OK;
+}
+
+TinyRet UpnpService_SetSCPDURL(UpnpService *thiz, const char *SCPDURL)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(SCPDURL, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->SCPDURL, SCPDURL, TINY_URL_LEN);
+
+    return TINY_RET_OK;
+}
+
+TinyRet UpnpService_SetCallbackURI(UpnpService *thiz, const char *callbackURI)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(callbackURI, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->callbackURI, callbackURI, TINY_URI_LEN);
+
+    return TINY_RET_OK;
+}
+
+const char * UpnpService_GetServiceType(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->serviceType;
+}
+
+const char * UpnpService_GetServiceId(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->serviceId;
+}
+
+const char * UpnpService_GetControlURL(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->controlURL;
+}
+
+const char * UpnpService_GetEventSubURL(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->eventSubURL;
+}
+
+const char * UpnpService_GetSCPDURL(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->SCPDURL;
+}
+
+const char * UpnpService_GetCallbackURI(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->callbackURI;
 }

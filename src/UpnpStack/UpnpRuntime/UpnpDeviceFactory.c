@@ -13,8 +13,6 @@
 #include "UpnpDeviceFactory.h"
 #include "UpnpDeviceParser.h"
 #include "UpnpServiceParser.h"
-#include "UpnpDeviceDefinition.h"
-#include "UpnpServiceDefinition.h"
 #include "tiny_log.h"
 
 #define TAG         "UpnpDeviceFactory"
@@ -38,7 +36,7 @@ UpnpDevice * UpnpDeviceFactory_Create(UpnpDeviceSummary *summary)
             break;
         }
 
-        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_Address, summary->deviceIp);
+        UpnpDevice_SetAddress(device, summary->deviceIp);
 
         ret = UpnpDeviceParser_Parse(summary->deviceUrl, device, UPNP_TIMEOUT);
         if (RET_FAILED(ret))
@@ -49,10 +47,10 @@ UpnpDevice * UpnpDeviceFactory_Create(UpnpDeviceSummary *summary)
             break;
         }
 
-        urlbase = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_URLBase);
+        urlbase = UpnpDevice_GetURLBase(device);
         if (urlbase == NULL)
         {
-            LOG_D(TAG, "<%s> not found", UPNP_DEVICE_URLBase);
+            LOG_D(TAG, "<URLBase> not found");
             UpnpDevice_Delete(device);
             device = NULL;
             break;
@@ -64,10 +62,10 @@ UpnpDevice * UpnpDeviceFactory_Create(UpnpDeviceSummary *summary)
         {
             char url[TINY_URL_LEN];
             UpnpService *service = UpnpServiceList_GetServiceAt(services, i);
-            const char *scpdUrl = UpnpService_GetPropertyValue(service, UPNP_SERVICE_SCPDURL);
+            const char *scpdUrl = UpnpService_GetSCPDURL(service);
             if (scpdUrl == NULL)
             {
-                LOG_D(TAG, "Get <%s> failed", UPNP_SERVICE_SCPDURL);
+                LOG_D(TAG, "Get <SCPDURL> failed");
                 ret = TINY_RET_E_NOT_FOUND;
                 break;
             }

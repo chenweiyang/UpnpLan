@@ -20,14 +20,11 @@
 #include "TinyList.h"
 #include "TinyXml.h"
 #include "PropertyList.h"
-#include "SoapDefinition.h"
 
 #define TAG                             "SoapMessage"
 
 static TinyRet SoapMessage_Construct(SoapMessage *thiz);
 static TinyRet SoapMessage_Dispose(SoapMessage *thiz);
-static TinyRet SoapMessage_InitializeProperty(SoapMessage *thiz);
-static TinyRet SoapMessage_InitializeFault(SoapMessage *thiz);
 static TinyRet SoapMessage_ParseXml(SoapMessage *thiz, TinyXml *xml);
 
 static bool is_envelope(SoapMessage *thiz, TinyXmlNode *root);
@@ -36,11 +33,33 @@ static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault);
 static TinyRet get_action_name(SoapMessage *thiz, const char *name);
 static TinyRet get_action_xmlns(SoapMessage *thiz, TinyXmlNode *response);
 
+
+#define FAULT_STRING_LEN        512
+typedef struct _SoapFault
+{
+    int faultCode;
+    char faultString[FAULT_STRING_LEN];
+} SoapFault;
+
+#define ERROR_DESC_LEN          512
+typedef struct _SoapError
+{
+    int errorCode;
+    char errorDescription[ERROR_DESC_LEN];
+} SoapError;
+
+#define ACTION_NAME_LEN         128
+#define ACTION_XMLNS_LEN        256
+
 struct _SoapMessage
 {
-    PropertyList *propertyList;
+    char serverURL[TINY_URL_LEN];
+    char actionName[ACTION_NAME_LEN];
+    char actionXmlns[ACTION_XMLNS_LEN];
+    bool isFault;
+    SoapFault fault;
+    SoapError error;
     PropertyList *argumentList;
-    PropertyList *fault;
 };
 
 SoapMessage * SoapMessage_New(void)
@@ -64,14 +83,6 @@ SoapMessage * SoapMessage_New(void)
             thiz = NULL;
             break;
         }
-
-        ret = SoapMessage_InitializeProperty(thiz);
-        if (RET_FAILED(ret))
-        {
-            SoapMessage_Delete(thiz);
-            thiz = NULL;
-            break;
-        }
     } while (0);
 
     return thiz;
@@ -86,13 +97,7 @@ static TinyRet SoapMessage_Construct(SoapMessage *thiz)
     do
     {
         memset(thiz, 0, sizeof(SoapMessage));
-
-        thiz->propertyList = PropertyList_New();
-        if (thiz->propertyList == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
+        thiz->isFault = false;
 
         thiz->argumentList = PropertyList_New();
         if (thiz->argumentList == NULL)
@@ -109,19 +114,9 @@ static TinyRet SoapMessage_Dispose(SoapMessage *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    if (thiz->propertyList != NULL)
-    {
-        PropertyList_Delete(thiz->propertyList);
-    }
-
     if (thiz->argumentList != NULL)
     {
         PropertyList_Delete(thiz->argumentList);
-    }
-
-    if (thiz->fault != NULL)
-    {
-        PropertyList_Delete(thiz->fault);
     }
 
     return TINY_RET_OK;
@@ -134,99 +129,11 @@ void SoapMessage_Delete(SoapMessage *thiz)
     tiny_free(thiz);
 }
 
-static TinyRet SoapMessage_InitializeProperty(SoapMessage *thiz)
-{
-    TinyRet ret = TINY_RET_OK;
-    ObjectType type;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-
-    ObjectType_Construct(&type);
-
-    do
-    {
-        ObjectType_SetType(&type, CLAZZ_STRING);
-
-        ret = PropertyList_InitProperty(thiz->propertyList, SOAP_ServerURL, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, SOAP_ActionName, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, SOAP_ActionXmlns, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-    } while (0);
-
-    ObjectType_Dispose(&type);
-
-    return ret;
-}
-
-static TinyRet SoapMessage_InitializeFault(SoapMessage *thiz)
-{
-    TinyRet ret = TINY_RET_OK;
-    ObjectType type;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-
-    ObjectType_Construct(&type);
-
-    do
-    {
-        ObjectType_SetType(&type, CLAZZ_STRING);
-
-        ret = PropertyList_InitProperty(thiz->fault, SOAP_FAULT_Code, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->fault, SOAP_FAULT_String, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->fault, SOAP_FAULT_ErrorCode, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->fault, SOAP_FAULT_ErrorDescription, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-    } while (0);
-
-    ObjectType_Dispose(&type);
-
-    return ret;
-}
-
 PropertyList *SoapMessage_GetArgumentList(SoapMessage *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     return thiz->argumentList;
-}
-
-PropertyList *SoapMessage_GetFault(SoapMessage *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->fault;
 }
 
 TinyRet SoapMessage_Parse(SoapMessage *thiz, const char *bytes, uint32_t len)
@@ -347,8 +254,6 @@ TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len)
 
     do
     {
-        Object *actionName = NULL;
-        Object *actionXmlns = NULL;
         uint32_t i = 0;
         uint32_t count = 0;
         int32_t unused = 0;
@@ -370,21 +275,7 @@ TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len)
             break;
         }
 
-        actionName = PropertyList_GetPropertyValue(thiz->propertyList, SOAP_ActionName);
-        if (actionName == NULL)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        actionXmlns = PropertyList_GetPropertyValue(thiz->propertyList, SOAP_ActionXmlns);
-        if (actionXmlns == NULL)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        tiny_snprintf(p, unused, SOAP_ACTION_BEGIN, actionName->value.stringValue, actionXmlns->value.stringValue);
+        tiny_snprintf(p, unused, SOAP_ACTION_BEGIN, thiz->actionName, thiz->actionXmlns);
         p[unused - 1] = 0;
 
         p += strlen(p);
@@ -467,7 +358,7 @@ TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len)
             }
         }
 
-        tiny_snprintf(p, unused, SOAP_ACTION_END, actionName->value.stringValue);
+        tiny_snprintf(p, unused, SOAP_ACTION_END, thiz->actionName);
         p[unused - 1] = 0;
 
         p += strlen(p);
@@ -488,76 +379,110 @@ TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len)
     return ret;
 }
 
-TinyRet SoapMessage_SetPropertyValue(SoapMessage *thiz, const char *propertyName, const char *value)
+TinyRet SoapMessage_SetServerURL(SoapMessage *thiz, const char *serverURL)
 {
-    TinyRet ret = TINY_RET_OK;
-    Object data;
-
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(propertyName, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(value, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(serverURL, TINY_RET_E_ARG_NULL);
 
-    Object_Construct(&data);
-    {
-        Object_setString(&data, value);
-        ret = PropertyList_SetPropertyValue(thiz->propertyList, propertyName, &data);
-    }
-    Object_Dispose(&data);
+    strncpy(thiz->serverURL, serverURL, TINY_URL_LEN);
 
-    return ret;
+    return TINY_RET_OK;
 }
 
-const char * SoapMessage_GetPropertyValue(SoapMessage *thiz, const char *propertyName)
+TinyRet SoapMessage_SetActionName(SoapMessage *thiz, const char *actionName)
 {
-    const char *value = NULL;
-    Object *data = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-    RETURN_VAL_IF_FAIL(propertyName, NULL);
-
-    data = PropertyList_GetPropertyValue(thiz->propertyList, propertyName);
-    if (data != NULL)
-    {
-        value = data->value.stringValue;
-    }
-
-    return value;
-}
-
-TinyRet SoapMessage_SetFaultValue(SoapMessage *thiz, const char *faultName, const char *value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Object data;
-
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(faultName, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(value, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(actionName, TINY_RET_E_ARG_NULL);
 
-    Object_Construct(&data);
-    {
-        Object_setString(&data, value);
-        ret = PropertyList_SetPropertyValue(thiz->propertyList, faultName, &data);
-    }
-    Object_Dispose(&data);
+    strncpy(thiz->actionName, actionName, ACTION_NAME_LEN);
 
-    return ret;
+    return TINY_RET_OK;
 }
 
-const char * SoapMessage_GetFaultValue(SoapMessage *thiz, const char *faultName)
+TinyRet SoapMessage_SetActionXmlns(SoapMessage *thiz, const char *actionXmlns)
 {
-    const char *value = NULL;
-    Object *data = NULL;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(actionXmlns, TINY_RET_E_ARG_NULL);
 
+    strncpy(thiz->actionXmlns, actionXmlns, ACTION_XMLNS_LEN);
+
+    return TINY_RET_OK;
+}
+
+const char * SoapMessage_GetServerURL(SoapMessage *thiz)
+{
     RETURN_VAL_IF_FAIL(thiz, NULL);
-    RETURN_VAL_IF_FAIL(faultName, NULL);
 
-    data = PropertyList_GetPropertyValue(thiz->fault, faultName);
-    if (data != NULL)
-    {
-        value = data->value.stringValue;
-    }
+    return thiz->serverURL;
+}
 
-    return value;
+const char * SoapMessage_GetActionName(SoapMessage *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->actionName;
+}
+
+const char * SoapMessage_GetActionXmlns(SoapMessage *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->actionXmlns;
+}
+
+bool SoapMessage_IsFault(SoapMessage *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, false);
+
+    return thiz->isFault;
+}
+
+TinyRet SoapMessage_SetFault(SoapMessage *thiz, int faultcode, const char *faultstring)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    thiz->fault.faultCode = faultcode;
+    strncpy(thiz->fault.faultString, faultstring, FAULT_STRING_LEN);
+
+    return TINY_RET_OK;
+}
+
+TinyRet SoapMessage_SetError(SoapMessage *thiz, int errorCode, const char *errorDescription)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    thiz->error.errorCode = errorCode;
+    strncpy(thiz->error.errorDescription, errorDescription, ERROR_DESC_LEN);
+
+    return TINY_RET_OK;
+}
+
+int SoapMessage_GetFaultcode(SoapMessage *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return thiz->fault.faultCode;
+}
+
+const char * SoapMessage_GetFaultstring(SoapMessage *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->fault.faultString;
+}
+
+int SoapMessage_GetErrorCode(SoapMessage *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return thiz->error.errorCode;
+}
+
+const char * SoapMessage_GetErrorDescription(SoapMessage *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->error.errorDescription;
 }
 
 static bool is_envelope(SoapMessage *thiz, TinyXmlNode *root)
@@ -605,12 +530,7 @@ static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
          */
         if (str_equal(TinyXmlNode_GetName(response), "Fault", true))
         {
-            ret = SoapMessage_InitializeFault(thiz);
-            if (RET_FAILED(ret))
-            {
-                break;
-            }
-
+            thiz->isFault = true;
             ret = load_soap_fault(thiz, response);
             break;
         }
@@ -705,12 +625,6 @@ static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault)
             break;
         }
 
-        ret = PropertyList_SetPropertyStringValue(thiz->fault, SOAP_FAULT_Code, faultcode);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
         faultstring = TinyXmlNode_GetChildContent(fault, SOAP_FAULT_STRING);
         if (faultstring == NULL)
         {
@@ -718,7 +632,7 @@ static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault)
             break;
         }
 
-        ret = PropertyList_SetPropertyStringValue(thiz->fault, SOAP_FAULT_String, faultstring);
+        ret = SoapMessage_SetFault(thiz, atoi(faultcode), faultstring);
         if (RET_FAILED(ret))
         {
             break;
@@ -763,13 +677,7 @@ static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault)
                 break;
             }
 
-            ret = PropertyList_SetPropertyIntegerValue(thiz->fault, SOAP_FAULT_ErrorCode, atoi(error_code));
-            if (RET_FAILED(ret))
-            {
-                break;
-            }
-
-            ret = PropertyList_SetPropertyStringValue(thiz->fault, SOAP_FAULT_ErrorDescription, error_description);
+            ret = SoapMessage_SetError(thiz, atoi(error_code), error_description);
             if (RET_FAILED(ret))
             {
                 break;
@@ -813,7 +721,7 @@ static TinyRet get_action_name(SoapMessage *thiz, const char *action_response)
 
         LOG_D(TAG, "actionName is: %s", action_name);
 
-        SoapMessage_SetPropertyValue(thiz, SOAP_ActionName, action_name);
+        SoapMessage_SetActionName(thiz, action_name);
     } while (0);
 
     return ret;
@@ -833,7 +741,7 @@ static TinyRet get_action_xmlns(SoapMessage *thiz, TinyXmlNode *response)
             break;
         }
 
-        SoapMessage_SetPropertyValue(thiz, SOAP_ActionXmlns, attr->value);
+        SoapMessage_SetActionXmlns(thiz, attr->value);
     } while (0);
 
     return ret;

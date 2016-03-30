@@ -17,7 +17,6 @@
 #include "HttpClient.h"
 #include "tiny_log.h"
 #include "tiny_str_equal.h"
-#include "UpnpActionDefinition.h"
 
 #define TAG                             "SDD"
 
@@ -63,6 +62,9 @@ static TinyRet SDD_ParseXml(UpnpService *thiz, TinyXml *xml);
 static TinyRet SDD_LoadSpecVersion(UpnpService *thiz, TinyXmlNode *root);
 static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root);
 static TinyRet SDD_LoadServiceStateTable(UpnpService *thiz, TinyXmlNode *root);
+
+static uint32_t UpnpServiceParser_ActionToXml(UpnpAction *action, char *xml, uint32_t len);
+static uint32_t UpnpServiceParser_StateToXml(UpnpState *state, char *xml, uint32_t len);
 
 TinyRet UpnpServiceParser_Parse(const char *url, UpnpService *service, uint32_t timeout)
 {
@@ -398,7 +400,7 @@ static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root)
             argList = UpnpAction_GetArgumentList(action);
             resultList = UpnpAction_GetResultList(action);
 
-            UpnpAction_SetPropertyValue(action, UPNP_ACTION_Name, action_name);
+            UpnpAction_SetName(action, action_name);
 
             action_arg_count = TinyXmlNode_GetChildren(node_arg_list);
             for (j = 0; j < action_arg_count; j++)
@@ -461,4 +463,154 @@ static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root)
     } while (0);
 
     return ret;
+}
+
+static uint32_t UpnpServiceParser_ActionToXml(UpnpAction *action, char *xml, uint32_t len)
+{
+    RETURN_VAL_IF_FAIL(action, 0);
+    RETURN_VAL_IF_FAIL(xml, 0);
+
+    do
+    {
+        uint32_t i = 0;
+        uint32_t count = 0;
+        PropertyList *argList = UpnpAction_GetArgumentList(action);
+        PropertyList *resultList = UpnpAction_GetResultList(action);
+
+        strcat(xml, "<action>");
+
+        {
+            char name[1024];
+            memset(name, 0, 1024);
+            tiny_snprintf(name, 1024, "<name>%s</name>", UpnpAction_GetName(action));
+            strcat(xml, name);
+        }
+
+        strcat(xml, "<argumentList>");
+
+        count = PropertyList_GetSize(argList);
+        for (i = 0; i < count; ++i)
+        {
+            Property * p = PropertyList_GetPropertyAt(argList, i);
+            char name[1024];
+            char relatedStateVariable[1024];
+
+            memset(name, 0, 1024);
+            memset(relatedStateVariable, 0, 1024);
+
+            tiny_snprintf(name, 1024, "<name>%s</name>", p->definition.name);
+            tiny_snprintf(relatedStateVariable, 1024, "<relatedStateVariable>%s</relatedStateVariable>", p->definition.name);
+
+            strcat(xml, "<argument>");
+            strcat(xml, name);
+            strcat(xml, "<direction>in</direction>");
+            strcat(xml, relatedStateVariable);
+            strcat(xml, "</argument>");
+        }
+
+        count = PropertyList_GetSize(resultList);
+        for (i = 0; i < count; ++i)
+        {
+            Property * p = PropertyList_GetPropertyAt(resultList, i);
+            char name[1024];
+            char relatedStateVariable[1024];
+
+            memset(name, 0, 1024);
+            memset(relatedStateVariable, 0, 1024);
+
+            tiny_snprintf(name, 1024, "<name>%s</name>", p->definition.name);
+            tiny_snprintf(relatedStateVariable, 1024, "<relatedStateVariable>%s</relatedStateVariable>", p->definition.name);
+
+            strcat(xml, "<argument>");
+            strcat(xml, name);
+            strcat(xml, "<direction>out</direction>");
+            strcat(xml, relatedStateVariable);
+            strcat(xml, "</argument>");
+        }
+
+        strcat(xml, "</argumentList>");
+
+        strcat(xml, "</action>");
+    } while (0);
+
+    return strlen(xml);
+}
+
+static uint32_t UpnpServiceParser_StateToXml(UpnpState *state, char *xml, uint32_t len)
+{
+    RETURN_VAL_IF_FAIL(state, 0);
+    RETURN_VAL_IF_FAIL(xml, 0);
+
+    do
+    {
+        char buf[1024];
+
+        memset(buf, 0, 1024);
+        tiny_snprintf(buf, 1024, "<stateVariable sendEvents=\"%s\">", ObjectType_BooleanToString(state->sendEvents));
+        strcat(xml, buf);
+
+        memset(buf, 0, 1024);
+        tiny_snprintf(buf, 1024, "<name>%s</name>", state->definition.name);
+        strcat(xml, buf);
+
+        memset(buf, 0, 1024);
+        tiny_snprintf(buf, 1024, "<dataType>%s</dataType>", state->definition.type.clazzName);
+        strcat(xml, buf);
+
+        strcat(xml, "</stateVariable>");
+    } while (0);
+
+    return strlen(xml);
+}
+
+uint32_t UpnpServiceParser_ToXml(UpnpService *service, char *xml, uint32_t len)
+{
+    RETURN_VAL_IF_FAIL(service, 0);
+    RETURN_VAL_IF_FAIL(xml, 0);
+
+    do
+    {
+        uint32_t i = 0;
+        uint32_t count = 0;
+        UpnpActionList *actionList = UpnpService_GetActionList(service);
+        UpnpStateList *stateList = UpnpService_GetStateList(service);
+
+        strcat(xml, 
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+            "<scpd xmlns=\"urn:schemas-upnp-org:service-1-0\">"
+            "<specVersion>"
+            "<major>1</major>"
+            "<minor>0</minor>"
+            "</specVersion>");
+
+        /* <actionList> */
+        strcat(xml, "<actionList>");
+        count = UpnpActionList_GetSize(actionList);
+        for (i = 0; i < count; ++i)
+        {
+            UpnpAction *action = UpnpActionList_GetActionAt(actionList, i);
+            char buf[1024 * 4];
+            memset(buf, 0, 1024 * 4);
+            UpnpServiceParser_ActionToXml(action, buf, 1024 * 4);
+            strcat(xml, buf);
+        }
+        strcat(xml, "</actionList>");
+
+        /* <stateVariableList> */
+        strcat(xml, "<serviceStateTable>");
+        count = UpnpStateList_GetSize(stateList);
+        for (i = 0; i < count; ++i)
+        {
+            UpnpState *state = UpnpStateList_GetStateAt(stateList, i);
+            char buf[1024 * 4];
+            memset(buf, 0, 1024 * 4);
+            UpnpServiceParser_StateToXml(state, buf, 1024 * 4);
+            strcat(xml, buf);
+        }
+        strcat(xml, "</serviceStateTable>");
+
+        strcat(xml, "</scpd>");
+    } while (0);
+
+    return strlen(xml);
 }

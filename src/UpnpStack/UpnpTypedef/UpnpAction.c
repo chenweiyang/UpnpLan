@@ -11,17 +11,18 @@
 */
 
 #include "UpnpAction.h"
-#include "UpnpActionDefinition.h"
 #include "tiny_memory.h"
 
 static TinyRet UpnpAction_Construct(UpnpAction *thiz);
 static void UpnpAction_Dispose(UpnpAction *thiz);
-static TinyRet UpnpAction_Initialize(UpnpAction *thiz);
+
+#define NAME_LEN    128
 
 struct _UpnpAction
 {
+    char name[NAME_LEN];
+
     void * service;
-    PropertyList * propertyList;
     PropertyList * argumentList;
     PropertyList * resultList;
 };
@@ -41,14 +42,6 @@ UpnpAction * UpnpAction_New(void)
         }
 
         ret = UpnpAction_Construct(thiz);
-        if (RET_FAILED(ret))
-        {
-            UpnpAction_Delete(thiz);
-            thiz = NULL;
-            break;
-        }
-
-        ret = UpnpAction_Initialize(thiz);
         if (RET_FAILED(ret))
         {
             UpnpAction_Delete(thiz);
@@ -78,13 +71,6 @@ static TinyRet UpnpAction_Construct(UpnpAction *thiz)
     {
         memset(thiz, 0, sizeof(UpnpAction));
 
-        thiz->propertyList = PropertyList_New();
-        if (thiz->propertyList == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
-
         thiz->argumentList = PropertyList_New();
         if (thiz->argumentList == NULL)
         {
@@ -107,26 +93,8 @@ static void UpnpAction_Dispose(UpnpAction *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    PropertyList_Delete(thiz->propertyList);
     PropertyList_Delete(thiz->argumentList);
     PropertyList_Delete(thiz->resultList);
-}
-
-static TinyRet UpnpAction_Initialize(UpnpAction *thiz)
-{
-    TinyRet ret = TINY_RET_OK;
-    ObjectType type;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-
-    ObjectType_Construct(&type);
-    {
-        ObjectType_SetType(&type, CLAZZ_STRING);
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_ACTION_Name, &type);
-    }
-    ObjectType_Dispose(&type);
-
-    return ret;
 }
 
 void UpnpAction_SetParentService(UpnpAction *thiz, void *service)
@@ -158,45 +126,19 @@ PropertyList* UpnpAction_GetResultList(UpnpAction *thiz)
     return thiz->resultList;
 }
 
-PropertyList* UpnpAction_GetPropertyList(UpnpAction *thiz)
+TinyRet UpnpAction_SetName(UpnpAction *thiz, const char *name)
 {
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->propertyList;
-}
-
-TinyRet UpnpAction_SetPropertyValue(UpnpAction *thiz, const char *propertyName, const char *value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Object data;
-
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(propertyName, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(value, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
 
-    Object_Construct(&data);
-    {
-        Object_setString(&data, value);
-        ret = PropertyList_SetPropertyValue(thiz->propertyList, propertyName, &data);
-    }
-    Object_Dispose(&data);
+    strncpy(thiz->name, name, NAME_LEN);
 
-    return ret;
+    return TINY_RET_OK;
 }
 
-const char * UpnpAction_GetPropertyValue(UpnpAction *thiz, const char *propertyName)
+const char * UpnpAction_GetName(UpnpAction *thiz)
 {
-    const char *value = NULL;
-    Object *data = NULL;
-
     RETURN_VAL_IF_FAIL(thiz, NULL);
-    RETURN_VAL_IF_FAIL(propertyName, NULL);
 
-    data = PropertyList_GetPropertyValue(thiz->propertyList, propertyName);
-    if (data != NULL)
-    {
-        value = data->value.stringValue;
-    }
-
-    return value;
+    return thiz->name;
 }

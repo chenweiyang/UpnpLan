@@ -17,6 +17,7 @@
 
 #include "tiny_base.h"
 #include "UpnpDevice.h"
+#include "UpnpService.h"
 
 TINY_BEGIN_DECLS
 
@@ -26,10 +27,10 @@ typedef void(*ServiceChangedListener)(UpnpService *service, void *ctx);
 
 typedef struct _UpnpObserver
 {
-    DeviceAddedListener      OnDeviceAdded;
-    DeviceRemovedListener    OnDeviceRemoved;
-    ServiceChangedListener   OnServiceChanged;
-    void                   * ctx;
+    DeviceAddedListener           OnDeviceAdded;
+    DeviceRemovedListener         OnDeviceRemoved;
+    ServiceChangedListener        OnServiceChanged;
+    void                        * ctx;
 } UpnpObserver;
 
 UpnpObserver * UpnpObserver_New(void);

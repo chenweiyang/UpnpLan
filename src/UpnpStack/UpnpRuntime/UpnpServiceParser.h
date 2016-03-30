@@ -22,6 +22,7 @@ TINY_BEGIN_DECLS
 
 
 TinyRet UpnpServiceParser_Parse(const char *url, UpnpService *service, uint32_t timeout);
+uint32_t UpnpServiceParser_ToXml(UpnpService *service, char *xml, uint32_t len);
 
 
 TINY_END_DECLS

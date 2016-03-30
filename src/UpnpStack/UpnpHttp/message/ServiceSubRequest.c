@@ -14,8 +14,6 @@
 
 #include "ServiceSubRequest.h"
 #include "UpnpDevice.h"
-#include "UpnpDeviceDefinition.h"
-#include "UpnpServiceDefinition.h"
 
 TinyRet ServiceSubToRequest(UpnpSubscription *subscription, HttpMessage *request)
 {
@@ -28,8 +26,8 @@ TinyRet ServiceSubToRequest(UpnpSubscription *subscription, HttpMessage *request
     RETURN_VAL_IF_FAIL(request, TINY_RET_E_ARG_NULL);
 
     device = (UpnpDevice *)UpnpService_GetParentDevice(subscription->service);
-    urlbase = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_URLBase);
-    eventSubUrl = UpnpService_GetPropertyValue(subscription->service, UPNP_SERVICE_EventSubURL);
+    urlbase = UpnpDevice_GetURLBase(device);
+    eventSubUrl = UpnpService_GetEventSubURL(subscription->service);
 
     memset(sub_url, 0, TINY_URL_LEN);
     tiny_snprintf(sub_url, TINY_URL_LEN, "%s%s", urlbase, eventSubUrl);

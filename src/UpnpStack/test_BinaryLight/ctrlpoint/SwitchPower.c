@@ -16,7 +16,6 @@
 #include "tiny_log.h"
 #include "UpnpCode.h"
 #include "UpnpEvent.h"
-#include "UpnpServiceDefinition.h"
 
 #define TAG             "SwitchPower"
 
@@ -74,9 +73,9 @@ SwitchPower * SwitchPower_Create(UpnpService *service, UpnpRuntime *runtime)
         thiz->service = service;
         thiz->runtime = runtime;
 
-        if (!STR_EQUAL(_SERVICE_TYPE, UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceType)))
+        if (!STR_EQUAL(_SERVICE_TYPE, UpnpService_GetServiceType(service)))
         {
-            LOG_E(TAG, "SERVICE_TYPE invalid: %s", UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceType));
+            LOG_E(TAG, "SERVICE_TYPE invalid: %s", UpnpService_GetServiceType(service));
             SwitchPower_Delete(thiz);
             thiz = NULL;
             break;

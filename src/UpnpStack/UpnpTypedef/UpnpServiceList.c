@@ -11,7 +11,6 @@
 */
 
 #include "UpnpServiceList.h"
-#include "UpnpServiceDefinition.h"
 #include "TinyMap.h"
 #include "tiny_memory.h"
 
@@ -89,8 +88,8 @@ static void UpnpServiceList_Dispose(UpnpServiceList *thiz)
 
 static void ServiceDeleteListener(void * data, void *ctx)
 {
-    UpnpService *action = (UpnpService *)data;
-    UpnpService_Delete(action);
+    UpnpService *service = (UpnpService *)data;
+    UpnpService_Delete(service);
 }
 
 TinyRet UpnpServiceList_AddService(UpnpServiceList * thiz, UpnpService *service)
@@ -98,7 +97,7 @@ TinyRet UpnpServiceList_AddService(UpnpServiceList * thiz, UpnpService *service)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
 
-    return TinyMap_Insert(&thiz->actions, UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceId), service);
+    return TinyMap_Insert(&thiz->actions, UpnpService_GetServiceId(service), service);
 }
 
 uint32_t UpnpServiceList_GetSize(UpnpServiceList *thiz)

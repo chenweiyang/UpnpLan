@@ -27,6 +27,7 @@ UPNP_API UpnpDeviceConfig * UpnpDeviceConfig_New(void);
 UPNP_API void UpnpDeviceConfig_Delete(UpnpDeviceConfig *thiz);
 
 UPNP_API void UpnpDeviceConfig_SetDeviceName(UpnpDeviceConfig *thiz, const char *name);
+UPNP_API void UpnpDeviceConfig_SetDeviceId(UpnpDeviceConfig *thiz, const char *deviceId);
 UPNP_API void UpnpDeviceConfig_SetModelName(UpnpDeviceConfig *thiz, const char *name);
 UPNP_API void UpnpDeviceConfig_SetModelNumber(UpnpDeviceConfig *thiz, const char *number);
 UPNP_API void UpnpDeviceConfig_SetModelDescription(UpnpDeviceConfig *thiz, const char *description);
@@ -34,7 +35,7 @@ UPNP_API void UpnpDeviceConfig_SetModelUrl(UpnpDeviceConfig *thiz, const char *u
 UPNP_API void UpnpDeviceConfig_SetManufacturer(UpnpDeviceConfig *thiz, const char *manufacturer);
 UPNP_API void UpnpDeviceConfig_SetManufacturerUrl(UpnpDeviceConfig *thiz, const char *url);
 
-UPNP_API UpnpDevice * UpnpDeviceConfig_CreateDevice(UpnpDeviceConfig *thiz);
+UPNP_API UpnpDevice * UpnpDeviceConfig_CreateDevice(UpnpDeviceConfig *thiz, const char *deviceType);
 
 
 TINY_END_DECLS

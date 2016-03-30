@@ -19,9 +19,7 @@
 #include "TinyXml.h"
 #include "UpnpEvent.h"
 #include "UpnpService.h"
-#include "UpnpServiceDefinition.h"
 #include "UpnpDevice.h"
-#include "UpnpDeviceDefinition.h"
 
 
 #define TAG                 "UpnpSubscriber"
@@ -148,31 +146,33 @@ static void notify_handler(UpnpHttpConnection *conn,
 
     do
     {
-        UpnpEvent event;
-        UpnpSubscription *subscription = (UpnpSubscription *)TinyMap_GetValue(&thiz->map, uri);
+        UpnpSubscription *subscription = NULL;
+        UpnpEvent * event = NULL;
+
+        subscription = (UpnpSubscription *)TinyMap_GetValue(&thiz->map, uri);
         if (subscription == NULL)
         {
             UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
             break;
         }
 
-        if (RET_FAILED(UpnpEvent_Construct(&event)))
+        event = UpnpEvent_New();
+        if (event == NULL)
         {
             LOG_E(TAG, "UpnpEvent_Construct failed");
             break;
         }
 
         do {
-            if (RET_FAILED(UpnpEvent_Parse(&event, nt, nts, sid, seq, content, contentLength)))
+            if (RET_FAILED(UpnpEvent_Parse(event, nt, nts, sid, seq, content, contentLength)))
             {
-                UpnpEvent_Dispose(&event);
                 break;
             }
 
-            subscription->listener(&event, subscription->ctx);
+            subscription->listener(event, subscription->ctx);
         } while (0);
 
-        UpnpEvent_Dispose(&event);
+        UpnpEvent_Delete(event);
         UpnpHttpConnection_SendOk(conn);
     } while (0);  
 
@@ -247,7 +247,7 @@ TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz,
             break;
         }
 
-        UpnpService_SetPropertyValue(service, UPNP_SERVICE_CallbackURI, UpnpSubscription_GetCallBackUri(subscription));
+        UpnpService_SetCallbackURI(service, UpnpSubscription_GetCallBackUri(subscription));
     } while (0);
 
     TinyMutex_Unlock(&thiz->mutex);
@@ -267,7 +267,7 @@ TinyRet UpnpSubscriber_Unsubscribe(UpnpSubscriber *thiz, UpnpService *service, U
 
     do
     {
-        const char *callbackUri = UpnpService_GetPropertyValue(service, UPNP_SERVICE_CallbackURI);
+        const char *callbackUri = UpnpService_GetCallbackURI(service);
         UpnpSubscription *subscription = NULL;
 
         if (!UpnpHttpServer_IsRunning(&thiz->http->server))

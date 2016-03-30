@@ -14,8 +14,7 @@
 #include "tiny_memory.h"
 #include "tiny_str_equal.h"
 #include "tiny_log.h"
-#include "UpnpServiceDefinition.h"
-#include "UpnpActionDefinition.h"
+#include "UpnpServiceHelper.h"
 
 #define TAG             "SwitchPower"
 
@@ -43,6 +42,10 @@ static const char * PROPERTY_Target = "Target";
 
 static TinyRet SwitchPower_Construct(SwitchPower *thiz, UpnpDevice *device, UpnpRuntime *runtime);
 static void SwitchPower_Dispose(SwitchPower *thiz);
+
+static TinyRet init_service(SwitchPower *thiz, UpnpDevice *device);
+static TinyRet init_stateList(UpnpService *service);
+static TinyRet init_actionList(UpnpService *service);
 
 static UpnpCode handle_GetTarget(SwitchPower *thiz, UpnpAction *action);
 static UpnpCode handle_SetTarget(SwitchPower *thiz, UpnpAction *action);
@@ -96,15 +99,16 @@ static TinyRet SwitchPower_Construct(SwitchPower *thiz, UpnpDevice *device, Upnp
     {
         memset(thiz, 0, sizeof(SwitchPower));
         thiz->runtime = runtime;
-        thiz->service = NULL;
         thiz->OnGetTarget = NULL;
         thiz->OnSetTarget = NULL;
         thiz->OnGetStatus = NULL;
         thiz->ctx = NULL;
 
-        /**
-         * create UpnpService
-         */
+        ret = init_service(thiz, device);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
     } while (0);
 
     return ret;
@@ -113,6 +117,10 @@ static TinyRet SwitchPower_Construct(SwitchPower *thiz, UpnpDevice *device, Upnp
 static void SwitchPower_Dispose(SwitchPower *thiz)
 {
     RETURN_IF_FAIL(thiz);
+
+    /**
+     * DO NOT delete thiz->service !!!
+     */
 }
 
 void SwitchPower_Delete(SwitchPower *thiz)
@@ -123,12 +131,211 @@ void SwitchPower_Delete(SwitchPower *thiz)
     tiny_free(thiz);
 }
 
+static TinyRet init_service(SwitchPower *thiz, UpnpDevice *device)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        UpnpServiceList * serviceList = NULL;
+
+        thiz->service = UpnpService_New();
+        if (thiz->service == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        UpnpService_SetParentDevice(thiz->service, device);
+        UpnpService_SetServiceType(thiz->service, _SERVICE_TYPE);
+
+        ret = UpnpServiceHelper_UpdateServiceId(thiz->service);
+        if (RET_FAILED(ret))
+        {
+            UpnpService_Delete(thiz->service);
+            thiz->service = NULL;
+            break;
+        }
+
+        ret = UpnpServiceHelper_UpdateScpdUrl(thiz->service);
+        if (RET_FAILED(ret))
+        {
+            UpnpService_Delete(thiz->service);
+            thiz->service = NULL;
+            break;
+        }
+
+        ret = UpnpServiceHelper_UpdateCtrlUrl(thiz->service);
+        if (RET_FAILED(ret))
+        {
+            UpnpService_Delete(thiz->service);
+            thiz->service = NULL;
+            break;
+        }
+
+        ret = UpnpServiceHelper_UpdateEventUrl(thiz->service);
+        if (RET_FAILED(ret))
+        {
+            UpnpService_Delete(thiz->service);
+            thiz->service = NULL;
+            break;
+        }
+
+        ret = init_stateList(thiz->service);
+        if (RET_FAILED(ret))
+        {
+            UpnpService_Delete(thiz->service);
+            thiz->service = NULL;
+            break;
+        }
+
+        ret = init_actionList(thiz->service);
+        if (RET_FAILED(ret))
+        {
+            UpnpService_Delete(thiz->service);
+            thiz->service = NULL;
+            break;
+        }
+
+        serviceList = UpnpDevice_GetServiceList(device);
+        ret = UpnpServiceList_AddService(serviceList, thiz->service);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+    } while (0);
+
+    return ret;
+}
+
+static TinyRet init_stateList(UpnpService *service)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        UpnpStateList * stateList = UpnpService_GetStateList(service);
+        ObjectType dataType;
+
+        /* Status */
+        ObjectType_SetName(&dataType, "string");
+        ret = UpnpStateList_InitState(stateList, PROPERTY_Status, &dataType, true, service);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        /* Target */
+        ObjectType_SetName(&dataType, "string");
+        ret = UpnpStateList_InitState(stateList, PROPERTY_Target, &dataType, true, service);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+    } while (0);
+
+    return ret;
+}
+
+static TinyRet init_actionList(UpnpService *service)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        UpnpActionList * actionList = UpnpService_GetActionList(service);
+        UpnpStateList * stateList = UpnpService_GetStateList(service);
+
+        UpnpAction *GetTarget = NULL;
+        UpnpAction *SetTarget = NULL;
+        UpnpAction *GetStatus = NULL;
+
+        PropertyList *argList = NULL;
+        PropertyList *resultList = NULL;
+        UpnpState * relatedState;
+
+        /** 
+         * GetTarget
+         */
+        GetTarget = UpnpAction_New();
+
+        argList = UpnpAction_GetArgumentList(GetTarget);
+        resultList = UpnpAction_GetResultList(GetTarget);
+        UpnpAction_SetParentService(GetTarget, service);
+        UpnpAction_SetName(GetTarget, ACTION_GetTarget);
+
+        relatedState = UpnpStateList_GetState(stateList, PROPERTY_Target);
+        if (relatedState == NULL)
+        {
+            LOG_D(TAG, "UpnpStateList_GetState failed: <%s>", PROPERTY_Target);
+        }
+
+        PropertyList_InitProperty(resultList, _GetTarget_ARG_RetTargetValue, &relatedState->definition.type);
+
+        ret = UpnpActionList_AddAction(actionList, GetTarget);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpActionList_AddAction failed: <%s>", ACTION_GetTarget);
+        }
+
+        /**
+        * SetTarget
+        */
+        SetTarget = UpnpAction_New();
+
+        argList = UpnpAction_GetArgumentList(SetTarget);
+        resultList = UpnpAction_GetResultList(SetTarget);
+        UpnpAction_SetParentService(SetTarget, service);
+        UpnpAction_SetName(SetTarget, ACTION_SetTarget);
+
+        relatedState = UpnpStateList_GetState(stateList, PROPERTY_Target);
+        if (relatedState == NULL)
+        {
+            LOG_D(TAG, "UpnpStateList_GetState failed: <%s>", PROPERTY_Target);
+        }
+
+        PropertyList_InitProperty(argList, _GetTarget_ARG_RetTargetValue, &relatedState->definition.type);
+
+        ret = UpnpActionList_AddAction(actionList, SetTarget);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpActionList_AddAction failed: <%s>", ACTION_SetTarget);
+        }
+
+        /**
+        * GetStatus
+        */
+        GetStatus = UpnpAction_New();
+
+        argList = UpnpAction_GetArgumentList(GetStatus);
+        resultList = UpnpAction_GetResultList(GetStatus);
+        UpnpAction_SetParentService(GetStatus, service);
+        UpnpAction_SetName(GetStatus, ACTION_GetStatus);
+
+        relatedState = UpnpStateList_GetState(stateList, PROPERTY_Status);
+        if (relatedState == NULL)
+        {
+            LOG_D(TAG, "UpnpStateList_GetState failed: <%s>", PROPERTY_Status);
+        }
+
+        PropertyList_InitProperty(resultList, _GetTarget_ARG_RetTargetValue, &relatedState->definition.type);
+
+        ret = UpnpActionList_AddAction(actionList, GetStatus);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpActionList_AddAction failed: <%s>", ACTION_GetStatus);
+        }
+    } while (false);
+
+    return ret;
+}
+
 bool SwitchPower_IsImplemented(SwitchPower *thiz, UpnpService *service)
 {
     RETURN_VAL_IF_FAIL(thiz, false);
     RETURN_VAL_IF_FAIL(service, false);
 
-    return STR_EQUAL(UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceType), _SERVICE_TYPE);
+    return STR_EQUAL(UpnpService_GetServiceType(service), _SERVICE_TYPE);
 }
 
 TinyRet SwitchPower_SetHandler(SwitchPower *thiz, SwitchPower_ActionHandler *handler, void *ctx)
@@ -152,7 +359,7 @@ UpnpCode SwitchPower_OnAction(SwitchPower *thiz, UpnpAction *action)
     RETURN_VAL_IF_FAIL(thiz, UPNP_ERR_INVALID_ARGS);
     RETURN_VAL_IF_FAIL(action, UPNP_ERR_INVALID_ARGS);
 
-    actionName = UpnpAction_GetPropertyValue(action, UPNP_ACTION_Name);
+    actionName = UpnpAction_GetName(action);
     LOG_D(TAG, "SwitchPower_OnAction: %s", actionName);
 
     if (STR_EQUAL(actionName, ACTION_GetTarget))
@@ -179,8 +386,7 @@ TinyRet SwitchPower_SendEvents(SwitchPower *thiz)
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    // UpnpService_SendEvents(thiz->service);
-    return ret;  
+    return UpnpService_SendEvents(thiz->service);
 }
 
 TinyRet SwitchPower_SetStatus(SwitchPower *thiz, bool theStatus)

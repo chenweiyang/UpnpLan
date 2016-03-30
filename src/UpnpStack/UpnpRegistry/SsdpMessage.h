@@ -173,14 +173,21 @@ typedef struct _SsdpMessage
 } SsdpMessage;
 
 TinyRet SsdpMessage_Construct(SsdpMessage *message, const char *ip, uint16_t port, const char *buf, uint32_t len);
-TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device);
-TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device);
-TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service);
+TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location);
+TinyRet SsdpMessage_ConstructAlive_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location);
+TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location);
+TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location);
 TinyRet SsdpMessage_ConstructByebye_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device);
+TinyRet SsdpMessage_ConstructByebye_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device);
 TinyRet SsdpMessage_ConstructByebye_DEVICE(SsdpMessage *thiz, UpnpDevice *device);
 TinyRet SsdpMessage_ConstructByebye_SERVICE(SsdpMessage *thiz, UpnpService *service);
+
 TinyRet SsdpMessage_ConstructRequest(SsdpMessage *thiz, const char *target);
-TinyRet SsdpMessage_ConstructResponse(SsdpMessage *thiz);
+TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port);
+TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port);
+TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port);
+TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location, const char *ip, uint16_t port);
+
 void SsdpMessage_Dispose(SsdpMessage *thiz);
 
 uint32_t SsdpMessage_ToString(SsdpMessage *thiz, char string[], uint32_t len);

@@ -160,9 +160,29 @@ TinyRet UpnpHost_Stop(UpnpHost *thiz)
 
 static void OnGet(UpnpHttpConnection *conn, const char *uri, void *ctx)
 {
+    UpnpHost *thiz = (UpnpHost *)ctx;
+
     LOG_D(TAG, "OnGet: %s", uri);
 
-    UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
+    UpnpProvider_Lock(thiz->provider);
+
+    do
+    {
+        char content[UPNP_DOCUMENT_LEN];
+        uint32_t contentLength = 0;
+
+        memset(content, 0, UPNP_DOCUMENT_LEN);
+        contentLength = UpnpProvider_GetDocument(thiz->provider, uri, content, UPNP_DOCUMENT_LEN);
+        if (contentLength == 0)
+        {
+            UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
+            break;
+        }
+
+        UpnpHttpConnection_SendFileContent(conn, content, contentLength);       
+    } while (0);
+
+    UpnpProvider_Unlock(thiz->provider);
 }
 
 static void OnPost(UpnpHttpConnection *conn, const char *uri, const char *soapAction, const char *content, uint32_t contentLength, void *ctx)
@@ -189,4 +209,6 @@ static void OnUnsubscribe(UpnpHttpConnection *conn, const char *uri, const char 
 static void OnServiceChanged(UpnpService *service, void *ctx)
 {
     LOG_D(TAG, "OnServiceChanged");
+
+    // Send NOTIFY
 }

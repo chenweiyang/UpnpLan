@@ -31,9 +31,8 @@ UPNP_API void * UpnpAction_GetParentService(UpnpAction *thiz);
 UPNP_API PropertyList* UpnpAction_GetArgumentList(UpnpAction *thiz);
 UPNP_API PropertyList* UpnpAction_GetResultList(UpnpAction *thiz);
 
-UPNP_API PropertyList* UpnpAction_GetPropertyList(UpnpAction *thiz);
-UPNP_API TinyRet UpnpAction_SetPropertyValue(UpnpAction *thiz, const char *propertyName, const char *value);
-UPNP_API const char * UpnpAction_GetPropertyValue(UpnpAction *thiz, const char *propertyName);
+UPNP_API TinyRet UpnpAction_SetName(UpnpAction *thiz, const char *name);
+UPNP_API const char * UpnpAction_GetName(UpnpAction *thiz);
 
 
 TINY_END_DECLS

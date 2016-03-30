@@ -11,7 +11,6 @@
 */
 
 #include "UpnpDeviceConfig.h"
-#include "UpnpDeviceDefinition.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
 #include "TinyUuid.h"
@@ -20,13 +19,14 @@
 
 static TinyRet UpnpDeviceConfig_Construct(UpnpDeviceConfig *thiz);
 static void UpnpDeviceConfig_Dispose(UpnpDeviceConfig *thiz);
-static bool generateNewDeviceId(UpnpDevice * device);
+//static bool generateNewDeviceId(UpnpDevice * device);
 
 #define LEN     128
 
 struct _UpnpDeviceConfig
 {
     char deviceName[LEN];
+    char deviceId[LEN];
     char modelNumber[LEN];
     char modelName[LEN];
     char modelDescription[LEN];
@@ -95,6 +95,14 @@ void UpnpDeviceConfig_SetDeviceName(UpnpDeviceConfig *thiz, const char *name)
     strncpy(thiz->deviceName, name, LEN);
 }
 
+void UpnpDeviceConfig_SetDeviceId(UpnpDeviceConfig *thiz, const char *deviceId)
+{
+    RETURN_IF_FAIL(thiz);
+    RETURN_IF_FAIL(deviceId);
+
+    strncpy(thiz->deviceId, deviceId, LEN);
+}
+
 void UpnpDeviceConfig_SetModelName(UpnpDeviceConfig *thiz, const char *name)
 {
     RETURN_IF_FAIL(thiz);
@@ -143,7 +151,7 @@ void UpnpDeviceConfig_SetManufacturerUrl(UpnpDeviceConfig *thiz, const char *url
     strncpy(thiz->manufacturerUrl, url, LEN);
 }
 
-UpnpDevice * UpnpDeviceConfig_CreateDevice(UpnpDeviceConfig *thiz)
+UpnpDevice * UpnpDeviceConfig_CreateDevice(UpnpDeviceConfig *thiz, const char *deviceType)
 {
     UpnpDevice * device = NULL;
 
@@ -151,21 +159,29 @@ UpnpDevice * UpnpDeviceConfig_CreateDevice(UpnpDeviceConfig *thiz)
 
     do
     {
+        char uri[256];
+
         device = UpnpDevice_New();
         if (device == NULL)
         {
             LOG_D(TAG, "UpnpDevice_New failed");
             break;
         }
-        
-        // UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_DeviceType, deviceType);
-        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_FriendlyName, thiz->deviceName);
-        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ModelNumber, thiz->modelNumber);
-        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ModelName, thiz->modelName);
-        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ModelURL, thiz->modelUrl);
-        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_Manufacturer, thiz->manufacturer);
-        UpnpDevice_SetPropertyValue(device, UPNP_DEVICE_ManufacturerURL, thiz->manufacturerUrl);
 
+        memset(uri, 0, 256);
+        tiny_snprintf(uri, 256, "/upnp/%s/description.xml", thiz->deviceId);
+
+        UpnpDevice_SetDeviceType(device, deviceType);
+        UpnpDevice_SetDeviceId(device, thiz->deviceId);
+        UpnpDevice_SetFriendlyName(device, thiz->deviceName);
+        UpnpDevice_SetModelNumber(device, thiz->modelNumber);
+        UpnpDevice_SetModelName(device, thiz->modelName);
+        UpnpDevice_SetModelURL(device, thiz->modelUrl);
+        UpnpDevice_SetManufacturer(device, thiz->manufacturer);
+        UpnpDevice_SetManufacturerURL(device, thiz->manufacturerUrl);
+        UpnpDevice_SetURI(device, uri);
+
+#if 0
         if (!generateNewDeviceId(device))
         {
             LOG_D(TAG, "generateNewDeviceId failed");
@@ -173,11 +189,13 @@ UpnpDevice * UpnpDeviceConfig_CreateDevice(UpnpDeviceConfig *thiz)
             device = NULL;
             break;
         }
+#endif
     } while (0);
 
     return device;
 }
 
+#if 0
 static bool generateNewDeviceId(UpnpDevice * device)
 {
     TinyUuid uuid;
@@ -201,3 +219,4 @@ static bool generateNewDeviceId(UpnpDevice * device)
 
     return true;
 }
+#endif

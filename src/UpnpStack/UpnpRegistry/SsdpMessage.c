@@ -13,8 +13,6 @@
 #include "SsdpMessage.h"
 #include "HttpMessage.h"
 #include "tiny_log.h"
-#include "UpnpDeviceDefinition.h"
-#include "UpnpServiceDefinition.h"
 
 #define TAG     "SsdpMessage"
 
@@ -359,52 +357,231 @@ TinyRet SsdpMessage_Construct(SsdpMessage *thiz, const char *ip, uint16_t port, 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device)
+TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        uint16_t port = UpnpDevice_GetHttpPort(device);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::upnp:rootdevice", deviceId);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_ALIVE;
+
+        strncpy(thiz->v.alive.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.alive.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.alive.nt, "upnp:rootdevice", HEAD_NT_LEN);
+        strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
+        strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
+        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device)
+TinyRet SsdpMessage_ConstructAlive_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_ALIVE;
+
+        strncpy(thiz->v.alive.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.alive.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.alive.nt, deviceId, HEAD_NT_LEN);
+        strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
+        strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.alive.usn, deviceId, HEAD_USN_LEN);
+        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service)
+TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *deviceType = UpnpDevice_GetDeviceType(device);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_ALIVE;
+
+        strncpy(thiz->v.alive.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.alive.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.alive.nt, deviceType, HEAD_NT_LEN);
+        strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
+        strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
+        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
+}
+
+TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        UpnpDevice *device = (UpnpDevice *) UpnpService_GetParentDevice(service);
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *serviceType = UpnpService_GetServiceType(service);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::%s", deviceId, serviceType);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_ALIVE;
+
+        strncpy(thiz->v.alive.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.alive.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.alive.nt, serviceType, HEAD_NT_LEN);
+        strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
+        strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
+        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
 }
 
 TinyRet SsdpMessage_ConstructByebye_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::upnp:rootdevice", deviceId);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_BYEBYE;
+
+        strncpy(thiz->v.byebye.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.byebye.nt, "upnp:rootdevice", HEAD_NT_LEN);
+        strncpy(thiz->v.byebye.nts, NTS_BYEBYE, HEAD_NTS_LEN);
+        strncpy(thiz->v.byebye.usn, usn, HEAD_USN_LEN);
+    } while (0);
+
+    return ret;
+}
+
+TinyRet SsdpMessage_ConstructByebye_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_BYEBYE;
+
+        strncpy(thiz->v.byebye.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.byebye.nt, deviceId, HEAD_NT_LEN);
+        strncpy(thiz->v.byebye.nts, NTS_BYEBYE, HEAD_NTS_LEN);
+        strncpy(thiz->v.byebye.usn, deviceId, HEAD_USN_LEN);
+    } while (0);
+
+    return ret;
 }
 
 TinyRet SsdpMessage_ConstructByebye_DEVICE(SsdpMessage *thiz, UpnpDevice *device)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *deviceType = UpnpDevice_GetDeviceType(device);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_BYEBYE;
+
+        strncpy(thiz->v.byebye.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.byebye.nt, deviceType, HEAD_NT_LEN);
+        strncpy(thiz->v.byebye.nts, NTS_BYEBYE, HEAD_NTS_LEN);
+        strncpy(thiz->v.byebye.usn, usn, HEAD_USN_LEN);
+    } while (0);
+
+    return ret;
 }
 
 TinyRet SsdpMessage_ConstructByebye_SERVICE(SsdpMessage *thiz, UpnpService *service)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        UpnpDevice *device = (UpnpDevice *)UpnpService_GetParentDevice(service);
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *serviceType = UpnpService_GetServiceType(service);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::%s", deviceId, serviceType);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_BYEBYE;
+
+        strncpy(thiz->v.byebye.host, DEFAULT_HOST, HEAD_HOST_LEN);
+        strncpy(thiz->v.byebye.nt, serviceType, HEAD_NT_LEN);
+        strncpy(thiz->v.byebye.nts, NTS_BYEBYE, HEAD_NTS_LEN);
+        strncpy(thiz->v.byebye.usn, usn, HEAD_USN_LEN);
+    } while (0);
+
+    return ret;
 }
 
 TinyRet SsdpMessage_ConstructRequest(SsdpMessage *thiz, const char *target)
@@ -428,11 +605,130 @@ TinyRet SsdpMessage_ConstructRequest(SsdpMessage *thiz, const char *target)
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructResponse(SsdpMessage *thiz)
+TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    TinyRet ret = TINY_RET_OK;
 
-    return TINY_RET_OK;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        uint16_t port = UpnpDevice_GetHttpPort(device);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::upnp:rootdevice", deviceId);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_MSEARCH_RESPONSE;
+
+        thiz->port = port;
+        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.response.st, "upnp:rootdevice", HEAD_NT_LEN);
+        strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
+
+}
+
+TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *deviceType = UpnpDevice_GetDeviceType(device);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_MSEARCH_RESPONSE;
+
+        thiz->port = port;
+        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.response.st, deviceType, HEAD_NT_LEN);
+        strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
+}
+
+TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(device, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *deviceType = UpnpDevice_GetDeviceType(device);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_MSEARCH_RESPONSE;
+
+        thiz->port = port;
+        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.response.st, deviceType, HEAD_NT_LEN);
+        strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
+}
+
+TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location, const char *ip, uint16_t port)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        UpnpDevice *device = (UpnpDevice *)UpnpService_GetParentDevice(service);
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *serviceType = UpnpService_GetServiceType(service);
+        char usn[256];
+
+        memset(usn, 0, 256);
+        tiny_snprintf(usn, 256, "%s::%s", deviceId, serviceType);
+
+        memset(thiz, 0, sizeof(SsdpMessage));
+        thiz->type = SSDP_MSEARCH_RESPONSE;
+
+        thiz->port = port;
+        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
+        strncpy(thiz->v.response.st, serviceType, HEAD_NT_LEN);
+        strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
+        strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+    } while (0);
+
+    return ret;
 }
 
 void SsdpMessage_Dispose(SsdpMessage *thiz)
@@ -456,9 +752,27 @@ uint32_t SsdpMessage_ToString(SsdpMessage *thiz, char string[], uint32_t len)
         switch (thiz->type)
         {
         case SSDP_ALIVE:
+            HttpMessage_SetType(&msg, HTTP_REQUEST);
+            HttpMessage_SetVersion(&msg, 1, 1);
+            HttpMessage_SetMethod(&msg, METHOD_NOTIFY);
+            HttpMessage_SetUri(&msg, "*");
+            HttpMessage_SetHeader(&msg, HEAD_HOST, thiz->v.alive.host);
+            HttpMessage_SetHeader(&msg, HEAD_CACHE_CONTROL, thiz->v.alive.cache_control);
+            HttpMessage_SetHeader(&msg, HEAD_NT, thiz->v.alive.nt);
+            HttpMessage_SetHeader(&msg, HEAD_NTS, thiz->v.alive.nts);
+            HttpMessage_SetHeader(&msg, HEAD_SERVER, thiz->v.alive.server);
+            HttpMessage_SetHeader(&msg, HEAD_USN, thiz->v.alive.usn);
+            HttpMessage_SetHeader(&msg, HEAD_LOCATION, thiz->v.alive.location);
             break;
 
         case SSDP_BYEBYE:
+            HttpMessage_SetType(&msg, HTTP_REQUEST);
+            HttpMessage_SetVersion(&msg, 1, 1);
+            HttpMessage_SetMethod(&msg, METHOD_NOTIFY);
+            HttpMessage_SetUri(&msg, "*");
+            HttpMessage_SetHeader(&msg, HEAD_HOST, thiz->v.byebye.host);
+            HttpMessage_SetHeader(&msg, HEAD_NT, thiz->v.byebye.nt);
+            HttpMessage_SetHeader(&msg, HEAD_NTS, thiz->v.byebye.nts);
             break;
 
         case SSDP_MSEARCH_REQUEST:

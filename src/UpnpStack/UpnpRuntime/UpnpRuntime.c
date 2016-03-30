@@ -276,6 +276,8 @@ TinyRet UpnpRuntime_Register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHa
 
     UpnpProvider_Lock(&thiz->provider); 
     {
+        UpnpDevice_SetHttpPort(device, UpnpHttpServer_GetListeningPort(&thiz->http.server));
+
         ret = UpnpProvider_Add(&thiz->provider, device, handler, ctx);
     }
     UpnpProvider_Unlock(&thiz->provider);

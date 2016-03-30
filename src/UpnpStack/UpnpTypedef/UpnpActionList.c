@@ -11,7 +11,6 @@
 */
 
 #include "UpnpActionList.h"
-#include "UpnpActionDefinition.h"
 #include "TinyMap.h"
 #include "tiny_memory.h"
 
@@ -98,7 +97,7 @@ TinyRet UpnpActionList_AddAction(UpnpActionList * thiz, UpnpAction *action)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(action, TINY_RET_E_ARG_NULL);
 
-    return TinyMap_Insert(&thiz->actions, UpnpAction_GetPropertyValue(action, UPNP_ACTION_Name), action);
+    return TinyMap_Insert(&thiz->actions, UpnpAction_GetName(action), action);
 }
 
 uint32_t UpnpActionList_GetSize(UpnpActionList *thiz)

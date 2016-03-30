@@ -34,6 +34,8 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx);
 static void OnDeviceRemoved(UpnpDevice *device, void *ctx);
 static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx);
 
+static bool deviceIsMatched(UpnpDevice *device, const char *st);
+
 UpnpRegistry * UpnpRegistry_New(UpnpProvider *provider)
 {
     UpnpRegistry *thiz = NULL;
@@ -339,7 +341,79 @@ static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
 
     LOG_D(TAG, "OnRequestDeviceVisit");
 
-    // TODO: Send SsdpResponse
+    if (deviceIsMatched(device, c->request->st))
+    {
+
+        do
+        {
+            SsdpMessage message;
+            uint16_t port = UpnpDevice_GetHttpPort(device);
+            const char *uri = UpnpDevice_GetURI(device);
+            UpnpServiceList *list = UpnpDevice_GetServiceList(device);
+            uint32_t count = UpnpServiceList_GetSize(list);
+            uint32_t i = 0;
+            char location[TINY_URL_LEN];
+
+            memset(location, 0, TINY_URL_LEN);
+            tiny_snprintf(location, TINY_URL_LEN, "http://%s:%d%s", "10.0.1.8", port, uri);
+
+            /**
+             * root
+             */
+            if (RET_FAILED(SsdpMessage_ConstructResponse_ROOTDEVICE(&message, device, location, c->ip, c->port)))
+            {
+                break;
+            }
+            Ssdp_SendMessage(&c->registry->ssdp, &message);
+            SsdpMessage_Dispose(&message);
+
+            /**
+             * device uuid
+             */
+            if (RET_FAILED(SsdpMessage_ConstructResponse_DEVICE_UUID(&message, device, location, c->ip, c->port)))
+            {
+                break;
+            }
+            Ssdp_SendMessage(&c->registry->ssdp, &message);
+            SsdpMessage_Dispose(&message);
+
+            /**
+             * device
+             */
+            if (RET_FAILED(SsdpMessage_ConstructResponse_DEVICE(&message, device, location, c->ip, c->port)))
+            {
+                break;
+            }
+            Ssdp_SendMessage(&c->registry->ssdp, &message);
+            SsdpMessage_Dispose(&message);
+
+            /**
+             * services
+             */
+            for (i = 0; i < count; ++i)
+            {
+                UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+                if (RET_FAILED(SsdpMessage_ConstructResponse_SERVICE(&message, service, location, c->ip, c->port)))
+                {
+                    break;
+                }
+                Ssdp_SendMessage(&c->registry->ssdp, &message);
+                SsdpMessage_Dispose(&message);
+            }
+        } while (0);
+    }
+}
+
+static bool deviceIsMatched(UpnpDevice *device, const char *st)
+{
+    if (STR_EQUAL(st, DEFAULT_ST))
+    {
+        return true;
+    }
+
+    // TODO: check deviceType & serviceType
+
+    return false;
 }
 
 static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, const char *ip, uint16_t port)
@@ -408,29 +482,45 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
     do
     {
         SsdpMessage message;
+        uint16_t port = UpnpDevice_GetHttpPort(device);
+        const char *uri = UpnpDevice_GetURI(device);
         UpnpServiceList *list = UpnpDevice_GetServiceList(device);
         uint32_t count = UpnpServiceList_GetSize(list);
         uint32_t i = 0;
+        char location[TINY_URL_LEN];
+
+        memset(location, 0, TINY_URL_LEN);
+        tiny_snprintf(location, TINY_URL_LEN, "http://%s:%d%s", "10.0.1.8", port, uri);
 
         /**
          * root
          */
-        if (RET_SUCCEEDED(SsdpMessage_ConstructAlive_ROOTDEVICE(&message, device)))
+        if (RET_FAILED(SsdpMessage_ConstructAlive_ROOTDEVICE(&message, device, location)))
         {
-            Ssdp_SendMessage(&thiz->ssdp, &message);
-            SsdpMessage_Dispose(&message);
             break;
         }
+        Ssdp_SendMessage(&thiz->ssdp, &message);
+        SsdpMessage_Dispose(&message);
+
+        /**
+         * device uuid
+         */
+        if (RET_FAILED(SsdpMessage_ConstructAlive_DEVICE_UUID(&message, device, location)))
+        {
+            break;
+        }
+        Ssdp_SendMessage(&thiz->ssdp, &message);
+        SsdpMessage_Dispose(&message);
 
         /**
          * device
          */
-        if (RET_SUCCEEDED(SsdpMessage_ConstructAlive_DEVICE(&message, device)))
+        if (RET_FAILED(SsdpMessage_ConstructAlive_DEVICE(&message, device, location)))
         {
-            Ssdp_SendMessage(&thiz->ssdp, &message);
-            SsdpMessage_Dispose(&message);
             break;
         }
+        Ssdp_SendMessage(&thiz->ssdp, &message);
+        SsdpMessage_Dispose(&message);
 
         /**
          * services
@@ -438,12 +528,12 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
         for (i = 0; i < count; ++i)
         {
             UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
-            if (RET_SUCCEEDED(SsdpMessage_ConstructAlive_SERVICE(&message, service)))
+            if (RET_FAILED(SsdpMessage_ConstructAlive_SERVICE(&message, service, location)))
             {
-                Ssdp_SendMessage(&thiz->ssdp, &message);
-                SsdpMessage_Dispose(&message);
                 break;
             }
+            Ssdp_SendMessage(&thiz->ssdp, &message);
+            SsdpMessage_Dispose(&message);
         }
     } while (0);
 }
@@ -467,32 +557,42 @@ static void OnDeviceRemoved(UpnpDevice *device, void *ctx)
         for (i = 0; i < count; ++i)
         {
             UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
-            if (RET_SUCCEEDED(SsdpMessage_ConstructByebye_SERVICE(&message, service)))
+            if (RET_FAILED(SsdpMessage_ConstructByebye_SERVICE(&message, service)))
             {
-                Ssdp_SendMessage(&thiz->ssdp, &message);
-                SsdpMessage_Dispose(&message);
                 break;
             }
+            Ssdp_SendMessage(&thiz->ssdp, &message);
+            SsdpMessage_Dispose(&message);
         }
 
         /**
          * device
          */
-        if (RET_SUCCEEDED(SsdpMessage_ConstructByebye_DEVICE(&message, device)))
+        if (RET_FAILED(SsdpMessage_ConstructByebye_DEVICE(&message, device)))
         {
-            Ssdp_SendMessage(&thiz->ssdp, &message);
-            SsdpMessage_Dispose(&message);
             break;
         }
+        Ssdp_SendMessage(&thiz->ssdp, &message);
+        SsdpMessage_Dispose(&message);
+
+        /**
+         * device uuid
+         */
+        if (RET_FAILED(SsdpMessage_ConstructByebye_DEVICE_UUID(&message, device)))
+        {
+            break;
+        }
+        Ssdp_SendMessage(&thiz->ssdp, &message);
+        SsdpMessage_Dispose(&message);
 
         /**
          * root
          */
-        if (RET_SUCCEEDED(SsdpMessage_ConstructByebye_ROOTDEVICE(&message, device)))
+        if (RET_FAILED(SsdpMessage_ConstructByebye_ROOTDEVICE(&message, device)))
         {
-            Ssdp_SendMessage(&thiz->ssdp, &message);
-            SsdpMessage_Dispose(&message);
             break;
         }
+        Ssdp_SendMessage(&thiz->ssdp, &message);
+        SsdpMessage_Dispose(&message);
     } while (0);
 }

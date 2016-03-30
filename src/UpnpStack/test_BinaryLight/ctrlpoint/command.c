@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "UpnpDevice.h"
-#include "UpnpDeviceDefinition.h"
 #include "UpnpDeviceFactory.h"
 #include "BinaryLight.h"
 #include "SwitchPower.h"
@@ -106,7 +105,7 @@ static void device_listener(UpnpDeviceSummary *deviceSummary, bool alive, void *
     {
         if (device != NULL)
         {
-            if (STR_EQUAL(deviceSummary->deviceId, UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_UDN)))
+            if (STR_EQUAL(deviceSummary->deviceId, UpnpDevice_GetDeviceId(device)))
             {
                 if (binaryLight != NULL)
                 {

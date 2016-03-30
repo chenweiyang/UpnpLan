@@ -18,8 +18,6 @@
 #include "tiny_url_split.h"
 #include "TinyXml.h"
 #include "HttpClient.h"
-#include "UpnpDeviceDefinition.h"
-#include "UpnpServiceDefinition.h"
 
 #define TAG         "UpnpDeviceParser"
 
@@ -79,7 +77,7 @@ static TinyRet DDD_LoadDevice(UpnpDevice *thiz, TinyXmlNode *root);
 static TinyRet DDD_LoadUrlBase(UpnpDevice *thiz, TinyXmlNode *root);
 static TinyRet DDD_LoadIconList(UpnpDevice *thiz, TinyXmlNode *iconList);
 static TinyRet DDD_LoadServiceList(UpnpDevice *thiz, TinyXmlNode *serviceList);
-static TinyRet UpnpDevice_SetURLBase(UpnpDevice *thiz, const char *deviceUrl);
+static TinyRet UpnpDeviceParser_SetURLBase(UpnpDevice *thiz, const char *deviceUrl);
 
 TinyRet UpnpDeviceParser_Parse(const char *url, UpnpDevice *device, uint32_t timeout)
 {
@@ -322,7 +320,7 @@ static TinyRet DDD_LoadDevice(UpnpDevice *thiz, TinyXmlNode *root)
 
         if (deviceType != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_DeviceType, deviceType);
+            UpnpDevice_SetDeviceType(thiz, deviceType);
         }
         else
         {
@@ -333,7 +331,7 @@ static TinyRet DDD_LoadDevice(UpnpDevice *thiz, TinyXmlNode *root)
 
         if (friendlyName != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_FriendlyName, friendlyName);
+            UpnpDevice_SetFriendlyName(thiz, friendlyName);
         }
         else
         {
@@ -342,37 +340,37 @@ static TinyRet DDD_LoadDevice(UpnpDevice *thiz, TinyXmlNode *root)
 
         if (modelNumber != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_ModelNumber, modelNumber);
+            UpnpDevice_SetModelNumber(thiz, modelNumber);
         }
 
         if (modelName != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_ModelName, modelName);
+            UpnpDevice_SetModelName(thiz, modelName);
         }
 
         if (modelURL != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_ModelURL, modelURL);
+            UpnpDevice_SetModelURL(thiz, modelURL);
         }
 
         if (udn != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_UDN, udn);
+            UpnpDevice_SetDeviceId(thiz, udn);
         }
 
         if (manufacturer != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_Manufacturer, manufacturer);
+            UpnpDevice_SetManufacturer(thiz, manufacturer);
         }
 
         if (manufacturerURL != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_ManufacturerURL, manufacturerURL);
+            UpnpDevice_SetManufacturerURL(thiz, manufacturerURL);
         }
 
         if (serialNumber != NULL)
         {
-            UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_SerialNumber, serialNumber);
+            UpnpDevice_SetSerialNumber(thiz, serialNumber);
         }
 
         /* <iconList> is optional */
@@ -387,7 +385,7 @@ static TinyRet DDD_LoadDevice(UpnpDevice *thiz, TinyXmlNode *root)
             }
         }
 
-        /* <iconList> is required */
+        /* <serviceList> is required */
         serviceList = TinyXmlNode_GetChildByName(device, DDD_SERVICELIST);
         if (serviceList == NULL)
         {
@@ -420,7 +418,7 @@ static TinyRet DDD_LoadUrlBase(UpnpDevice *thiz, TinyXmlNode *root)
             break;
         }
 
-        UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_URLBase, url_base);
+        UpnpDevice_SetURLBase(thiz, url_base);
     } while (0);
 
     return ret;
@@ -537,11 +535,11 @@ static TinyRet DDD_LoadServiceList(UpnpDevice *thiz, TinyXmlNode *serviceList)
             }
             else
             {
-                UpnpService_SetPropertyValue(service, UPNP_SERVICE_ServiceType, service_type);
-                UpnpService_SetPropertyValue(service, UPNP_SERVICE_ServiceId, service_id);
-                UpnpService_SetPropertyValue(service, UPNP_SERVICE_ControlURL, ctrl_url);
-                UpnpService_SetPropertyValue(service, UPNP_SERVICE_EventSubURL, event_sub_url);
-                UpnpService_SetPropertyValue(service, UPNP_SERVICE_SCPDURL, scpd_url);
+                UpnpService_SetServiceType(service, service_type);
+                UpnpService_SetServiceId(service, service_id);
+                UpnpService_SetControlURL(service, ctrl_url);
+                UpnpService_SetEventSubURL(service, event_sub_url);
+                UpnpService_SetSCPDURL(service, scpd_url);
                 UpnpService_SetParentDevice(service, thiz);
             }
 
@@ -552,7 +550,7 @@ static TinyRet DDD_LoadServiceList(UpnpDevice *thiz, TinyXmlNode *serviceList)
     return ret;
 }
 
-static TinyRet UpnpDevice_SetURLBase(UpnpDevice *thiz, const char *deviceUrl)
+static TinyRet UpnpDeviceParser_SetURLBase(UpnpDevice *thiz, const char *deviceUrl)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -577,8 +575,96 @@ static TinyRet UpnpDevice_SetURLBase(UpnpDevice *thiz, const char *deviceUrl)
 
         tiny_snprintf(url_base, TINY_URL_LEN, "http://%s:%d", ip, port);
 
-        UpnpDevice_SetPropertyValue(thiz, UPNP_DEVICE_URLBase, url_base);
+        UpnpDevice_SetURLBase(thiz, url_base);
     } while (0);
 
     return ret;
+}
+
+uint32_t UpnpDeviceParser_ToXml(UpnpDevice *device, char *xml, uint32_t len)
+{
+    char *p = xml;
+    uint32_t unused = len;
+
+    RETURN_VAL_IF_FAIL(device, 0);
+    RETURN_VAL_IF_FAIL(xml, 0);
+
+    do
+    {
+        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
+        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t i = 0;
+
+        tiny_snprintf(p, unused,
+            "<?xml version=\"1.0\"?>"
+            "<root xmlns=\"urn:schemas-upnp-org:device-1-0\">"
+            "<specVersion>"
+            "<major>1</major>"
+            "<minor>0</minor>"
+            "</specVersion>"
+            "<device>"
+            "<deviceType>%s</deviceType>"
+            "<friendlyName>%s</friendlyName>"
+            "<manufacturer>%s</manufacturer>"
+            "<manufacturerURL>%s</manufacturerURL>"
+            "<modelDescription></modelDescription>"
+            "<modelName>%s</modelName>"
+            "<modelNumber>%s</modelNumber>"
+            "<modelURL>%s</modelURL>"
+            "<UDN>%s</UDN>"
+            "<iconList>"
+            "</iconList>"
+            "<servieList>",
+            UpnpDevice_GetDeviceType(device),
+            UpnpDevice_GetFriendlyName(device),
+            UpnpDevice_GetManufacturer(device),
+            UpnpDevice_GetManufacturerURL(device),
+            UpnpDevice_GetModelName(device),
+            UpnpDevice_GetModelNumber(device),
+            UpnpDevice_GetModelURL(device),
+            UpnpDevice_GetDeviceId(device)
+            );
+
+        p = xml + strlen(p);
+        unused = len - (p - xml);
+
+        for (i = 0; i < count; ++i)
+        {
+            char ss[1024 * 3];
+            UpnpService *service = UpnpServiceList_GetServiceAt(list, i);
+            const char *scpd = UpnpService_GetSCPDURL(service);
+            const char *ctrl = UpnpService_GetControlURL(service);
+            const char *event = UpnpService_GetEventSubURL(service);
+            const char *id = UpnpService_GetServiceId(service);
+            const char *type = UpnpService_GetServiceType(service);
+
+            memset(ss, 0, 1024 * 3);
+            tiny_snprintf(ss, 1024 * 3,
+                "<service>"
+                "<serviceType>%s</serviceType>"
+                "<serviceId>%s</serviceId>"
+                "<SCPDURL>%s</SCPDURL>"
+                "<controlURL>%s</controlURL>"
+                "<eventSubURL>%s</eventSubURL>"
+                "</service>",
+                type,
+                id,
+                scpd,
+                ctrl,
+                event);
+
+            tiny_snprintf(p, unused, ss);
+
+            p += strlen(ss);
+            unused -= strlen(ss);
+        }
+
+        tiny_snprintf(p, unused,
+            "</servieList>"
+            "</device>"
+            "</root>"
+            );
+    } while (0);
+
+    return strlen(xml);
 }

@@ -22,8 +22,9 @@ TINY_BEGIN_DECLS
 
 #define UPNP_GROUP                              "239.255.255.250"
 #define UPNP_PORT                               1900
+#define UPNP_DOCUMENT_LEN                       (1024 * 60)
 #define UPNP_DDD_LEN                            (1024 * 20)
-#define UPNP_SDD_LEN                            (1024 * 20)
+#define UPNP_SDD_LEN                            (1024 * 60)
 #define UPNP_TIMEOUT                            (1000 * 20)
 #define UPNP_SOAP_LEN                           (1024 * 20)
 #define UPNP_STACK_INFO                         "UPnP/1.0 UpnpLan/1.0"

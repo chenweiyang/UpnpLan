@@ -11,19 +11,32 @@
 */
 
 #include "UpnpEvent.h"
-#include "UpnpEventDefinition.h"
 #include "TinyXml.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
+#include "PropertyList.h"
 
 #define TAG         "UpnpEvent"
-
-static TinyRet UpnpEvent_Initialize(UpnpEvent *thiz);
 
 static TinyRet load_content(UpnpEvent *thiz, const char *bytes, uint32_t len);
 static TinyRet load_xml(UpnpEvent *thiz, TinyXml *xml);
 static TinyRet load_propertyset(UpnpEvent *thiz, TinyXmlNode *root);
 
+#define CONNECTION_LEN      128
+#define NT_LEN              128
+#define NTS_LEN             128
+#define SID_LEN             128
+#define SEQ_LEN             128
+
+struct _UpnpEvent
+{
+    char connection[CONNECTION_LEN];
+    char nt[NT_LEN];
+    char nts[NTS_LEN];
+    char sid[SID_LEN];
+    char seq[SEQ_LEN];
+    PropertyList * argumentList;
+};
 
 UpnpEvent * UpnpEvent_New(void)
 {
@@ -46,14 +59,6 @@ UpnpEvent * UpnpEvent_New(void)
             thiz = NULL;
             break;
         }
-
-        ret = UpnpEvent_Initialize(thiz);
-        if (RET_FAILED(ret))
-        {
-            UpnpEvent_Delete(thiz);
-            thiz = NULL;
-            break;
-        }
     } while (0);
 
     return thiz;
@@ -68,13 +73,6 @@ TinyRet UpnpEvent_Construct(UpnpEvent *thiz)
     do
     {
         memset(thiz, 0, sizeof(UpnpEvent));
-
-        thiz->propertyList = PropertyList_New();
-        if (thiz->propertyList == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
 
         thiz->argumentList = PropertyList_New();
         if (thiz->argumentList == NULL)
@@ -91,7 +89,6 @@ void UpnpEvent_Dispose(UpnpEvent *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    PropertyList_Delete(thiz->propertyList);
     PropertyList_Delete(thiz->argumentList);
 }
 
@@ -103,96 +100,89 @@ void UpnpEvent_Delete(UpnpEvent *thiz)
     tiny_free(thiz);
 }
 
-static TinyRet UpnpEvent_Initialize(UpnpEvent *thiz)
+TinyRet UpnpEvent_SetConnection(UpnpEvent *thiz, const char *connection)
 {
-    TinyRet ret = TINY_RET_OK;
-    ObjectType type;
-
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(connection, TINY_RET_E_ARG_NULL);
 
-    ObjectType_Construct(&type);
+    strncpy(thiz->connection, connection, CONNECTION_LEN);
 
-    do
-    {
-        ObjectType_SetType(&type, CLAZZ_STRING);
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_EVENT_Connection, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_EVENT_Nt, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_EVENT_Nts, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_EVENT_Sid, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-
-        ret = PropertyList_InitProperty(thiz->propertyList, UPNP_EVENT_Seq, &type);
-        if (RET_FAILED(ret))
-        {
-            break;
-        }
-    } while (0);
-
-    ObjectType_Dispose(&type);
-
-    return ret;
+    return TINY_RET_OK;
 }
 
-TinyRet UpnpEvent_SetPropertyValue(UpnpEvent *thiz, const char *propertyName, const char *value)
+TinyRet UpnpEvent_SetNt(UpnpEvent *thiz, const char *nt)
 {
-    TinyRet ret = TINY_RET_OK;
-    Object data;
-
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(propertyName, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(value, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(nt, TINY_RET_E_ARG_NULL);
 
-    Object_Construct(&data);
-    {
-        Object_setString(&data, value);
-        ret = PropertyList_SetPropertyValue(thiz->propertyList, propertyName, &data);
-    }
-    Object_Dispose(&data);
+    strncpy(thiz->nt, nt, NT_LEN);
 
-    return ret;
+    return TINY_RET_OK;
 }
 
-const char * UpnpEvent_GetPropertyValue(UpnpEvent *thiz, const char *propertyName)
+TinyRet UpnpEvent_SetNts(UpnpEvent *thiz, const char *nts)
 {
-    const char *value = NULL;
-    Object *data = NULL;
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(nts, TINY_RET_E_ARG_NULL);
 
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-    RETURN_VAL_IF_FAIL(propertyName, NULL);
+    strncpy(thiz->nts, nts, NTS_LEN);
 
-    data = PropertyList_GetPropertyValue(thiz->propertyList, propertyName);
-    if (data != NULL)
-    {
-        value = data->value.stringValue;
-    }
-
-    return value;
+    return TINY_RET_OK;
 }
 
-PropertyList* UpnpEvent_GetArgumentList(UpnpEvent *thiz)
+TinyRet UpnpEvent_SetSid(UpnpEvent *thiz, const char *sid)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(sid, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->sid, sid, SID_LEN);
+
+    return TINY_RET_OK;
+}
+
+TinyRet UpnpEvent_SetSeq(UpnpEvent *thiz, const char *seq)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(seq, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->seq, seq, SEQ_LEN);
+
+    return TINY_RET_OK;
+}
+
+const char * UpnpEvent_GetConnection(UpnpEvent *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
-    return thiz->argumentList;
+    return thiz->connection;
+}
+
+const char * UpnpEvent_GetNt(UpnpEvent *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->nt;
+}
+
+const char * UpnpEvent_GetNts(UpnpEvent *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->nts;
+}
+
+const char * UpnpEvent_GetSid(UpnpEvent *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->sid;
+}
+
+const char * UpnpEvent_GetSeq(UpnpEvent *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->seq;
 }
 
 TinyRet UpnpEvent_SetArgumentValue(UpnpEvent *thiz, const char *argumentName, const char *value)
@@ -272,10 +262,10 @@ TinyRet UpnpEvent_Parse(UpnpEvent *thiz, const char *nt, const char *nts, const 
 
     do
     {
-        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Nt, nt);
-        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Nts, nts);
-        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Sid, sid);
-        UpnpEvent_SetPropertyValue(thiz, UPNP_EVENT_Seq, seq);
+        UpnpEvent_SetNt(thiz, nt);
+        UpnpEvent_SetNts(thiz, nts);
+        UpnpEvent_SetSid(thiz, sid);
+        UpnpEvent_SetSeq(thiz, seq);
 
         ret = load_content(thiz, content, contentLength);
         if (RET_FAILED(ret))

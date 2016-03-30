@@ -24,6 +24,7 @@
 
 TINY_BEGIN_DECLS
 
+
 typedef void(*UpnpObjectListener)(UpnpObject *object, bool alive, void *ctx);
 
 typedef struct _UpnpRegistry

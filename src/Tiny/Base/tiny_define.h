@@ -18,7 +18,7 @@
 
 #define TINY_IP_LEN              32
 #define TINY_URL_LEN             1024
-
+#define TINY_URI_LEN             1024
 
 
 

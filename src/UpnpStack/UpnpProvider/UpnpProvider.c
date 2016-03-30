@@ -15,9 +15,12 @@
 #include "UpnpProvider.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
-#include "UpnpDeviceDefinition.h"
+#include "UpnpDeviceParser.h"
+#include "UpnpServiceParser.h"
 
 #define TAG     "UpnpProvider"
+
+static uint32_t UpnpProvider_GetServiceDocument(UpnpProvider *thiz, UpnpDevice *device, const char *uri, char *content, uint32_t len);
 
 static void device_delete_listener(void * data, void *ctx)
 {
@@ -31,6 +34,27 @@ static void handler_delete_listener(void *data, void *ctx)
 
 static void observer_delete_listener(void *data, void *ctx)
 {
+    UpnpObserver * observer = (UpnpObserver *)data;
+    UpnpObserver_Delete(observer);
+}
+
+static void onServiceChanged(UpnpService *service, void *ctx)
+{
+    UpnpProvider *thiz = (UpnpProvider *)ctx;
+    uint32_t count = TinyMap_GetCount(&thiz->observers);
+    uint32_t i = 0;
+
+    /**
+     * Notify
+     */
+    for (i = 0; i < count; i++)
+    {
+        UpnpObserver *observer = (UpnpObserver *)TinyMap_GetValueAt(&thiz->observers, i);
+        if (observer->OnServiceChanged != NULL)
+        {
+            observer->OnServiceChanged(service, observer->ctx);
+        }
+    }
 }
 
 UpnpProvider * UpnpProvider_New(void)
@@ -264,13 +288,14 @@ TinyRet UpnpProvider_Add(UpnpProvider *thiz, UpnpDevice *device, UpnpActionHandl
 
     do
     {
+        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
         uint32_t count = TinyMap_GetCount(&thiz->observers);
         uint32_t i = 0;
 
         /**
          * add device  & handler
          */
-        const char *deviceId = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_UDN);
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
         if (deviceId == NULL)
         {
             LOG_D(TAG, "DeviceId is NULL");
@@ -301,6 +326,16 @@ TinyRet UpnpProvider_Add(UpnpProvider *thiz, UpnpDevice *device, UpnpActionHandl
                 observer->OnDeviceAdded(device, observer->ctx);
             }
         }
+
+        /**
+         * Register ServiceChangedHandler
+         */
+        count = UpnpServiceList_GetSize(list);
+        for (i = 0; i < count; ++i)
+        {
+            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            UpnpService_SetChangedListener(service, onServiceChanged, thiz);
+        }
     } while (0);
 
     return ret;
@@ -315,6 +350,7 @@ TinyRet UpnpProvider_Remove(UpnpProvider *thiz, const char *deviceId)
 
     do
     {
+        UpnpServiceList *list = NULL;
         uint32_t count = TinyMap_GetCount(&thiz->observers);
         uint32_t i = 0;
 
@@ -338,6 +374,17 @@ TinyRet UpnpProvider_Remove(UpnpProvider *thiz, const char *deviceId)
         }
 
         /**
+        * UnRegister ServiceChangedHandler
+        */
+        list = UpnpDevice_GetServiceList(device);
+        count = UpnpServiceList_GetSize(list);
+        for (i = 0; i < count; ++i)
+        {
+            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            UpnpService_SetChangedListener(service, NULL, NULL);
+        }
+
+        /**
          * delete device & handler
          */
         ret = TinyMap_Erase(&thiz->devices, deviceId);
@@ -350,6 +397,68 @@ TinyRet UpnpProvider_Remove(UpnpProvider *thiz, const char *deviceId)
         if (RET_FAILED(ret))
         {
             break;
+        }
+    } while (0);
+
+    return ret;
+}
+
+uint32_t UpnpProvider_GetDocument(UpnpProvider *thiz, const char *uri, char *content, uint32_t len)
+{
+    uint32_t ret = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, 0);
+    RETURN_VAL_IF_FAIL(content, 0);
+
+    do
+    {
+        uint32_t i = 0;
+        uint32_t count = TinyMap_GetCount(&thiz->devices);
+
+        for (i = 0; i < count; i++)
+        {
+            UpnpDevice *device = (UpnpDevice *)TinyMap_GetValueAt(&thiz->devices, i);
+
+            if (STR_EQUAL(uri, UpnpDevice_GetURI(device)))
+            {
+                ret = UpnpDeviceParser_ToXml(device, content, len);
+                break;
+            }
+
+            ret = UpnpProvider_GetServiceDocument(thiz, device, uri, content, len);
+            if (ret > 0)
+            {
+                break;
+            }
+        }
+    } while (0);
+
+    return ret;
+}
+
+static uint32_t UpnpProvider_GetServiceDocument(UpnpProvider *thiz, UpnpDevice *device, const char *uri, char *content, uint32_t len)
+{
+    uint32_t ret = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, 0);
+    RETURN_VAL_IF_FAIL(content, 0);
+
+    do
+    {
+        UpnpServiceList * list = UpnpDevice_GetServiceList(device);
+        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t i = 0;
+
+        for (i = 0; i < count; i++)
+        {
+            UpnpService *service = UpnpServiceList_GetServiceAt(list, i);
+            const char *scpd = UpnpService_GetSCPDURL(service);
+
+            if (STR_EQUAL(uri, scpd))
+            {
+                ret = UpnpServiceParser_ToXml(service, content, len);
+                break;
+            }
         }
     } while (0);
 

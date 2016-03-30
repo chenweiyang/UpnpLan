@@ -214,6 +214,8 @@ static TinyRet Ssdp_Send(Ssdp *thiz, const char *bytes, uint32_t len, int fd, co
             break;
         }
 
+        LOG_D(TAG, bytes);
+
         tiny_udp_write(fd, ip, port, bytes, len);
     } while (0);
 
@@ -242,6 +244,7 @@ TinyRet Ssdp_SendMessage(Ssdp *thiz, SsdpMessage *message)
         {
         case SSDP_ALIVE:
         case SSDP_BYEBYE:
+            ret = Ssdp_Send(thiz, string, len, thiz->group_fd, UPNP_GROUP, UPNP_PORT);
             break;
 
         case SSDP_MSEARCH_REQUEST:

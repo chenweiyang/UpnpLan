@@ -14,12 +14,8 @@
 
 #include "ActionRequest.h"
 #include "soap/SoapMessage.h"
-#include "soap/SoapDefinition.h"
 #include "UpnpDevice.h"
-#include "UpnpDeviceDefinition.h"
 #include "UpnpService.h"
-#include "UpnpServiceDefinition.h"
-#include "UpnpActionDefinition.h"
 #include "tiny_memory.h"
 
 static TinyRet ActionToSoapRequest(UpnpAction *action, SoapMessage *soap);
@@ -86,24 +82,24 @@ static TinyRet ActionToSoapRequest(UpnpAction *action, SoapMessage *soap)
             break;
         }
 
-        ctrlUrl = UpnpService_GetPropertyValue(service, UPNP_SERVICE_ControlURL);
-        urlBase = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_URLBase);
+        ctrlUrl = UpnpService_GetControlURL(service);
+        urlBase = UpnpDevice_GetURLBase(device);
 
         tiny_snprintf(url, TINY_URL_LEN, "%s%s", urlBase, ctrlUrl);
 
-        ret = SoapMessage_SetPropertyValue(soap, SOAP_ServerURL, url);
+        ret = SoapMessage_SetServerURL(soap, url);
         if (RET_FAILED(ret))
         {
             break;
         }
 
-        ret = SoapMessage_SetPropertyValue(soap, SOAP_ActionName, UpnpAction_GetPropertyValue(action, UPNP_ACTION_Name));
+        ret = SoapMessage_SetActionName(soap, UpnpAction_GetName(action));
         if (RET_FAILED(ret))
         {
             break;
         }
 
-        ret = SoapMessage_SetPropertyValue(soap, SOAP_ActionXmlns, UpnpService_GetPropertyValue(service, UPNP_SERVICE_ServiceType));
+        ret = SoapMessage_SetActionXmlns(soap, UpnpService_GetServiceType(service));
         if (RET_FAILED(ret))
         {
             break;
@@ -126,9 +122,9 @@ static TinyRet SoapRequestToHttpRequest(SoapMessage *soap, HttpMessage *request)
         char soap_action[256];
         char *data = NULL;
         uint32_t size = UPNP_SOAP_LEN;
-        const char * serverUrl = SoapMessage_GetPropertyValue(soap, SOAP_ServerURL);
-        const char * actionName = SoapMessage_GetPropertyValue(soap, SOAP_ActionName);
-        const char * actionXmlns = SoapMessage_GetPropertyValue(soap, SOAP_ActionXmlns);
+        const char * serverUrl = SoapMessage_GetServerURL(soap);
+        const char * actionName = SoapMessage_GetActionName(soap);
+        const char * actionXmlns = SoapMessage_GetActionXmlns(soap);
 
         tiny_snprintf(soap_action, 256, "\"%s#%s\"", actionXmlns, actionName);
 

@@ -12,9 +12,7 @@
 
 #include "tiny_base.h"
 #include "UpnpSubscription.h"
-#include "UpnpServiceDefinition.h"
 #include "UpnpDevice.h"
-#include "UpnpDeviceDefinition.h"
 #include "tiny_log.h"
 #include "tiny_md5.h"
 #include "tiny_memory.h"
@@ -91,8 +89,8 @@ const char * UpnpSubscription_GetCallBackUri(UpnpSubscription *thiz)
     {
         char md5[TINY_MD5_LEN];
         UpnpDevice *device = (UpnpDevice *)UpnpService_GetParentDevice(thiz->service);
-        const char *deviceId = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_UDN);
-        const char *serviceId = UpnpService_GetPropertyValue(thiz->service, UPNP_SERVICE_ServiceId);
+        const char *deviceId = UpnpDevice_GetDeviceId(device);
+        const char *serviceId = UpnpService_GetServiceId(thiz->service);
 
         memset(md5, 0, TINY_MD5_LEN);
 
@@ -113,8 +111,8 @@ const char * UpnpSubscription_GetFullCallBack(UpnpSubscription *thiz)
         {
             TinyRet ret = TINY_RET_OK;
             UpnpDevice *device = (UpnpDevice *)UpnpService_GetParentDevice(thiz->service);
-            const char *deviceAddress = UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_Address);
-            const char *serviceId = UpnpService_GetPropertyValue(thiz->service, UPNP_SERVICE_ServiceId);
+            const char *deviceAddress = UpnpDevice_GetAddress(device);
+            const char *serviceId = UpnpService_GetServiceId(thiz->service);
             char selfAddress[TINY_IP_LEN];
 
             memset(selfAddress, 0, TINY_IP_LEN);

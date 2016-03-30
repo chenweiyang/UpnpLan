@@ -49,6 +49,7 @@ int main(void)
         }
 
         UpnpDeviceConfig_SetDeviceName(config, "Ouyang BinaryLight A");
+        UpnpDeviceConfig_SetDeviceId(config, "uuid:9ba32c90-9923-4ec6-81d0-335100229b93");
         UpnpDeviceConfig_SetModelNumber(config, "2016");
         UpnpDeviceConfig_SetModelName(config, "Light");
         UpnpDeviceConfig_SetModelDescription(config, "BinaryLight for demo");

@@ -15,27 +15,29 @@
 
 #include "tiny_base.h"
 #include "upnp_api.h"
-#include "PropertyList.h"
-#include "HttpMessage.h"
 
 TINY_BEGIN_DECLS
 
 
-typedef struct _UpnpEvent
-{
-    PropertyList * propertyList;
-    PropertyList * argumentList;
-} UpnpEvent;
+struct _UpnpEvent;
+typedef struct _UpnpEvent UpnpEvent;
 
 UPNP_API UpnpEvent * UpnpEvent_New(void);
 UPNP_API TinyRet UpnpEvent_Construct(UpnpEvent *thiz);
 UPNP_API void UpnpEvent_Dispose(UpnpEvent *thiz);
 UPNP_API void UpnpEvent_Delete(UpnpEvent *thiz);
 
-UPNP_API TinyRet UpnpEvent_SetPropertyValue(UpnpEvent *thiz, const char *propertyName, const char *value);
-UPNP_API const char * UpnpEvent_GetPropertyValue(UpnpEvent *thiz, const char *propertyName);
+UPNP_API TinyRet UpnpEvent_SetConnection(UpnpEvent *thiz, const char *connection);
+UPNP_API TinyRet UpnpEvent_SetNt(UpnpEvent *thiz, const char *nt);
+UPNP_API TinyRet UpnpEvent_SetNts(UpnpEvent *thiz, const char *nts);
+UPNP_API TinyRet UpnpEvent_SetSid(UpnpEvent *thiz, const char *sid);
+UPNP_API TinyRet UpnpEvent_SetSeq(UpnpEvent *thiz, const char *seq);
+UPNP_API const char * UpnpEvent_GetConnection(UpnpEvent *thiz);
+UPNP_API const char * UpnpEvent_GetNt(UpnpEvent *thiz);
+UPNP_API const char * UpnpEvent_GetNts(UpnpEvent *thiz);
+UPNP_API const char * UpnpEvent_GetSid(UpnpEvent *thiz);
+UPNP_API const char * UpnpEvent_GetSeq(UpnpEvent *thiz);
 
-UPNP_API PropertyList* UpnpEvent_GetArgumentList(UpnpEvent *thiz);
 UPNP_API TinyRet UpnpEvent_SetArgumentValue(UpnpEvent *thiz, const char *argumentName, const char *value);
 UPNP_API const char * UpnpEvent_GetArgumentValue(UpnpEvent *thiz, const char *argumentName);
 

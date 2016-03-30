@@ -13,7 +13,6 @@
 #include "BinaryLight.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
-#include "UpnpDeviceDefinition.h"
 
 #define TAG "BinaryLight"
 
@@ -69,7 +68,7 @@ static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDeviceConfig *config
         memset(thiz, 0, sizeof(BinaryLight));
         thiz->runtime = runtime;
 
-        thiz->device = UpnpDeviceConfig_CreateDevice(config);
+        thiz->device = UpnpDeviceConfig_CreateDevice(config, BINARYLIGHT_DEVICE_TYPE);
         if (thiz->device == NULL)
         {
             LOG_E(TAG, "UpnpDeviceConfig_CreateDevice failed");
@@ -137,7 +136,7 @@ TinyRet BinaryLight_Stop(BinaryLight *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return UpnpRuntime_Unregister(thiz->runtime, UpnpDevice_GetPropertyValue(thiz->device, UPNP_DEVICE_UDN));
+    return UpnpRuntime_Unregister(thiz->runtime, UpnpDevice_GetDeviceId(thiz->device));
 }
 
 static uint32_t action_handler(UpnpAction *action, void *ctx)

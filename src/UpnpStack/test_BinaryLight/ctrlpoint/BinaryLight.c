@@ -11,7 +11,6 @@
 */
 
 #include "BinaryLight.h"
-#include "UpnpDeviceDefinition.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
 
@@ -72,9 +71,9 @@ static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDevice *device, Upnp
         thiz->device = device;
         thiz->runtime = runtime;
 
-        if (!STR_EQUAL(BINARYLIGHT_DEVICE_TYPE, UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_DeviceType)))
+        if (!STR_EQUAL(BINARYLIGHT_DEVICE_TYPE, UpnpDevice_GetDeviceType(device)))
         {
-            LOG_E(TAG, "DEVICE_TYPE invalid: %s", UpnpDevice_GetPropertyValue(device, UPNP_DEVICE_DeviceType));
+            LOG_E(TAG, "DEVICE_TYPE invalid: %s", UpnpDevice_GetDeviceType(device));
             ret = TINY_RET_E_CONSTRUCT;
             break;
         }
