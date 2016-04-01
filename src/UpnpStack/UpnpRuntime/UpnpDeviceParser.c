@@ -490,7 +490,6 @@ static TinyRet DDD_LoadServiceList(UpnpDevice *thiz, TinyXmlNode *serviceList)
 
     do
     {
-        UpnpServiceList * svcList = UpnpDevice_GetServiceList(thiz);
         uint32_t count = 0;
         uint32_t i = 0;
 
@@ -543,7 +542,7 @@ static TinyRet DDD_LoadServiceList(UpnpDevice *thiz, TinyXmlNode *serviceList)
                 UpnpService_SetParentDevice(service, thiz);
             }
 
-            UpnpServiceList_AddService(svcList, service);
+            UpnpDevice_AddService(thiz, service);
         }
     } while (0);
 
@@ -591,8 +590,7 @@ uint32_t UpnpDeviceParser_ToXml(UpnpDevice *device, char *xml, uint32_t len)
 
     do
     {
-        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
-        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t count = UpnpDevice_GetServiceCount(device);
         uint32_t i = 0;
 
         tiny_snprintf(p, unused,
@@ -631,7 +629,7 @@ uint32_t UpnpDeviceParser_ToXml(UpnpDevice *device, char *xml, uint32_t len)
         for (i = 0; i < count; ++i)
         {
             char ss[1024 * 3];
-            UpnpService *service = UpnpServiceList_GetServiceAt(list, i);
+            UpnpService *service = UpnpDevice_GetServiceAt(device, i);
             const char *scpd = UpnpService_GetSCPDURL(service);
             const char *ctrl = UpnpService_GetControlURL(service);
             const char *event = UpnpService_GetEventSubURL(service);

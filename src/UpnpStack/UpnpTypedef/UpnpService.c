@@ -11,13 +11,23 @@
 */
 
 #include "UpnpService.h"
-#include "PropertyList.h"
-#include "UpnpActionList.h"
-#include "UpnpStateList.h"
+#include "TinyList.h"
 #include "tiny_memory.h"
 
 static TinyRet UpnpService_Construct(UpnpService *thiz);
 static void UpnpService_Dispose(UpnpService *thiz);
+
+static void ActionDeleteListener(void * data, void *ctx)
+{
+    UpnpAction *a = (UpnpAction *)data;
+    UpnpAction_Delete(a);
+}
+
+static void UpnpStateVariableDeleteListener(void * data, void *ctx)
+{
+    UpnpStateVariable * v = (UpnpStateVariable *)data;
+    UpnpStateVariable_Delete(v);
+}
 
 #define SERVICE_TYPE_LEN    128
 #define SERVICE_ID_LEN      128
@@ -32,8 +42,8 @@ struct _UpnpService
     char callbackURI[TINY_URI_LEN];
 
     void * device;
-    UpnpStateList * stateList;
-    UpnpActionList * actionList;
+    TinyList actionList;
+    TinyList stateVariableTable;
     UpnpServiceChangedListener changedListener;
     void * changedCtx;
 };
@@ -85,19 +95,23 @@ static TinyRet UpnpService_Construct(UpnpService *thiz)
         thiz->changedListener = NULL;
         thiz->changedCtx = NULL;
 
-        thiz->actionList = UpnpActionList_New();
-        if (thiz->actionList == NULL)
+        ret = TinyList_Construct(&thiz->actionList);
+        if (RET_FAILED(ret))
         {
             ret = TINY_RET_E_NEW;
             break;
         }
 
-        thiz->stateList = UpnpStateList_New();
-        if (thiz->actionList == NULL)
+        TinyList_SetDeleteListener(&thiz->actionList, ActionDeleteListener, thiz);
+
+        ret = TinyList_Construct(&thiz->stateVariableTable);
+        if (RET_FAILED(ret))
         {
             ret = TINY_RET_E_NEW;
             break;
         }
+
+        TinyList_SetDeleteListener(&thiz->stateVariableTable, UpnpStateVariableDeleteListener, thiz);
     } while (0);
 
     return ret;
@@ -107,8 +121,8 @@ static void UpnpService_Dispose(UpnpService *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    UpnpActionList_Delete(thiz->actionList);
-    UpnpStateList_Delete(thiz->stateList);
+    TinyList_Dispose(&thiz->stateVariableTable);
+    TinyList_Dispose(&thiz->actionList);
 }
 
 void UpnpService_SetParentDevice(UpnpService *thiz, void *device)
@@ -151,65 +165,6 @@ TinyRet UpnpService_SendEvents(UpnpService *thiz)
 
     return TINY_RET_E_NOT_IMPLEMENTED;
 }
-
-UpnpActionList * UpnpService_GetActionList(UpnpService *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->actionList;
-}
-
-UpnpStateList * UpnpService_GetStateList(UpnpService *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->stateList;
-}
-
-#if 0
-PropertyList * UpnpService_GetPropertyList(UpnpService *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->propertyList;
-}
-
-TinyRet UpnpService_SetPropertyValue(UpnpService *thiz, const char *propertyName, const char *value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Object data;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(propertyName, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(value, TINY_RET_E_ARG_NULL);
-
-    Object_Construct(&data);
-    {
-        Object_setString(&data, value);
-        ret = PropertyList_SetPropertyValue(thiz->propertyList, propertyName, &data);
-    }
-    Object_Dispose(&data);
-
-    return ret;
-}
-
-const char * UpnpService_GetPropertyValue(UpnpService *thiz, const char *propertyName)
-{
-    const char *value = NULL;
-    Object *data = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-    RETURN_VAL_IF_FAIL(propertyName, NULL);
-
-    data = PropertyList_GetPropertyValue(thiz->propertyList, propertyName);
-    if (data != NULL)
-    {
-        value = data->value.stringValue;
-    }
-
-    return value;
-}
-#endif
 
 TinyRet UpnpService_SetServiceType(UpnpService *thiz, const char *serviceType)
 {
@@ -311,4 +266,96 @@ const char * UpnpService_GetCallbackURI(UpnpService *thiz)
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     return thiz->callbackURI;
+}
+
+TinyRet UpnpService_AddAction(UpnpService *thiz, UpnpAction *action)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(action, TINY_RET_E_ARG_NULL);
+
+    UpnpAction_SetParentService(action, thiz);
+
+    return TinyList_AddTail(&thiz->actionList, action);
+}
+
+uint32_t UpnpService_GetActionCount(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return TinyList_GetCount(&thiz->actionList);
+}
+
+UpnpAction * UpnpService_GetActionAt(UpnpService *thiz, uint32_t index)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return (UpnpAction *)TinyList_GetAt(&thiz->actionList, index);
+}
+
+UpnpAction * UpnpService_GetAction(UpnpService *thiz, const char *actionName)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(actionName, NULL);
+
+    count = TinyList_GetCount(&thiz->actionList);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpAction *action = (UpnpAction *)TinyList_GetAt(&thiz->actionList, i);
+        if (STR_EQUAL(UpnpAction_GetName(action), actionName))
+        {
+            return action;
+        }
+    }
+
+    return NULL;
+}
+
+TinyRet UpnpService_AddStateVariable(UpnpService *thiz, UpnpStateVariable *stateVariable)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(stateVariable, TINY_RET_E_ARG_NULL);
+
+    stateVariable->service = thiz;
+
+    return TinyList_AddTail(&thiz->stateVariableTable, stateVariable);
+}
+
+uint32_t UpnpService_GetStateVariableCount(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return TinyList_GetCount(&thiz->stateVariableTable);
+}
+
+UpnpStateVariable * UpnpService_GetStateVariableAt(UpnpService *thiz, uint32_t index)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return (UpnpStateVariable *)TinyList_GetAt(&thiz->stateVariableTable, index);
+}
+
+UpnpStateVariable * UpnpService_GetStateVariable(UpnpService *thiz, const char *stateName)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(stateName, NULL);
+
+    count = TinyList_GetCount(&thiz->stateVariableTable);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpStateVariable *state = (UpnpStateVariable *)TinyList_GetAt(&thiz->stateVariableTable, i);
+        if (STR_EQUAL(state->definition.name, stateName))
+        {
+            return state;
+        }
+    }
+
+    return NULL;
 }

@@ -187,38 +187,19 @@ const char * UpnpEvent_GetSeq(UpnpEvent *thiz)
 
 TinyRet UpnpEvent_SetArgumentValue(UpnpEvent *thiz, const char *argumentName, const char *value)
 {
-    TinyRet ret = TINY_RET_OK;
-    Object data;
-
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(argumentName, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(value, TINY_RET_E_ARG_NULL);
 
-    Object_Construct(&data);
-    {
-        Object_setString(&data, value);
-        ret = PropertyList_SetPropertyValue(thiz->argumentList, argumentName, &data);
-    }
-    Object_Dispose(&data);
-
-    return ret;
+    return PropertyList_Add(thiz->argumentList, argumentName, value);
 }
 
 const char * UpnpEvent_GetArgumentValue(UpnpEvent *thiz, const char *argumentName)
 {
-    const char *value = NULL;
-    Object *data = NULL;
-
     RETURN_VAL_IF_FAIL(thiz, NULL);
     RETURN_VAL_IF_FAIL(argumentName, NULL);
 
-    data = PropertyList_GetPropertyValue(thiz->argumentList, argumentName);
-    if (data != NULL)
-    {
-        value = data->value.stringValue;
-    }
-
-    return value;
+    return PropertyList_GetPropertyValue(thiz->argumentList, argumentName);
 }
 
 /*
@@ -393,14 +374,6 @@ static TinyRet load_propertyset(UpnpEvent *thiz, TinyXmlNode *root)
             {
                 const char *name = TinyXmlNode_GetName(child);
                 const char *value = TinyXmlNode_GetContent(child);
-
-                /**
-                 * MUST init property
-                 */
-                ObjectType type;
-                ObjectType_SetType(&type, CLAZZ_STRING);
-
-                PropertyList_InitProperty(thiz->argumentList, name, &type);
 
                 if (value == NULL)
                 {

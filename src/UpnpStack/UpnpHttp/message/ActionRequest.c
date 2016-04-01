@@ -17,6 +17,9 @@
 #include "UpnpDevice.h"
 #include "UpnpService.h"
 #include "tiny_memory.h"
+#include "tiny_log.h"
+
+#define TAG     "ActionRequest"
 
 static TinyRet ActionToSoapRequest(UpnpAction *action, SoapMessage *soap);
 static  TinyRet SoapRequestToHttpRequest(SoapMessage *soap, HttpMessage *request);
@@ -58,8 +61,9 @@ static TinyRet ActionToSoapRequest(UpnpAction *action, SoapMessage *soap)
 
     do
     {
-        PropertyList *actionArguments = NULL;
-        PropertyList *soapArguments = NULL;
+        uint32_t i = 0;
+        uint32_t count = 0;
+        PropertyList *soapArguments = SoapMessage_GetArgumentList(soap);
         UpnpDevice *device = NULL;
         UpnpService *service = NULL;
         const char *ctrlUrl = NULL;
@@ -105,9 +109,49 @@ static TinyRet ActionToSoapRequest(UpnpAction *action, SoapMessage *soap)
             break;
         }
 
-        soapArguments = SoapMessage_GetArgumentList(soap);
-        actionArguments = UpnpAction_GetArgumentList(action);
-        PropertyList_Copy(soapArguments, actionArguments);
+        count = UpnpAction_GetArgumentCount(action);
+        for (i = 0; i < count; ++i)
+        {
+            UpnpArgument * argument = NULL;
+            UpnpStateVariable * state = NULL;
+            const char *name = NULL;
+            const char *value = NULL;
+            char buffer[128];
+
+            argument = UpnpAction_GetArgumentAt(action, i);
+            if (UpnpArgument_GetDirection(argument) != ARG_IN)
+            {
+                continue;
+            }
+
+            state = UpnpService_GetStateVariable(service, UpnpArgument_GetRelatedStateVariable(argument));
+            if (state == NULL)
+            {
+                LOG_E(TAG, "RelatedStateVariable NOT FOUND: %s", UpnpArgument_GetRelatedStateVariable(argument));
+                break;
+            }
+
+            memset(buffer, 0, 128);
+
+            name = UpnpArgument_GetName(argument);
+            value = buffer;
+
+            if (state->value.internalType == INTERNAL_STRING)
+            {
+                value = state->value.internalValue.stringValue;
+            }
+            else 
+            {
+                ret = DataValue_GetValue(&state->value, buffer, 128);
+                if (RET_FAILED(ret))
+                {
+                    LOG_E(TAG, "value invalid: %s", name);
+                    break;
+                }
+            }
+
+            PropertyList_Add(soapArguments, name, value);
+        }
     } while (0);
 
     return ret;

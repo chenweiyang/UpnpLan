@@ -64,7 +64,6 @@ static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDevice *device, Upnp
 
     do
     {
-        UpnpServiceList * _list = NULL;
         UpnpService * _SwitchPower = NULL;
 
         memset(thiz, 0, sizeof(BinaryLight));
@@ -78,8 +77,7 @@ static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDevice *device, Upnp
             break;
         }
 
-        _list = UpnpDevice_GetServiceList(device);
-        _SwitchPower = UpnpServiceList_GetService(_list, _ID_SwitchPower);
+        _SwitchPower = UpnpDevice_GetService(device, _ID_SwitchPower);
         if (_SwitchPower == NULL)
         {
             LOG_E(TAG, "Service not found: %s", _ID_SwitchPower);

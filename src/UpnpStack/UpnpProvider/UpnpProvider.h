@@ -59,6 +59,7 @@ TinyRet UpnpProvider_Add(UpnpProvider *thiz, UpnpDevice *device, UpnpActionHandl
 TinyRet UpnpProvider_Remove(UpnpProvider *thiz, const char *deviceId);
 
 uint32_t UpnpProvider_GetDocument(UpnpProvider *thiz, const char *uri, char *content, uint32_t len);
+UpnpAction * UpnpProvider_GetAction(UpnpProvider *thiz, const char *uri, const char *serviceType, const char *actionName);
 
 
 TINY_END_DECLS

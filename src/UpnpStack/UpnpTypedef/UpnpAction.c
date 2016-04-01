@@ -12,19 +12,24 @@
 
 #include "UpnpAction.h"
 #include "tiny_memory.h"
+#include "TinyList.h"
 
 static TinyRet UpnpAction_Construct(UpnpAction *thiz);
 static void UpnpAction_Dispose(UpnpAction *thiz);
+static void UpnpArgumentDeleteListener (void * data, void *ctx)
+{
+    UpnpArgument *argument = (UpnpArgument *)data;
+    UpnpArgument_Delete(argument);
+}
 
 #define NAME_LEN    128
 
+
 struct _UpnpAction
 {
-    char name[NAME_LEN];
-
     void * service;
-    PropertyList * argumentList;
-    PropertyList * resultList;
+    char name[NAME_LEN];
+    TinyList argumentList;
 };
 
 UpnpAction * UpnpAction_New(void)
@@ -71,19 +76,14 @@ static TinyRet UpnpAction_Construct(UpnpAction *thiz)
     {
         memset(thiz, 0, sizeof(UpnpAction));
 
-        thiz->argumentList = PropertyList_New();
-        if (thiz->argumentList == NULL)
+        ret = TinyList_Construct(&thiz->argumentList);
+        if (RET_FAILED(ret))
         {
             ret = TINY_RET_E_NEW;
             break;
         }
 
-        thiz->resultList = PropertyList_New();
-        if (thiz->resultList == NULL)
-        {
-            ret = TINY_RET_E_NEW;
-            break;
-        }
+        TinyList_SetDeleteListener(&thiz->argumentList, UpnpArgumentDeleteListener, thiz);
     } while (0);
 
     return ret;
@@ -93,8 +93,7 @@ static void UpnpAction_Dispose(UpnpAction *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    PropertyList_Delete(thiz->argumentList);
-    PropertyList_Delete(thiz->resultList);
+    TinyList_Dispose(&thiz->argumentList);
 }
 
 void UpnpAction_SetParentService(UpnpAction *thiz, void *service)
@@ -112,20 +111,6 @@ void* UpnpAction_GetParentService(UpnpAction *thiz)
     return thiz->service;
 }
 
-PropertyList* UpnpAction_GetArgumentList(UpnpAction *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->argumentList;
-}
-
-PropertyList* UpnpAction_GetResultList(UpnpAction *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->resultList;
-}
-
 TinyRet UpnpAction_SetName(UpnpAction *thiz, const char *name)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
@@ -141,4 +126,64 @@ const char * UpnpAction_GetName(UpnpAction *thiz)
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     return thiz->name;
+}
+
+TinyRet UpnpAction_AddArgument(UpnpAction *thiz, UpnpArgument *argument)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(argument, TINY_RET_E_ARG_NULL);
+
+    return TinyList_AddTail(&thiz->argumentList, argument);
+}
+
+uint32_t UpnpAction_GetArgumentCount(UpnpAction *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return TinyList_GetSize(&thiz->argumentList);
+}
+
+UpnpArgument * UpnpAction_GetArgumentAt(UpnpAction *thiz, uint32_t index)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return (UpnpArgument *)TinyList_GetAt(&thiz->argumentList, index);
+}
+
+UpnpArgument * UpnpAction_GetArgument(UpnpAction *thiz, const char *argumentName)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(argumentName, NULL);
+
+    count = TinyList_GetCount(&thiz->argumentList);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpArgument *argument = (UpnpArgument *)TinyList_GetAt(&thiz->argumentList, i);
+        if (STR_EQUAL(UpnpArgument_GetName(argument), argumentName))
+        {
+            return argument;
+        }
+    }
+
+    return NULL;
+}
+
+const char * UpnpAction_GetArgumentRelatedStateVariable(UpnpAction *thiz, const char *argumentName)
+{
+    UpnpArgument * argument = NULL;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(argumentName, NULL);
+
+    argument = UpnpAction_GetArgument(thiz, argumentName);
+    if (argument != NULL)
+    {
+        return UpnpArgument_GetRelatedStateVariable(argument);
+    }
+
+    return NULL;
 }

@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2013-2015
- *
- * @author jxfengzi@gmail.com
- * @date   2013-11-19
- *
- * @file   ObjectType.c
- *
- * @remark
- *
- */
+* Copyright (C) 2013-2015
+*
+* @author jxfengzi@gmail.com
+* @date   2013-11-19
+*
+* @file   DataType.c
+*
+* @remark
+*
+*/
 
-#include "ObjectType.h"
+#include "DataType.h"
 #include "tiny_log.h"
 #include "tiny_str_equal.h"
 
@@ -43,67 +43,67 @@
 
 
 /**
- *  Byte                 i1
- *  Word                 ui1, i2
- *  Integer              ui2, i4, int
- *  Long                 ui4, time, time.tz
- *  Float                r4, float
- *  Double               r8, number, fixed.14.4
- *  Character            char
- *  String               string, uri, uuid, bin.base64, bin.hex, date, dateTime, dateTime.tz
- *  Boolean              boolean
- */
-static ClazzType ClazzType_RetrieveType(const char *typeName)
+*  Byte                 i1
+*  Word                 ui1, i2
+*  Integer              ui2, i4, int
+*  Long                 ui4, time, time.tz
+*  Float                r4, float
+*  Double               r8, number, fixed.14.4
+*  Character            char
+*  String               string, uri, uuid, bin.base64, bin.hex, date, dateTime, dateTime.tz
+*  Boolean              boolean
+*/
+static InternalType InternalType_RetrieveType(const char *typeName)
 {
-    ClazzType t = CLAZZ_INTEGER;
+    InternalType t = INTERNAL_INTEGER;
 
     do
     {
         if (STR_EQUAL(typeName, TYPE_I1))
         {
-            t = CLAZZ_BYTE;
+            t = INTERNAL_BYTE;
             break;
         }
 
         if (STR_EQUAL(typeName, TYPE_UI1) || STR_EQUAL(typeName, TYPE_I2))
         {
-            t = CLAZZ_WORD;
+            t = INTERNAL_WORD;
             break;
         }
 
         if (STR_EQUAL(typeName, TYPE_UI2) || STR_EQUAL(typeName, TYPE_I4) || STR_EQUAL(typeName, TYPE_INT))
         {
-            t = CLAZZ_INTEGER;
+            t = INTERNAL_INTEGER;
             break;
         }
 
         if (STR_EQUAL(typeName, TYPE_UI4) || STR_EQUAL(typeName, TYPE_TIME) || STR_EQUAL(typeName, TYPE_TIME_TZ))
         {
-            t = CLAZZ_LONG;
+            t = INTERNAL_LONG;
             break;
         }
 
         if (STR_EQUAL(typeName, TYPE_R4) || STR_EQUAL(typeName, TYPE_FLOAT))
         {
-            t = CLAZZ_FLOAT;
+            t = INTERNAL_FLOAT;
             break;
         }
 
         if (STR_EQUAL(typeName, TYPE_R8) || STR_EQUAL(typeName, TYPE_NUMBER) || STR_EQUAL(typeName, TYPE_FIXED_14_4))
         {
-            t = CLAZZ_DOUBLE;
+            t = INTERNAL_DOUBLE;
             break;
         }
 
         if (STR_EQUAL(typeName, TYPE_CHAR))
         {
-            t = CLAZZ_CHAR;
+            t = INTERNAL_CHAR;
             break;
         }
 
         if (STR_EQUAL(typeName, TYPE_BOOLEAN))
         {
-            t = CLAZZ_BOOLEAN;
+            t = INTERNAL_BOOLEAN;
             break;
         }
 
@@ -116,7 +116,7 @@ static ClazzType ClazzType_RetrieveType(const char *typeName)
             || STR_EQUAL(typeName, TYPE_DATETIME)
             || STR_EQUAL(typeName, TYPE_DATETIME_TZ))
         {
-            t = CLAZZ_STRING;
+            t = INTERNAL_STRING;
             break;
         }
 
@@ -125,45 +125,45 @@ static ClazzType ClazzType_RetrieveType(const char *typeName)
     return t;
 }
 
-static const char * ClazzType_GetName(ClazzType type)
+static const char * InternalType_GetName(InternalType type)
 {
     const char * t = NULL;
 
     switch (type)
     {
-    case CLAZZ_BYTE:
+    case INTERNAL_BYTE:
         t = TYPE_CHAR;
         break;
 
-    case CLAZZ_WORD:
+    case INTERNAL_WORD:
         t = TYPE_I2;
         break;
 
-    case CLAZZ_INTEGER:
+    case INTERNAL_INTEGER:
         t = TYPE_I4;
         break;
 
-    case CLAZZ_LONG:
+    case INTERNAL_LONG:
         t = TYPE_UI4;
         break;
 
-    case CLAZZ_FLOAT:
+    case INTERNAL_FLOAT:
         t = TYPE_FLOAT;
         break;
 
-    case CLAZZ_DOUBLE:
+    case INTERNAL_DOUBLE:
         t = TYPE_NUMBER;
         break;
 
-    case CLAZZ_BOOLEAN:
+    case INTERNAL_BOOLEAN:
         t = TYPE_BOOLEAN;
         break;
 
-    case CLAZZ_CHAR:
+    case INTERNAL_CHAR:
         t = TYPE_CHAR;
         break;
 
-    case CLAZZ_STRING:
+    case INTERNAL_STRING:
         t = TYPE_STRING;
         break;
 
@@ -174,52 +174,52 @@ static const char * ClazzType_GetName(ClazzType type)
     return t;
 }
 
-void ObjectType_Construct(ObjectType *thiz)
+void DataType_Construct(DataType *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    memset(thiz, 0, sizeof(ObjectType));
+    memset(thiz, 0, sizeof(DataType));
 }
 
-void ObjectType_Dispose(ObjectType *thiz)
+void DataType_Dispose(DataType *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    memset(thiz, 0, sizeof(ObjectType));
+    memset(thiz, 0, sizeof(DataType));
 }
 
-void ObjectType_Copy(ObjectType *dst, ObjectType *src)
+void DataType_Copy(DataType *dst, DataType *src)
 {
     RETURN_IF_FAIL(dst);
     RETURN_IF_FAIL(src);
 
     if (dst != src)
     {
-        ObjectType_Dispose(dst);
+        DataType_Dispose(dst);
 
-        dst->clazzType = src->clazzType;
-        strncpy(dst->clazzName, src->clazzName, CLAZZ_NAME_LEN);
+        dst->internalType = src->internalType;
+        strncpy(dst->name, src->name, DATA_TYPE_NAME_LEN);
     }
 }
 
-void ObjectType_SetName(ObjectType *thiz, const char *clazzName)
+void DataType_SetName(DataType *thiz, const char *name)
 {
     RETURN_IF_FAIL(thiz);
-    RETURN_IF_FAIL(clazzName);
+    RETURN_IF_FAIL(name);
 
-    strncpy(thiz->clazzName, clazzName, CLAZZ_NAME_LEN);
-    thiz->clazzType = ClazzType_RetrieveType(clazzName);
+    strncpy(thiz->name, name, DATA_TYPE_NAME_LEN);
+    thiz->internalType = InternalType_RetrieveType(name);
 }
 
-void ObjectType_SetType(ObjectType *thiz, ClazzType clazzType)
+void DataType_SetType(DataType *thiz, InternalType type)
 {
     RETURN_IF_FAIL(thiz);
 
-    thiz->clazzType = clazzType;
-    strncpy(thiz->clazzName, ClazzType_GetName(clazzType), CLAZZ_NAME_LEN);
+    thiz->internalType = type;
+    strncpy(thiz->name, InternalType_GetName(type), DATA_TYPE_NAME_LEN);
 }
 
-bool ObjectType_StringToBoolean(const char *string)
+bool DataType_StringToBoolean(const char *string)
 {
     RETURN_VAL_IF_FAIL(string, false);
 
@@ -238,7 +238,7 @@ bool ObjectType_StringToBoolean(const char *string)
     return false;
 }
 
-const char * ObjectType_BooleanToString(bool b)
+const char * DataType_BooleanToString(bool b)
 {
     return b ? "1" : "0";
 }

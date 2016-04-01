@@ -18,9 +18,9 @@
 #include "tiny_base.h"
 #include "UpnpHttpManager.h"
 #include "UpnpProvider.h"
-#include "UpnpService.h"
-#include "TinyMutex.h"
-#include "TinyList.h"
+#include "UpnpActionExecutor.h"
+#include "UpnpDocumentGetter.h"
+#include "UpnpEventPublisher.h"
 
 TINY_BEGIN_DECLS
 
@@ -29,6 +29,9 @@ typedef struct _UpnpHost
 {
     UpnpHttpManager *http;
     UpnpProvider *provider;
+    UpnpActionExecutor actionExecutor;
+    UpnpDocumentGetter documentGetter;
+    UpnpEventPublisher eventPublisher;
 } UpnpHost;
 
 UpnpHost * UpnpHost_New(UpnpHttpManager *http, UpnpProvider *provider);
@@ -36,8 +39,6 @@ TinyRet UpnpHost_Construct(UpnpHost *thiz, UpnpHttpManager *http, UpnpProvider *
 void UpnpHost_Dispose(UpnpHost *thiz);
 void UpnpHost_Delete(UpnpHost *thiz);
 
-TinyRet UpnpHost_Start(UpnpHost *thiz);
-TinyRet UpnpHost_Stop(UpnpHost *thiz);
 
 
 TINY_END_DECLS

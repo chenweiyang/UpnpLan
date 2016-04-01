@@ -11,12 +11,16 @@
 */
 
 #include "UpnpDevice.h"
-#include "PropertyList.h"
-#include "UpnpServiceList.h"
+#include "TinyList.h"
 #include "tiny_memory.h"
 
 static TinyRet UpnpDevice_Construct(UpnpDevice *thiz);
 static void UpnpDevice_Dispose(UpnpDevice *thiz);
+static void ServiceDeleteListener(void * data, void *ctx)
+{
+    UpnpService *service = (UpnpService *)data;
+    UpnpService_Delete(service);
+}
 
 #define UDN_LEN                 128
 #define FriendlyName_LEN        128
@@ -41,8 +45,7 @@ struct _UpnpDevice
     char modelURL[TINY_URL_LEN];
     char serialNumber[SerialNumber_LEN];
     char URLBase[TINY_URL_LEN];
-
-    UpnpServiceList * serviceList;
+    TinyList serviceList;
 };
 
 UpnpDevice * UpnpDevice_New(void)
@@ -90,8 +93,8 @@ static TinyRet UpnpDevice_Construct(UpnpDevice *thiz)
         memset(thiz, 0, sizeof(UpnpDevice));
         thiz->port = 0;
 
-        thiz->serviceList = UpnpServiceList_New();
-        if (thiz->serviceList == NULL)
+        ret = TinyList_Construct(&thiz->serviceList);
+        if (RET_FAILED(ret))
         {
             ret = TINY_RET_E_NEW;
             break;
@@ -105,22 +108,7 @@ static void UpnpDevice_Dispose(UpnpDevice *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    UpnpServiceList_Delete(thiz->serviceList);
-}
-
-UpnpServiceList * UpnpDevice_GetServiceList(UpnpDevice *thiz)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-
-    return thiz->serviceList;
-}
-
-UpnpService * UpnpDevice_GetService(UpnpDevice *thiz, const char *serviceId)
-{
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-    RETURN_VAL_IF_FAIL(serviceId, NULL);
-
-    return UpnpServiceList_GetService(thiz->serviceList, serviceId);
+    TinyList_Delete(&thiz->serviceList);
 }
 
 TinyRet UpnpDevice_SetHttpPort(UpnpDevice *thiz, uint16_t port)
@@ -341,4 +329,70 @@ const char * UpnpDevice_GetURLBase(UpnpDevice *thiz)
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     return thiz->URLBase;
+}
+
+TinyRet UpnpDevice_AddService(UpnpDevice *thiz, UpnpService *service)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
+
+    return TinyList_AddTail(&thiz->serviceList, service);
+}
+
+uint32_t UpnpDevice_GetServiceCount(UpnpDevice *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return TinyList_GetCount(&thiz->serviceList);
+}
+
+UpnpService * UpnpDevice_GetServiceAt(UpnpDevice *thiz, uint32_t index)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return TinyList_GetAt(&thiz->serviceList, index);
+}
+
+UpnpService * UpnpDevice_GetService(UpnpDevice *thiz, const char *serviceId)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(serviceId, NULL);
+
+    count = TinyList_GetCount(&thiz->serviceList);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpService *service = TinyList_GetAt(&thiz->serviceList, i);
+        if (STR_EQUAL(UpnpService_GetServiceId(service), serviceId))
+        {
+            return service;
+        }
+    }
+
+    return NULL;
+}
+
+UpnpService * UpnpDevice_GetServiceByControlURL(UpnpDevice *thiz, const char *controlURL)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(controlURL, NULL);
+
+    count = TinyList_GetCount(&thiz->serviceList);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpService *service = TinyList_GetAt(&thiz->serviceList, i);
+        if (STR_EQUAL(UpnpService_GetControlURL(service), controlURL))
+        {
+            return service;
+        }
+    }
+
+    return NULL;
 }

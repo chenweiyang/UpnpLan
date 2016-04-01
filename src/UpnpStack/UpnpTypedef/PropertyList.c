@@ -11,7 +11,7 @@
  */
 
 #include "PropertyList.h"
-#include "TinyMap.h"
+#include "TinyList.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
 
@@ -24,7 +24,7 @@ static void PropertyDeleteListener(void * data, void *ctx);
 
 struct _PropertyList
 {
-    TinyMap      properties;
+    TinyList      properties;
 };
 
 PropertyList * PropertyList_New(void)
@@ -63,13 +63,13 @@ static TinyRet PropertyList_Construct(PropertyList *thiz)
     {
         memset(thiz, 0, sizeof(PropertyList));
 
-        ret = TinyMap_Construct(&thiz->properties);
+        ret = TinyList_Construct(&thiz->properties);
         if (RET_FAILED(ret))
         {
             break;
         }
 
-        TinyMap_SetDeleteListener(&thiz->properties, PropertyDeleteListener, thiz);
+        TinyList_SetDeleteListener(&thiz->properties, PropertyDeleteListener, thiz);
     } while (0);
 
     return ret;
@@ -79,7 +79,7 @@ static void PropertyList_Dispose(PropertyList *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    TinyMap_Dispose(&thiz->properties);
+    TinyList_Dispose(&thiz->properties);
 }
 
 void PropertyList_Delete(PropertyList * thiz)
@@ -98,11 +98,10 @@ void PropertyList_Copy(PropertyList * dst, PropertyList * src)
     if (dst != src)
     {
         uint32_t i = 0;
-        uint32_t count = 0;
+        uint32_t count = PropertyList_GetSize(src);
 
         PropertyList_Dispose(dst);
 
-        count = PropertyList_GetSize(src);
         for (i = 0; i < count; i++)
         {
             TinyRet ret = TINY_RET_OK;
@@ -116,11 +115,11 @@ void PropertyList_Copy(PropertyList * dst, PropertyList * src)
             }
             Property_Copy(pDst, pSrc);
 
-            ret = TinyMap_Insert(&dst->properties, pDst->definition.name, pDst);
+            ret = TinyList_AddTail(&dst->properties, pDst);
             if (RET_FAILED(ret))
             {
                 Property_Delete(pDst);
-                LOG_E(TAG, "TinyMap_Insert failed");
+                LOG_E(TAG, "TinyList_AddTail failed");
                 break;
             }
         }
@@ -133,277 +132,67 @@ static void PropertyDeleteListener(void * data, void *ctx)
     tiny_free(p);
 }
 
-TinyRet PropertyList_InitProperty(PropertyList *thiz, const char *name, ObjectType *type)
+TinyRet PropertyList_Add(PropertyList *thiz, const char *name, const char *value)
 {
     TinyRet ret = TINY_RET_OK;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(value, TINY_RET_E_ARG_NULL);
 
     do
     {
-        Property *property = Property_New();
-        Property_Initialize(property, name, type, NULL);
+        Property *p = Property_New();
+        if (p == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
 
-        ret = TinyMap_Insert(&thiz->properties, name, property);
+
+        ret = PropertyList_AddProperty(thiz, p);
         if (RET_FAILED(ret))
         {
-            Property_Delete(property);
+            Property_Delete(p);
+            break;
         }
     } while (0);
 
     return ret;
 }
 
-Object * PropertyList_GetPropertyValue(PropertyList *thiz, const char *name)
-{
-    Object * data = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, NULL);
-    RETURN_VAL_IF_FAIL(name, NULL);
-
-    do
-    {
-        Property *property = (Property *)TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            break;
-        }
-
-        data = &property->value.object;
-    } while (0);
-
-    return data;
-}
-
-TinyRet PropertyList_SetPropertyValue(PropertyList *thiz, const char *name, Object *data)
+TinyRet PropertyList_AddProperty(PropertyList *thiz, Property *property)
 {
     TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(data, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(property, TINY_RET_E_ARG_NULL);
 
     do
     {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
+        bool found = false;
+        uint32_t i = 0;
+        uint32_t count = 0;
+
+        count = TinyList_GetCount(&thiz->properties);
+
+        for (i = 0; i < count; ++i)
         {
-            ret = TINY_RET_E_NOT_FOUND;
+            Property *p = TinyList_GetAt(&thiz->properties, i);
+            if (STR_EQUAL(p->name, property->name))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (found)
+        {
+            ret = TINY_RET_E_ITEM_EXIST;
             break;
         }
 
-        if (property->definition.type.clazzType != data->type.clazzType)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_Copy(&property->value.object, data);
-    } while (0);
-
-    return ret;
-}
-
-TinyRet PropertyList_SetPropertyIntegerValue(PropertyList *thiz, const char *name, int value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (property->definition.type.clazzType != CLAZZ_INTEGER)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_setInteger(&property->value.object, value);
-    } while (0);
-
-    return ret;
-}
-
-TinyRet PropertyList_SetPropertyLongValue(PropertyList *thiz, const char *name, long value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (property->definition.type.clazzType != CLAZZ_LONG)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_setLong(&property->value.object, value);
-    } while (0);
-
-    return ret;
-}
-
-TinyRet PropertyList_SetPropertyFloatValue(PropertyList *thiz, const char *name, float value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (property->definition.type.clazzType != CLAZZ_FLOAT)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_setFloat(&property->value.object, value);
-    } while (0);
-
-    return ret;
-}
-
-TinyRet PropertyList_SetPropertyDoubletValue(PropertyList *thiz, const char *name, double value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (property->definition.type.clazzType != CLAZZ_DOUBLE)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_setDouble(&property->value.object, value);
-    } while (0);
-
-    return ret;
-}
-
-TinyRet PropertyList_SetPropertyBoolValue(PropertyList *thiz, const char *name, bool value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (property->definition.type.clazzType != CLAZZ_BOOLEAN)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_setBool(&property->value.object, value);
-    } while (0);
-
-    return ret;
-}
-
-TinyRet PropertyList_SetPropertyCharValue(PropertyList *thiz, const char *name, char value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (property->definition.type.clazzType != CLAZZ_CHAR)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_setChar(&property->value.object, value);
-    } while (0);
-
-    return ret;
-}
-
-TinyRet PropertyList_SetPropertyStringValue(PropertyList *thiz, const char *name, const char * value)
-{
-    TinyRet ret = TINY_RET_OK;
-    Property *property = NULL;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        property = TinyMap_GetValue(&thiz->properties, name);
-        if (property == NULL)
-        {
-            ret = TINY_RET_E_NOT_FOUND;
-            break;
-        }
-
-        if (property->definition.type.clazzType != CLAZZ_STRING)
-        {
-            ret = TINY_RET_E_ARG_INVALID;
-            break;
-        }
-
-        Object_setString(&property->value.object, value);
+        ret = TinyList_AddTail(&thiz->properties, property);
     } while (0);
 
     return ret;
@@ -413,19 +202,45 @@ uint32_t PropertyList_GetSize(PropertyList *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, 0);
 
-    return TinyMap_GetSize(&thiz->properties);
+    return TinyList_GetSize(&thiz->properties);
 }
 
 Property * PropertyList_GetPropertyAt(PropertyList *thiz, uint32_t index)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
     
-    return (Property *)TinyMap_GetValueAt(&thiz->properties, index);
+    return (Property *)TinyList_GetAt(&thiz->properties, index);
 }
 
 Property * PropertyList_GetProperty(PropertyList *thiz, const char *name)
 {
-    RETURN_VAL_IF_FAIL(thiz, NULL);
+    uint32_t i = 0;
+    uint32_t count = 0;
 
-    return (Property *)TinyMap_GetValue(&thiz->properties, name);
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(name, NULL);
+
+    count = TinyList_GetCount(&thiz->properties);
+
+    for (i = 0; i < count; ++i)
+    {
+        Property *p = TinyList_GetAt(&thiz->properties, i);
+        if (STR_EQUAL(p->name, name))
+        {
+            return p;
+        }
+    }
+
+    return NULL;
+}
+
+const char * PropertyList_GetPropertyValue(PropertyList *thiz, const char *name)
+{
+    Property * p = PropertyList_GetProperty(thiz, name);
+    if (p != NULL)
+    {
+        return p->value;
+    }
+
+    return NULL;
 }

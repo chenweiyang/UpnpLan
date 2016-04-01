@@ -26,7 +26,6 @@ UpnpDevice * UpnpDeviceFactory_Create(UpnpDeviceSummary *summary)
         uint32_t i = 0;
         uint32_t size = 0;
         TinyRet ret = TINY_RET_OK;
-        UpnpServiceList *services = NULL;
         const char *urlbase = NULL;
 
         device = UpnpDevice_New();
@@ -56,12 +55,11 @@ UpnpDevice * UpnpDeviceFactory_Create(UpnpDeviceSummary *summary)
             break;
         }
 
-        services = UpnpDevice_GetServiceList(device);
-        size = UpnpServiceList_GetSize(services);
+        size = UpnpDevice_GetServiceCount(device);
         for (i = 0; i < size; ++i)
         {
             char url[TINY_URL_LEN];
-            UpnpService *service = UpnpServiceList_GetServiceAt(services, i);
+            UpnpService *service = UpnpDevice_GetServiceAt(device, i);
             const char *scpdUrl = UpnpService_GetSCPDURL(service);
             if (scpdUrl == NULL)
             {

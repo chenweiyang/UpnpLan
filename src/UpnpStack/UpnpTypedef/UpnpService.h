@@ -15,8 +15,8 @@
 
 #include "tiny_base.h"
 #include "upnp_api.h"
-#include "UpnpActionList.h"
-#include "UpnpStateList.h"
+#include "UpnpAction.h"
+#include "UpnpStateVariable.h"
 
 TINY_BEGIN_DECLS
 
@@ -34,9 +34,6 @@ typedef void(*UpnpServiceChangedListener)(UpnpService *service, void *ctx);
 UPNP_API void UpnpService_SetChangedListener(UpnpService *thiz, UpnpServiceChangedListener listener, void *ctx);
 UPNP_API TinyRet UpnpService_SendEvents(UpnpService *thiz);
 
-UPNP_API UpnpActionList * UpnpService_GetActionList(UpnpService *thiz);
-UPNP_API UpnpStateList * UpnpService_GetStateList(UpnpService *thiz);
-
 UPNP_API TinyRet UpnpService_SetServiceType(UpnpService *thiz, const char *serviceType);
 UPNP_API TinyRet UpnpService_SetServiceId(UpnpService *thiz, const char *serviceId);
 UPNP_API TinyRet UpnpService_SetControlURL(UpnpService *thiz, const char *controlURL);
@@ -50,6 +47,16 @@ UPNP_API const char * UpnpService_GetControlURL(UpnpService *thiz);
 UPNP_API const char * UpnpService_GetEventSubURL(UpnpService *thiz);
 UPNP_API const char * UpnpService_GetSCPDURL(UpnpService *thiz);
 UPNP_API const char * UpnpService_GetCallbackURI(UpnpService *thiz);
+
+UPNP_API TinyRet UpnpService_AddAction(UpnpService *thiz, UpnpAction *action);
+UPNP_API uint32_t UpnpService_GetActionCount(UpnpService *thiz);
+UPNP_API UpnpAction * UpnpService_GetActionAt(UpnpService *thiz, uint32_t index);
+UPNP_API UpnpAction * UpnpService_GetAction(UpnpService *thiz, const char *actionName);
+
+UPNP_API TinyRet UpnpService_AddStateVariable(UpnpService *thiz, UpnpStateVariable *UpnpStateVariable);
+UPNP_API uint32_t UpnpService_GetStateVariableCount(UpnpService *thiz);
+UPNP_API UpnpStateVariable * UpnpService_GetStateVariableAt(UpnpService *thiz, uint32_t index);
+UPNP_API UpnpStateVariable * UpnpService_GetStateVariable(UpnpService *thiz, const char *stateName);
 
 
 TINY_END_DECLS

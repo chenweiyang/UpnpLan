@@ -14,7 +14,6 @@
 #define __ALLOWED_VALUE_RANGE_H__
 
 #include "tiny_base.h"
-#include "ObjectType.h"
 
 TINY_BEGIN_DECLS
 

@@ -349,8 +349,7 @@ static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
             SsdpMessage message;
             uint16_t port = UpnpDevice_GetHttpPort(device);
             const char *uri = UpnpDevice_GetURI(device);
-            UpnpServiceList *list = UpnpDevice_GetServiceList(device);
-            uint32_t count = UpnpServiceList_GetSize(list);
+            uint32_t count = UpnpDevice_GetServiceCount(device);
             uint32_t i = 0;
             char location[TINY_URL_LEN];
 
@@ -392,7 +391,7 @@ static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
              */
             for (i = 0; i < count; ++i)
             {
-                UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+                UpnpService *service = UpnpDevice_GetServiceAt(device, i);
                 if (RET_FAILED(SsdpMessage_ConstructResponse_SERVICE(&message, service, location, c->ip, c->port)))
                 {
                     break;
@@ -484,8 +483,7 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
         SsdpMessage message;
         uint16_t port = UpnpDevice_GetHttpPort(device);
         const char *uri = UpnpDevice_GetURI(device);
-        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
-        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t count = UpnpDevice_GetServiceCount(device);
         uint32_t i = 0;
         char location[TINY_URL_LEN];
 
@@ -527,7 +525,7 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
          */
         for (i = 0; i < count; ++i)
         {
-            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            UpnpService *service = UpnpDevice_GetServiceAt(device, i);
             if (RET_FAILED(SsdpMessage_ConstructAlive_SERVICE(&message, service, location)))
             {
                 break;
@@ -547,8 +545,7 @@ static void OnDeviceRemoved(UpnpDevice *device, void *ctx)
     do
     {
         SsdpMessage message;
-        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
-        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t count = UpnpDevice_GetServiceCount(device);
         uint32_t i = 0;
 
         /**
@@ -556,7 +553,7 @@ static void OnDeviceRemoved(UpnpDevice *device, void *ctx)
          */
         for (i = 0; i < count; ++i)
         {
-            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            UpnpService *service = UpnpDevice_GetServiceAt(device, i);
             if (RET_FAILED(SsdpMessage_ConstructByebye_SERVICE(&message, service)))
             {
                 break;

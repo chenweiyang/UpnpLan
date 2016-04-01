@@ -14,6 +14,7 @@
 #define __UPNP_SUBSCRIPTION_H__
 
 #include "tiny_base.h"
+#include "upnp_define.h"
 #include "UpnpEvent.h"
 #include "UpnpService.h"
 

@@ -67,46 +67,71 @@ TinyRet SoapResponseToActionResult(SoapMessage *soap, UpnpAction *action, UpnpEr
 {
     TinyRet ret = TINY_RET_OK;
 
-    if (SoapMessage_IsFault(soap))
-    {
-        error->code = SoapMessage_GetErrorCode(soap);
-        strncpy(error->description, SoapMessage_GetErrorDescription(soap), UPNP_ERR_DESCRIPTION_LEN);
-        ret = TINY_RET_E_UPNP_INVOKE_FAILED;
-    }
-    else
+    do
     {
         uint32_t i = 0;
         uint32_t count = 0;
+        UpnpService *service = NULL;
+        PropertyList *soapResults = NULL;
 
-        PropertyList *actionResults = UpnpAction_GetResultList(action);
-        PropertyList *soapResults = SoapMessage_GetArgumentList(soap);
+        if (SoapMessage_IsFault(soap))
+        {
+            error->code = SoapMessage_GetErrorCode(soap);
+            strncpy(error->description, SoapMessage_GetErrorDescription(soap), UPNP_ERR_DESCRIPTION_LEN);
+            ret = TINY_RET_E_UPNP_INVOKE_FAILED;
+            break;
+        }
 
-        count = PropertyList_GetSize(actionResults);
+        service = (UpnpService *)UpnpAction_GetParentService(action);
+        if (service == NULL)
+        {
+            ret = TINY_RET_E_UPNP_SERVICE_NOT_FOUND;
+        }
+
+        soapResults = SoapMessage_GetArgumentList(soap);
+
+        count = UpnpAction_GetArgumentCount(action);
         for (i = 0; i < count; ++i)
         {
-            Property *p = PropertyList_GetPropertyAt(actionResults, i);
-            const char *name = p->definition.name;
+            const char *value = NULL;
+            UpnpArgument * argument = NULL;
+            UpnpStateVariable * state = NULL;
 
-            Property *result = PropertyList_GetProperty(soapResults, name);
-            if (result->definition.type.clazzType == CLAZZ_STRING)
+            argument = UpnpAction_GetArgumentAt(action, i);
+            if (UpnpArgument_GetDirection(argument) != ARG_OUT)
             {
-                p->value.object.type.clazzType = p->definition.type.clazzType;
+                continue;
+            }
 
-                ret = Object_setValue(&p->value.object, result->value.object.value.stringValue);
-                if (RET_FAILED(ret))
-                {
-                    LOG_D(TAG, "Object_setValue failed: %s, Property Value Type is: %d, Property definition type is: %d",
-                        result->value.object.value.stringValue,
-                        p->value.object.type.clazzType,
-                        p->definition.type.clazzType);
-                    break;
-                }
+            state = UpnpService_GetStateVariable(service, UpnpArgument_GetRelatedStateVariable(argument));
+            if (state == NULL)
+            {
+                LOG_E(TAG, "RelatedStateVariable NOT FOUND: %s", UpnpArgument_GetRelatedStateVariable(argument));
+                ret = TINY_RET_E_UPNP_ARGUMENT_NOT_FOUND;
+                break;
+            }
+
+            value = PropertyList_GetPropertyValue(soapResults, UpnpArgument_GetName(argument));
+            if (value == NULL)
+            {
+                LOG_D(TAG, "result NOT FOUND: %s", UpnpArgument_GetName(argument));
+                ret = TINY_RET_E_UPNP_ARGUMENT_NOT_FOUND;
+                break;
+            }
+
+            ret = DataValue_SetValue(&state->value, value);
+            if (RET_FAILED(ret))
+            {
+                break;
             }
         }
 
-        error->code = UPNP_SUCCESS;
-        strncpy(error->description, "OK", UPNP_ERR_DESCRIPTION_LEN);
-    }
+        if (RET_SUCCEEDED(ret))
+        {
+            error->code = UPNP_SUCCESS;
+            strncpy(error->description, "OK", UPNP_ERR_DESCRIPTION_LEN);
+        }
+    } while (0);
 
     return ret;
 }

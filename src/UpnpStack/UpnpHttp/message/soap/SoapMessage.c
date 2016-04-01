@@ -290,61 +290,7 @@ TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len)
         for (i = 0; i < count; i++)
         {
             Property *property = PropertyList_GetPropertyAt(thiz->argumentList, i);
-            const char *name = property->definition.name;
-            ClazzType clazzType = property->definition.type.clazzType;
-            ObjectValue *v = &(property->value.object.value);
-
-            switch (clazzType)
-            {
-            case CLAZZ_UNDEFINED:
-                LOG_E(TAG, "invalid type");
-                break;
-
-            case CLAZZ_BYTE:
-                tiny_snprintf(p, unused, "<%s>%d</%s>\n", name, v->byteValue, name);
-                break;
-
-            case CLAZZ_WORD:
-                tiny_snprintf(p, unused, "<%s>%d</%s>\n", name, v->wordValue, name);
-                break;
-
-            case CLAZZ_INTEGER:
-                tiny_snprintf(p, unused, "<%s>%d</%s>\n", name, v->integerValue, name);
-                break;
-
-            case CLAZZ_LONG:
-#if (defined _WIN32) || (defined __MAC_OSX__)
-
-                tiny_snprintf(p, unused, "<%s>%lld</%s>\n", name, v->longValue, name);
-#else
-                tiny_snprintf(p, unused, "<%s>%ld</%s>\n", name, v->longValue, name);
-#endif
-                break;
-
-            case CLAZZ_FLOAT:
-                tiny_snprintf(p, unused, "<%s>%f</%s>\n", name, v->floatValue, name);
-                break;
-
-            case CLAZZ_DOUBLE:
-                tiny_snprintf(p, unused, "<%s>%f</%s>\n", name, v->doubleValue, name);
-                break;
-
-            case CLAZZ_BOOLEAN:
-                tiny_snprintf(p, unused, "<%s>%s</%s>\n", name, ObjectType_BooleanToString(v->boolValue), name);
-                break;
-
-            case CLAZZ_CHAR:
-                tiny_snprintf(p, unused, "<%s>%c</%s>\n", name, v->charValue, name);
-                break;
-
-            case CLAZZ_STRING:
-                tiny_snprintf(p, unused, "<%s>%s</%s>\n", name, v->stringValue, name);
-                break;
-
-            default:
-                LOG_E(TAG, "invalid type");
-                break;
-            }
+            tiny_snprintf(p, unused, "<%s>%s</%s>\n", property->name, property->value, property->name);
 
             p[unused - 1] = 0;
 
@@ -576,19 +522,7 @@ static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
                 continue;
             }
 
-            ObjectType type;
-            ObjectType_Construct(&type);
-            ObjectType_SetType(&type, CLAZZ_STRING);
-            {
-                ret = PropertyList_InitProperty(thiz->argumentList, name, &type);
-                if (RET_FAILED(ret))
-                {
-                    break;
-                }
-            }
-            ObjectType_Dispose(&type);
-
-            ret = PropertyList_SetPropertyStringValue(thiz->argumentList, name, value);
+            ret = PropertyList_Add(thiz->argumentList, name, value);
             if (RET_FAILED(ret))
             {
                 break;

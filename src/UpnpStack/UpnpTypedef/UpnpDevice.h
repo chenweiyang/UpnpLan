@@ -15,8 +15,7 @@
 
 #include "tiny_base.h"
 #include "upnp_api.h"
-#include "PropertyList.h"
-#include "UpnpServiceList.h"
+#include "UpnpService.h"
 
 TINY_BEGIN_DECLS
 
@@ -26,9 +25,6 @@ typedef struct _UpnpDevice UpnpDevice;
 
 UPNP_API UpnpDevice * UpnpDevice_New(void);
 UPNP_API void UpnpDevice_Delete(UpnpDevice *thiz);
-
-UPNP_API UpnpServiceList * UpnpDevice_GetServiceList(UpnpDevice *thiz);
-UPNP_API UpnpService * UpnpDevice_GetService(UpnpDevice *thiz, const char *serviceId);
 
 UPNP_API TinyRet UpnpDevice_SetHttpPort(UpnpDevice *thiz, uint16_t port);
 UPNP_API TinyRet UpnpDevice_SetAddress(UpnpDevice *thiz, const char *Address);
@@ -58,11 +54,11 @@ UPNP_API const char * UpnpDevice_GetModelURL(UpnpDevice *thiz);
 UPNP_API const char * UpnpDevice_GetSerialNumber(UpnpDevice *thiz);
 UPNP_API const char * UpnpDevice_GetURLBase(UpnpDevice *thiz);
 
-
-
-//UPNP_API PropertyList * UpnpDevice_GetPropertyList(UpnpDevice *thiz);
-//UPNP_API TinyRet UpnpDevice_SetPropertyValue(UpnpDevice *thiz, const char *propertyName, const char *value);
-//UPNP_API const char * UpnpDevice_GetPropertyValue(UpnpDevice *thiz, const char *propertyName);
+UPNP_API TinyRet UpnpDevice_AddService(UpnpDevice *thiz, UpnpService *service);
+UPNP_API uint32_t UpnpDevice_GetServiceCount(UpnpDevice *thiz);
+UPNP_API UpnpService * UpnpDevice_GetServiceAt(UpnpDevice *thiz, uint32_t index);
+UPNP_API UpnpService * UpnpDevice_GetService(UpnpDevice *thiz, const char *serviceId);
+UPNP_API UpnpService * UpnpDevice_GetServiceByControlURL(UpnpDevice *device, const char *controlURL);
 
 
 TINY_END_DECLS

@@ -17,6 +17,7 @@
 #include "tiny_log.h"
 #include "UpnpDeviceParser.h"
 #include "UpnpServiceParser.h"
+#include "tiny_str_split.h"
 
 #define TAG     "UpnpProvider"
 
@@ -288,7 +289,6 @@ TinyRet UpnpProvider_Add(UpnpProvider *thiz, UpnpDevice *device, UpnpActionHandl
 
     do
     {
-        UpnpServiceList *list = UpnpDevice_GetServiceList(device);
         uint32_t count = TinyMap_GetCount(&thiz->observers);
         uint32_t i = 0;
 
@@ -330,10 +330,10 @@ TinyRet UpnpProvider_Add(UpnpProvider *thiz, UpnpDevice *device, UpnpActionHandl
         /**
          * Register ServiceChangedHandler
          */
-        count = UpnpServiceList_GetSize(list);
+        count = UpnpDevice_GetServiceCount(device);
         for (i = 0; i < count; ++i)
         {
-            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            UpnpService *service = UpnpDevice_GetServiceAt(device, i);
             UpnpService_SetChangedListener(service, onServiceChanged, thiz);
         }
     } while (0);
@@ -350,7 +350,6 @@ TinyRet UpnpProvider_Remove(UpnpProvider *thiz, const char *deviceId)
 
     do
     {
-        UpnpServiceList *list = NULL;
         uint32_t count = TinyMap_GetCount(&thiz->observers);
         uint32_t i = 0;
 
@@ -376,11 +375,10 @@ TinyRet UpnpProvider_Remove(UpnpProvider *thiz, const char *deviceId)
         /**
         * UnRegister ServiceChangedHandler
         */
-        list = UpnpDevice_GetServiceList(device);
-        count = UpnpServiceList_GetSize(list);
+        count = UpnpDevice_GetServiceCount(device);
         for (i = 0; i < count; ++i)
         {
-            UpnpService *service = (UpnpService *)UpnpServiceList_GetServiceAt(list, i);
+            UpnpService *service = UpnpDevice_GetServiceAt(device, i);
             UpnpService_SetChangedListener(service, NULL, NULL);
         }
 
@@ -445,13 +443,12 @@ static uint32_t UpnpProvider_GetServiceDocument(UpnpProvider *thiz, UpnpDevice *
 
     do
     {
-        UpnpServiceList * list = UpnpDevice_GetServiceList(device);
-        uint32_t count = UpnpServiceList_GetSize(list);
+        uint32_t count = UpnpDevice_GetServiceCount(device);
         uint32_t i = 0;
 
         for (i = 0; i < count; i++)
         {
-            UpnpService *service = UpnpServiceList_GetServiceAt(list, i);
+            UpnpService *service = UpnpDevice_GetServiceAt(device, i);
             const char *scpd = UpnpService_GetSCPDURL(service);
 
             if (STR_EQUAL(uri, scpd))
@@ -463,4 +460,43 @@ static uint32_t UpnpProvider_GetServiceDocument(UpnpProvider *thiz, UpnpDevice *
     } while (0);
 
     return ret;
+}
+
+UpnpAction * UpnpProvider_GetAction(UpnpProvider *thiz, const char *controlURL, const char *serviceType, const char *actionName)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+    RETURN_VAL_IF_FAIL(controlURL, 0);
+    RETURN_VAL_IF_FAIL(serviceType, 0);
+    RETURN_VAL_IF_FAIL(actionName, 0);
+
+    do
+    {
+        uint32_t i = 0;
+        uint32_t count = TinyMap_GetCount(&thiz->devices);
+
+        for (i = 0; i < count; i++)
+        {
+
+            UpnpDevice *device = NULL;
+            UpnpService *service = NULL;
+            UpnpAction * action = NULL;
+
+            device = (UpnpDevice *)TinyMap_GetValueAt(&thiz->devices, i);
+
+            service = UpnpDevice_GetServiceByControlURL(device, controlURL);
+            if (service == NULL)
+            {
+                continue;
+            }
+
+            if (STR_EQUAL(UpnpService_GetServiceType(service), serviceType))
+            {
+                return UpnpService_GetAction(service, actionName);
+            }
+
+            return NULL;
+        }
+    } while (0);
+
+    return NULL;
 }

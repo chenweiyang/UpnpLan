@@ -43,21 +43,19 @@ SOURCE_GROUP(UpnpCommon\\Source         FILES     ${UpnpCommon_Source})
 #-----------------------
 SET(UpnpTypedef_Header
     UpnpTypedef/UpnpListener.h
-    UpnpTypedef/ObjectType.h
-    UpnpTypedef/ObjectValue.h
-    UpnpTypedef/Object.h
-    UpnpTypedef/PropertyDefinition.h
-    UpnpTypedef/PropertyValue.h
     UpnpTypedef/Property.h
     UpnpTypedef/PropertyList.h
     UpnpTypedef/AllowedValueList.h
     UpnpTypedef/AllowedValueRange.h
     UpnpTypedef/UpnpAction.h
-    UpnpTypedef/UpnpActionList.h
-    UpnpTypedef/UpnpState.h
-    UpnpTypedef/UpnpStateList.h
+    UpnpTypedef/UpnpArgument.h
+    UpnpTypedef/UpnpArgumentDirection.h
+    UpnpTypedef/UpnpStateVariable.h
+    UpnpTypedef/UpnpStateVariableDefinition.h
+    UpnpTypedef/InternalData.h
+    UpnpTypedef/DataType.h
+    UpnpTypedef/DataValue.h
     UpnpTypedef/UpnpService.h
-    UpnpTypedef/UpnpServiceList.h
     UpnpTypedef/UpnpDevice.h
     UpnpTypedef/UpnpDeviceSummary.h
     UpnpTypedef/UpnpUri.h
@@ -66,20 +64,18 @@ SET(UpnpTypedef_Header
     )
 
 SET(UpnpTypedef_Source
-    UpnpTypedef/ObjectType.c
-    UpnpTypedef/Object.c
-    UpnpTypedef/PropertyDefinition.c
-    UpnpTypedef/PropertyValue.c
     UpnpTypedef/Property.c
     UpnpTypedef/PropertyList.c
     UpnpTypedef/AllowedValueList.c
     UpnpTypedef/AllowedValueRange.c
+    UpnpTypedef/DataType.c
+    UpnpTypedef/DataValue.c
+    UpnpTypedef/UpnpArgument.c
+    UpnpTypedef/UpnpArgumentDirection.c
     UpnpTypedef/UpnpAction.c
-    UpnpTypedef/UpnpActionList.c
-    UpnpTypedef/UpnpState.c
-    UpnpTypedef/UpnpStateList.c
+    UpnpTypedef/UpnpStateVariable.c
+    UpnpTypedef/UpnpStateVariableDefinition.c
     UpnpTypedef/UpnpService.c
-    UpnpTypedef/UpnpServiceList.c
     UpnpTypedef/UpnpDevice.c
     UpnpTypedef/UpnpUri.c
     UpnpTypedef/UpnpUsn.c
@@ -190,10 +186,16 @@ SOURCE_GROUP(UpnpCtrlPoint\\sources           FILES     ${UpnpCtrlPoint_Source})
 #-----------------------
 SET(UpnpHost_Header
     UpnpHost/UpnpHost.h
+    UpnpHost/UpnpActionExecutor.h
+    UpnpHost/UpnpDocumentGetter.h
+    UpnpHost/UpnpEventPublisher.h
     )
 
 SET(UpnpHost_Source
     UpnpHost/UpnpHost.c
+    UpnpHost/UpnpActionExecutor.c
+    UpnpHost/UpnpDocumentGetter.c
+    UpnpHost/UpnpEventPublisher.c
     )
 
 SOURCE_GROUP(UpnpHost\\headers               FILES     ${UpnpHost_Header})

@@ -39,20 +39,12 @@ Property * Property_New()
     return thiz;
 }
 
-void Property_Delete(Property *thiz)
-{
-    RETURN_IF_FAIL(thiz);
-
-    Property_Dispose(thiz);
-    tiny_free(thiz);
-}
-
 TinyRet Property_Construct(Property *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    PropertyDefinition_Construct(&thiz->definition);
-    PropertyValue_Construct(&thiz->value);
+    memset(thiz->name, 0, PROPERTY_NAME_LEN);
+    memset(thiz->value, 0, PROPERTY_VALUE_LEN);
 
     return TINY_RET_OK;
 }
@@ -61,8 +53,15 @@ void Property_Dispose(Property *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    PropertyDefinition_Dispose(&thiz->definition);
-    PropertyValue_Dispose(&thiz->value);
+    memset(thiz, 0, sizeof(Property));
+}
+
+void Property_Delete(Property *thiz)
+{
+    RETURN_IF_FAIL(thiz);
+
+    Property_Dispose(thiz);
+    tiny_free(thiz);
 }
 
 void Property_Copy(Property *dst, Property *src)
@@ -74,34 +73,7 @@ void Property_Copy(Property *dst, Property *src)
     {
         Property_Dispose(dst);
 
-        PropertyDefinition_Copy(&dst->definition, &src->definition);
-        PropertyValue_Copy(&dst->value, &src->value);
+        strncpy(dst->name, src->name, PROPERTY_NAME_LEN);
+        strncpy(dst->value, src->value, PROPERTY_VALUE_LEN);
     }
-}
-
-TinyRet Property_Initialize(Property *thiz, const char *name, ObjectType *type, Object *data)
-{
-    TinyRet ret = TINY_RET_OK;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        PropertyDefinition_Initialize(&thiz->definition, name, type);
-
-        if (data == NULL)
-        {
-            break;
-        }
-
-        if (data->type.clazzType != type->clazzType)
-        {
-            break;
-        }
-
-        PropertyValue_Initialize(&thiz->value, data);
-    } while (0);
-
-    return ret;
 }

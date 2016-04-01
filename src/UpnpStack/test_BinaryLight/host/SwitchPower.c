@@ -137,8 +137,6 @@ static TinyRet init_service(SwitchPower *thiz, UpnpDevice *device)
 
     do
     {
-        UpnpServiceList * serviceList = NULL;
-
         thiz->service = UpnpService_New();
         if (thiz->service == NULL)
         {
@@ -197,8 +195,7 @@ static TinyRet init_service(SwitchPower *thiz, UpnpDevice *device)
             break;
         }
 
-        serviceList = UpnpDevice_GetServiceList(device);
-        ret = UpnpServiceList_AddService(serviceList, thiz->service);
+        ret = UpnpDevice_AddService(device, thiz->service);
         if (RET_FAILED(ret))
         {
             break;
@@ -214,20 +211,42 @@ static TinyRet init_stateList(UpnpService *service)
 
     do
     {
-        UpnpStateList * stateList = UpnpService_GetStateList(service);
-        ObjectType dataType;
+        UpnpStateVariable * _Status = UpnpStateVariable_New();
+        if (_Status == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
 
-        /* Status */
-        ObjectType_SetName(&dataType, "string");
-        ret = UpnpStateList_InitState(stateList, PROPERTY_Status, &dataType, true, service);
+        ret = UpnpStateVariable_Initialize(_Status, PROPERTY_Status, "string", NULL, "YES");
         if (RET_FAILED(ret))
         {
             break;
         }
 
-        /* Target */
-        ObjectType_SetName(&dataType, "string");
-        ret = UpnpStateList_InitState(stateList, PROPERTY_Target, &dataType, true, service);
+        ret = UpnpService_AddStateVariable(service, _Status);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+    } while (0);
+
+    do
+    {
+        UpnpStateVariable * _Target = UpnpStateVariable_New();
+        if (_Target == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        ret = UpnpStateVariable_Initialize(_Target, PROPERTY_Target, "string", NULL, "YES");
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        ret = UpnpService_AddStateVariable(service, _Target);
         if (RET_FAILED(ret))
         {
             break;
@@ -241,89 +260,107 @@ static TinyRet init_actionList(UpnpService *service)
 {
     TinyRet ret = TINY_RET_OK;
 
+    /**
+     * GetTarget
+     */
     do
     {
-        UpnpActionList * actionList = UpnpService_GetActionList(service);
-        UpnpStateList * stateList = UpnpService_GetStateList(service);
+        UpnpAction * _GetTarget = NULL;
+        UpnpArgument * _RetTargetValue = NULL;
 
-        UpnpAction *GetTarget = NULL;
-        UpnpAction *SetTarget = NULL;
-        UpnpAction *GetStatus = NULL;
-
-        PropertyList *argList = NULL;
-        PropertyList *resultList = NULL;
-        UpnpState * relatedState;
-
-        /** 
-         * GetTarget
-         */
-        GetTarget = UpnpAction_New();
-
-        argList = UpnpAction_GetArgumentList(GetTarget);
-        resultList = UpnpAction_GetResultList(GetTarget);
-        UpnpAction_SetParentService(GetTarget, service);
-        UpnpAction_SetName(GetTarget, ACTION_GetTarget);
-
-        relatedState = UpnpStateList_GetState(stateList, PROPERTY_Target);
-        if (relatedState == NULL)
+        _GetTarget = UpnpAction_New();
+        if (_GetTarget == NULL)
         {
-            LOG_D(TAG, "UpnpStateList_GetState failed: <%s>", PROPERTY_Target);
+            ret = TINY_RET_E_NEW;
+            break;
         }
 
-        PropertyList_InitProperty(resultList, _GetTarget_ARG_RetTargetValue, &relatedState->definition.type);
-
-        ret = UpnpActionList_AddAction(actionList, GetTarget);
+        ret = UpnpAction_SetName(_GetTarget, ACTION_GetTarget);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "UpnpActionList_AddAction failed: <%s>", ACTION_GetTarget);
+            break;
         }
 
-        /**
-        * SetTarget
-        */
-        SetTarget = UpnpAction_New();
-
-        argList = UpnpAction_GetArgumentList(SetTarget);
-        resultList = UpnpAction_GetResultList(SetTarget);
-        UpnpAction_SetParentService(SetTarget, service);
-        UpnpAction_SetName(SetTarget, ACTION_SetTarget);
-
-        relatedState = UpnpStateList_GetState(stateList, PROPERTY_Target);
-        if (relatedState == NULL)
+        _RetTargetValue = UpnpArgument_New(_GetTarget_ARG_RetTargetValue, ARG_OUT, PROPERTY_Target);
+        if (_RetTargetValue == NULL)
         {
-            LOG_D(TAG, "UpnpStateList_GetState failed: <%s>", PROPERTY_Target);
+            ret = TINY_RET_E_NEW;
+            break;
         }
 
-        PropertyList_InitProperty(argList, _GetTarget_ARG_RetTargetValue, &relatedState->definition.type);
-
-        ret = UpnpActionList_AddAction(actionList, SetTarget);
+        ret = UpnpAction_AddArgument(_GetTarget, _RetTargetValue);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "UpnpActionList_AddAction failed: <%s>", ACTION_SetTarget);
+            break;
         }
+    } while (0);
 
-        /**
-        * GetStatus
-        */
-        GetStatus = UpnpAction_New();
+    /**
+     * SetTarget
+     */
+    do {
+        UpnpAction * _SetTarget = NULL;
+        UpnpArgument * _NewTargetValue = NULL;
 
-        argList = UpnpAction_GetArgumentList(GetStatus);
-        resultList = UpnpAction_GetResultList(GetStatus);
-        UpnpAction_SetParentService(GetStatus, service);
-        UpnpAction_SetName(GetStatus, ACTION_GetStatus);
-
-        relatedState = UpnpStateList_GetState(stateList, PROPERTY_Status);
-        if (relatedState == NULL)
+        _SetTarget = UpnpAction_New();
+        if (_SetTarget == NULL)
         {
-            LOG_D(TAG, "UpnpStateList_GetState failed: <%s>", PROPERTY_Status);
+            ret = TINY_RET_E_NEW;
+            break;
         }
 
-        PropertyList_InitProperty(resultList, _GetTarget_ARG_RetTargetValue, &relatedState->definition.type);
-
-        ret = UpnpActionList_AddAction(actionList, GetStatus);
+        ret = UpnpAction_SetName(_SetTarget, ACTION_SetTarget);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "UpnpActionList_AddAction failed: <%s>", ACTION_GetStatus);
+            break;
+        }
+
+        _NewTargetValue = UpnpArgument_New(_SetTarget_ARG_newTargetValue, ARG_IN, PROPERTY_Target);
+        if (_NewTargetValue == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        ret = UpnpAction_AddArgument(_SetTarget, _NewTargetValue);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+    } while (0);
+
+    /**
+     * GetStatus
+     */
+    do
+    {
+        UpnpAction * _GetStatus = NULL;
+        UpnpArgument * _ResultStatus = NULL;
+
+        _GetStatus = UpnpAction_New();
+        if (_GetStatus == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        ret = UpnpAction_SetName(_GetStatus, ACTION_GetStatus);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        _ResultStatus = UpnpArgument_New(_GetStatus_ARG_ResultStatus, ARG_OUT, PROPERTY_Status);
+        if (_ResultStatus == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        ret = UpnpAction_AddArgument(_GetStatus, _ResultStatus);
+        if (RET_FAILED(ret))
+        {
+            break;
         }
     } while (false);
 
@@ -430,15 +467,14 @@ static UpnpCode handle_GetTarget(SwitchPower *thiz, UpnpAction *action)
         /**
         * Argument OUT (1)
         */
-        PropertyList *_out = UpnpAction_GetResultList(action);
-        Property *_RetTargetValue = PropertyList_GetProperty(_out, _GetTarget_ARG_RetTargetValue);
+        UpnpStateVariable * _RetTargetValue = UpnpService_GetStateVariable(thiz->service, UpnpAction_GetArgumentRelatedStateVariable(action, _GetTarget_ARG_RetTargetValue));
         if (_RetTargetValue == NULL)
         {
             LOG_E(TAG, "Result invalid: %s NOT FOUND!", _GetTarget_ARG_RetTargetValue);
             break;
         }
 
-        _RetTargetValue->value.object.value.boolValue = result.theTargetValue;
+        _RetTargetValue->value.internalValue.boolValue = result.theTargetValue;
     } while (0);
 
     return code;
@@ -453,15 +489,14 @@ static UpnpCode handle_SetTarget(SwitchPower *thiz, UpnpAction *action)
         /**
         * Argument IN (1)
         */
-        PropertyList *_in = UpnpAction_GetArgumentList(action);
-        Property *_newTargetValue = PropertyList_GetProperty(_in, _SetTarget_ARG_newTargetValue);
+        UpnpStateVariable * _newTargetValue = UpnpService_GetStateVariable(thiz->service, UpnpAction_GetArgumentRelatedStateVariable(action, _SetTarget_ARG_newTargetValue));
         if (_newTargetValue == NULL)
         {
             LOG_E(TAG, "argument invalid: %s NOT FOUND!", _SetTarget_ARG_newTargetValue);
             break;
         }
 
-        code = thiz->OnSetTarget(thiz, _newTargetValue->value.object.value.boolValue, thiz->ctx);
+        code = thiz->OnSetTarget(thiz, _newTargetValue->value.internalValue.boolValue, thiz->ctx);
         if (code != UPNP_SUCCESS)
         {
             break;
@@ -498,15 +533,14 @@ static UpnpCode handle_GetStatus(SwitchPower *thiz, UpnpAction *action)
         /**
         * Argument OUT (1)
         */
-        PropertyList *_out = UpnpAction_GetResultList(action);
-        Property *_ResultStatus = PropertyList_GetProperty(_out, _GetStatus_ARG_ResultStatus);
+        UpnpStateVariable * _ResultStatus = UpnpService_GetStateVariable(thiz->service, UpnpAction_GetArgumentRelatedStateVariable(action, _GetStatus_ARG_ResultStatus));
         if (_ResultStatus == NULL)
         {
             LOG_E(TAG, "Result invalid: %s NOT FOUND!", _GetStatus_ARG_ResultStatus);
             break;
         }
 
-        _ResultStatus->value.object.value.boolValue = result.theResultStatus;
+        _ResultStatus->value.internalValue.boolValue = result.theResultStatus;
     } while (0);
 
     return code;

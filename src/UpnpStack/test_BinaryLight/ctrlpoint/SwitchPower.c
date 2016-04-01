@@ -102,8 +102,7 @@ TinyRet SwitchPower_GetTarget(SwitchPower *thiz, SwitchPower_GetTargetResult *re
 
     do
     {
-        UpnpActionList *list = UpnpService_GetActionList(thiz->service);
-        UpnpAction *action = UpnpActionList_GetAction(list, ACTION_GetTarget);
+        UpnpAction *action = UpnpService_GetAction(thiz->service, ACTION_GetTarget);
         if (action == NULL)
         {
             ret = TINY_RET_E_UPNP_ACTION_NOT_FOUND;
@@ -128,15 +127,14 @@ TinyRet SwitchPower_GetTarget(SwitchPower *thiz, SwitchPower_GetTargetResult *re
         /**
          * Argument OUT (1)
          */
-        PropertyList *_out = UpnpAction_GetResultList(action);
-        Property *_RetTargetValue = PropertyList_GetProperty(_out, _GetTarget_ARG_RetTargetValue);
+        UpnpStateVariable * _RetTargetValue = UpnpService_GetStateVariable(thiz->service, UpnpAction_GetArgumentRelatedStateVariable(action, _GetTarget_ARG_RetTargetValue));
         if (_RetTargetValue == NULL)
         {
             LOG_E(TAG, "Result invalid: %s NOT FOUND!", _GetTarget_ARG_RetTargetValue);
             break;
         }
 
-        result->theTargetValue = _RetTargetValue->value.object.value.boolValue;
+        result->theTargetValue = _RetTargetValue->value.internalValue.boolValue;
     } while (0);
 
     return ret;
@@ -151,8 +149,7 @@ TinyRet SwitchPower_SetTarget(SwitchPower *thiz, bool newTargetValue, UpnpError 
 
     do
     {
-        UpnpActionList *list = UpnpService_GetActionList(thiz->service);
-        UpnpAction *action = UpnpActionList_GetAction(list, ACTION_SetTarget);
+        UpnpAction *action = UpnpService_GetAction(thiz->service, ACTION_SetTarget);
         if (action == NULL)
         {
             ret = TINY_RET_E_ARG_INVALID;
@@ -162,16 +159,14 @@ TinyRet SwitchPower_SetTarget(SwitchPower *thiz, bool newTargetValue, UpnpError 
         /**
         * Argument IN (1)
         */
-
-        PropertyList *_in = UpnpAction_GetArgumentList(action);
-        Property *_newTargetValue = PropertyList_GetProperty(_in, _SetTarget_ARG_newTargetValue);
+        UpnpStateVariable * _newTargetValue = UpnpService_GetStateVariable(thiz->service, UpnpAction_GetArgumentRelatedStateVariable(action, _SetTarget_ARG_newTargetValue));
         if (_newTargetValue == NULL)
         {
             LOG_E(TAG, "Result invalid: %s NOT FOUND!", _SetTarget_ARG_newTargetValue);
             break;
         }
 
-        _newTargetValue->value.object.value.boolValue = newTargetValue;
+        _newTargetValue->value.internalValue.boolValue = newTargetValue;
 
         ret = UpnpRuntime_Invoke(thiz->runtime, action, error);
         if (ret != TINY_RET_OK)
@@ -202,8 +197,7 @@ TinyRet SwitchPower_GetStatus(SwitchPower *thiz, SwitchPower_GetStatusResult *re
 
     do
     {
-        UpnpActionList *list = UpnpService_GetActionList(thiz->service);
-        UpnpAction *action = UpnpActionList_GetAction(list, ACTION_GetStatus);
+        UpnpAction *action = UpnpService_GetAction(thiz->service, ACTION_GetStatus);
         if (action == NULL)
         {
             ret = TINY_RET_E_ARG_INVALID;
@@ -228,15 +222,14 @@ TinyRet SwitchPower_GetStatus(SwitchPower *thiz, SwitchPower_GetStatusResult *re
         /**
         * Argument OUT (1)
         */
-        PropertyList *_out = UpnpAction_GetResultList(action);
-        Property *_ResultStatus = PropertyList_GetProperty(_out, _GetStatus_ARG_ResultStatus);
+        UpnpStateVariable * _ResultStatus = UpnpService_GetStateVariable(thiz->service, UpnpAction_GetArgumentRelatedStateVariable(action, _GetStatus_ARG_ResultStatus));
         if (_ResultStatus == NULL)
         {
             LOG_E(TAG, "Result invalid: %s NOT FOUND!", _GetStatus_ARG_ResultStatus);
             break;
         }
 
-        result->theResultStatus = _ResultStatus->value.object.value.boolValue;
+        result->theResultStatus = _ResultStatus->value.internalValue.boolValue;
     } while (0);
 
     return ret;
@@ -301,7 +294,7 @@ static void event_listener(UpnpEvent *event, void *ctx)
         {
             if (thiz->onStatusChanged != NULL)
             {
-                thiz->onStatusChanged(ObjectType_StringToBoolean(_status), thiz->ctx);
+                thiz->onStatusChanged(DataType_StringToBoolean(_status), thiz->ctx);
             }
         }
     } while (0);

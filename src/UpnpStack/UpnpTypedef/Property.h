@@ -15,26 +15,26 @@
 
 #include "tiny_base.h"
 #include "upnp_api.h"
-#include "PropertyDefinition.h"
-#include "PropertyValue.h"
 
 TINY_BEGIN_DECLS
 
 
+#define PROPERTY_NAME_LEN       128
+#define PROPERTY_VALUE_LEN      256
+
+
 typedef struct _Property
 {
-    PropertyDefinition definition;
-    PropertyValue value;
+    char name[PROPERTY_NAME_LEN];
+    char value[PROPERTY_VALUE_LEN];
 } Property;
 
 UPNP_API Property * Property_New();
 UPNP_API void Property_Delete(Property *thiz);
-
 UPNP_API TinyRet Property_Construct(Property *thiz);
 UPNP_API void Property_Dispose(Property *thiz);
 
 UPNP_API void Property_Copy(Property *dst, Property *src);
-UPNP_API TinyRet Property_Initialize(Property *thiz, const char *name, ObjectType *ObjectType, Object *Object);
 
 
 TINY_END_DECLS

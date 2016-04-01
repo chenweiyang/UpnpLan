@@ -64,7 +64,7 @@ static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root);
 static TinyRet SDD_LoadServiceStateTable(UpnpService *thiz, TinyXmlNode *root);
 
 static uint32_t UpnpServiceParser_ActionToXml(UpnpAction *action, char *xml, uint32_t len);
-static uint32_t UpnpServiceParser_StateToXml(UpnpState *state, char *xml, uint32_t len);
+static uint32_t UpnpServiceParser_StateToXml(UpnpStateVariable *state, char *xml, uint32_t len);
 
 TinyRet UpnpServiceParser_Parse(const char *url, UpnpService *service, uint32_t timeout)
 {
@@ -266,8 +266,6 @@ static TinyRet SDD_LoadServiceStateTable(UpnpService *thiz, TinyXmlNode *root)
 
     do
     {
-        UpnpStateList * list = UpnpService_GetStateList(thiz);
-
         uint32_t count = 0;
         uint32_t i = 0;
 
@@ -288,13 +286,11 @@ static TinyRet SDD_LoadServiceStateTable(UpnpService *thiz, TinyXmlNode *root)
 
         for (i = 0; i < count; i++)
         {
+            UpnpStateVariable * stateVariable = NULL;
             TinyXmlNode *node_state = NULL;
             TinyXmlAttr *attr_sendEvents = NULL;
-            ObjectType dataType;
-            const char *state_name = NULL;
-            const char *state_dataType = NULL;
-
-            ObjectType_Construct(&dataType);
+            const char *name = NULL;
+            const char *dataType = NULL;
 
             node_state = TinyXmlNode_GetChildAt(actionList, i);
             if (!str_equal(TinyXmlNode_GetName(node_state), SDD_STATE, true))
@@ -308,28 +304,33 @@ static TinyRet SDD_LoadServiceStateTable(UpnpService *thiz, TinyXmlNode *root)
                 continue;
             }
 
-            state_name = TinyXmlNode_GetChildContent(node_state, SDD_STATE_NAME);
-            if (state_name == NULL)
+            name = TinyXmlNode_GetChildContent(node_state, SDD_STATE_NAME);
+            if (name == NULL)
             {
                 continue;
             }
 
-            state_dataType = TinyXmlNode_GetChildContent(node_state, SDD_STATE_DATATYPE);
-            if (state_dataType == NULL)
+            dataType = TinyXmlNode_GetChildContent(node_state, SDD_STATE_DATATYPE);
+            if (dataType == NULL)
             {
                 continue;
             }
 
-            ObjectType_SetName(&dataType, state_dataType);
-            UpnpStateList_InitState(list, state_name, &dataType, ObjectType_StringToBoolean(attr_sendEvents->value), thiz);
+            stateVariable = UpnpStateVariable_New();
+            if (stateVariable == NULL)
+            {
+                LOG_E(TAG, "OUT OF MEMORY");
+                ret = TINY_RET_E_NEW;
+                break;
+            }
 
-            ObjectType_Dispose(&dataType);
+            UpnpStateVariable_Initialize(stateVariable, name, dataType, NULL, attr_sendEvents->value);
+            UpnpService_AddStateVariable(thiz, stateVariable);
         }
     } while (0);
 
     return ret;
 }
-
 
 static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root)
 {
@@ -337,8 +338,6 @@ static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root)
 
     do
     {
-        UpnpActionList * actions = UpnpService_GetActionList(thiz);
-        UpnpStateList * states = UpnpService_GetStateList(thiz);
         uint32_t count = 0;
         uint32_t i = 0;
 
@@ -358,8 +357,6 @@ static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root)
 
         for (i = 0; i < count; i++)
         {
-            PropertyList *argList = NULL;
-            PropertyList *resultList = NULL;
             TinyXmlNode *node_action = NULL;
             TinyXmlNode *node_arg_list = NULL;
             UpnpAction *action = NULL;
@@ -397,15 +394,13 @@ static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root)
                 break;
             }
 
-            argList = UpnpAction_GetArgumentList(action);
-            resultList = UpnpAction_GetResultList(action);
-
             UpnpAction_SetName(action, action_name);
 
             action_arg_count = TinyXmlNode_GetChildren(node_arg_list);
             for (j = 0; j < action_arg_count; j++)
             {
-                UpnpState *relatedState = NULL;
+                UpnpArgument *argument;
+                UpnpArgumentDirection direction = ARG_UNKNOWN;
                 TinyXmlNode *node_arg = NULL;
                 const char * arg_name = NULL;
                 const char * arg_direction = NULL;
@@ -429,32 +424,24 @@ static TinyRet SDD_LoadActionList(UpnpService *thiz, TinyXmlNode *root)
                     continue;
                 }
 
-                relatedState = UpnpStateList_GetState(states, arg_releatedState);
-                if (relatedState == NULL)
-                {
-                    LOG_D(TAG, "UpnpStateList_GetState failed: <%s>", arg_releatedState);
-                    continue;
-                }
-
-                if (STR_EQUAL(arg_direction, DIRECTION_IN)) 
-                {
-                    PropertyList_InitProperty(argList, arg_name, &relatedState->definition.type);
-                }
-
-                else if (STR_EQUAL(arg_direction, DIRECTION_OUT))
-                {
-                    PropertyList_InitProperty(resultList, arg_name, &relatedState->definition.type);
-                }
-                else 
+                direction = UpnpArgumentDirection_Retrieve(arg_direction);
+                if (direction == ARG_UNKNOWN)
                 {
                     LOG_D(TAG, "<%s> invalid : %s", SDD_ARGUMENT_DIRECTION, arg_direction);
                     continue;
                 }
-            }
-            
-            UpnpAction_SetParentService(action, thiz);
 
-            ret = UpnpActionList_AddAction(actions, action);
+                argument = UpnpArgument_New(arg_name, direction, arg_releatedState);
+                if (argument == NULL)
+                {
+                    LOG_D(TAG, "OUT OF MEMORY");
+                    continue;
+                }
+
+                UpnpAction_AddArgument(action, argument);
+            }
+
+            ret = UpnpService_AddAction(thiz, action);
             if (RET_FAILED(ret))
             {
                 LOG_D(TAG, "UpnpActionList_AddAction failed: <%s>", action_name);
@@ -474,8 +461,6 @@ static uint32_t UpnpServiceParser_ActionToXml(UpnpAction *action, char *xml, uin
     {
         uint32_t i = 0;
         uint32_t count = 0;
-        PropertyList *argList = UpnpAction_GetArgumentList(action);
-        PropertyList *resultList = UpnpAction_GetResultList(action);
 
         strcat(xml, "<action>");
 
@@ -488,55 +473,38 @@ static uint32_t UpnpServiceParser_ActionToXml(UpnpAction *action, char *xml, uin
 
         strcat(xml, "<argumentList>");
 
-        count = PropertyList_GetSize(argList);
+        count = UpnpAction_GetArgumentCount(action);
         for (i = 0; i < count; ++i)
         {
-            Property * p = PropertyList_GetPropertyAt(argList, i);
+            UpnpArgument * arg = UpnpAction_GetArgumentAt(action, i);
             char name[1024];
+            char direction[1024];
             char relatedStateVariable[1024];
 
             memset(name, 0, 1024);
+            memset(direction, 0, 1024);
             memset(relatedStateVariable, 0, 1024);
 
-            tiny_snprintf(name, 1024, "<name>%s</name>", p->definition.name);
-            tiny_snprintf(relatedStateVariable, 1024, "<relatedStateVariable>%s</relatedStateVariable>", p->definition.name);
+            tiny_snprintf(name, 1024, "<name>%s</name>", UpnpArgument_GetName(arg));
+            tiny_snprintf(name, 1024, "<direction>%s</direction>", UpnpArgumentDirection_ToString(UpnpArgument_GetDirection(arg)));
+            tiny_snprintf(relatedStateVariable, 1024, "<relatedStateVariable>%s</relatedStateVariable>",
+                UpnpArgument_GetRelatedStateVariable(arg));
 
             strcat(xml, "<argument>");
             strcat(xml, name);
-            strcat(xml, "<direction>in</direction>");
-            strcat(xml, relatedStateVariable);
-            strcat(xml, "</argument>");
-        }
-
-        count = PropertyList_GetSize(resultList);
-        for (i = 0; i < count; ++i)
-        {
-            Property * p = PropertyList_GetPropertyAt(resultList, i);
-            char name[1024];
-            char relatedStateVariable[1024];
-
-            memset(name, 0, 1024);
-            memset(relatedStateVariable, 0, 1024);
-
-            tiny_snprintf(name, 1024, "<name>%s</name>", p->definition.name);
-            tiny_snprintf(relatedStateVariable, 1024, "<relatedStateVariable>%s</relatedStateVariable>", p->definition.name);
-
-            strcat(xml, "<argument>");
-            strcat(xml, name);
-            strcat(xml, "<direction>out</direction>");
+            strcat(xml, direction);
             strcat(xml, relatedStateVariable);
             strcat(xml, "</argument>");
         }
 
         strcat(xml, "</argumentList>");
-
         strcat(xml, "</action>");
     } while (0);
 
     return strlen(xml);
 }
 
-static uint32_t UpnpServiceParser_StateToXml(UpnpState *state, char *xml, uint32_t len)
+static uint32_t UpnpServiceParser_StateToXml(UpnpStateVariable *state, char *xml, uint32_t len)
 {
     RETURN_VAL_IF_FAIL(state, 0);
     RETURN_VAL_IF_FAIL(xml, 0);
@@ -546,7 +514,7 @@ static uint32_t UpnpServiceParser_StateToXml(UpnpState *state, char *xml, uint32
         char buf[1024];
 
         memset(buf, 0, 1024);
-        tiny_snprintf(buf, 1024, "<stateVariable sendEvents=\"%s\">", ObjectType_BooleanToString(state->sendEvents));
+        tiny_snprintf(buf, 1024, "<stateVariable sendEvents=\"%s\">", DataType_BooleanToString(state->sendEvents));
         strcat(xml, buf);
 
         memset(buf, 0, 1024);
@@ -554,7 +522,7 @@ static uint32_t UpnpServiceParser_StateToXml(UpnpState *state, char *xml, uint32
         strcat(xml, buf);
 
         memset(buf, 0, 1024);
-        tiny_snprintf(buf, 1024, "<dataType>%s</dataType>", state->definition.type.clazzName);
+        tiny_snprintf(buf, 1024, "<dataType>%s</dataType>", state->definition.dataType.name);
         strcat(xml, buf);
 
         strcat(xml, "</stateVariable>");
@@ -572,8 +540,6 @@ uint32_t UpnpServiceParser_ToXml(UpnpService *service, char *xml, uint32_t len)
     {
         uint32_t i = 0;
         uint32_t count = 0;
-        UpnpActionList *actionList = UpnpService_GetActionList(service);
-        UpnpStateList *stateList = UpnpService_GetStateList(service);
 
         strcat(xml, 
             "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
@@ -585,10 +551,10 @@ uint32_t UpnpServiceParser_ToXml(UpnpService *service, char *xml, uint32_t len)
 
         /* <actionList> */
         strcat(xml, "<actionList>");
-        count = UpnpActionList_GetSize(actionList);
+        count = UpnpService_GetActionCount(service);
         for (i = 0; i < count; ++i)
         {
-            UpnpAction *action = UpnpActionList_GetActionAt(actionList, i);
+            UpnpAction *action = UpnpService_GetActionAt(service, i);
             char buf[1024 * 4];
             memset(buf, 0, 1024 * 4);
             UpnpServiceParser_ActionToXml(action, buf, 1024 * 4);
@@ -598,10 +564,10 @@ uint32_t UpnpServiceParser_ToXml(UpnpService *service, char *xml, uint32_t len)
 
         /* <stateVariableList> */
         strcat(xml, "<serviceStateTable>");
-        count = UpnpStateList_GetSize(stateList);
+        count = UpnpService_GetStateVariableCount(service);
         for (i = 0; i < count; ++i)
         {
-            UpnpState *state = UpnpStateList_GetStateAt(stateList, i);
+            UpnpStateVariable * state = UpnpService_GetStateVariableAt(service, i);
             char buf[1024 * 4];
             memset(buf, 0, 1024 * 4);
             UpnpServiceParser_StateToXml(state, buf, 1024 * 4);
