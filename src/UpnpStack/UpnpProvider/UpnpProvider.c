@@ -30,7 +30,8 @@ static void device_delete_listener(void * data, void *ctx)
 
 static void handler_delete_listener(void *data, void *ctx)
 {
-    // NOTHING TO DO !
+    UpnpActionHandlerContext *context = (UpnpActionHandlerContext *)data;
+    tiny_free(context);
 }
 
 static void observer_delete_listener(void *data, void *ctx)
@@ -289,6 +290,7 @@ TinyRet UpnpProvider_Add(UpnpProvider *thiz, UpnpDevice *device, UpnpActionHandl
 
     do
     {
+        UpnpActionHandlerContext *context = NULL;
         uint32_t count = TinyMap_GetCount(&thiz->observers);
         uint32_t i = 0;
 
@@ -309,9 +311,21 @@ TinyRet UpnpProvider_Add(UpnpProvider *thiz, UpnpDevice *device, UpnpActionHandl
             break;
         }
 
-        ret = TinyMap_Insert(&thiz->handlers, deviceId, handler);
+        context = (UpnpActionHandlerContext *)tiny_malloc(sizeof(UpnpActionHandlerContext));
+        if (context == NULL)
+        {
+            LOG_D(TAG, "tiny_malloc failed");
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        context->handler = handler;
+        context->ctx = ctx;
+
+        ret = TinyMap_Insert(&thiz->handlers, deviceId, context);
         if (RET_FAILED(ret))
         {
+            tiny_free(context);
             break;
         }
 
@@ -499,4 +513,34 @@ UpnpAction * UpnpProvider_GetAction(UpnpProvider *thiz, const char *controlURL, 
     } while (0);
 
     return NULL;
+}
+
+UpnpActionHandlerContext * UpnpProvider_GetActionHandlerContext(UpnpProvider *thiz, UpnpAction *action)
+{
+    UpnpActionHandlerContext *context = NULL;
+
+    RETURN_VAL_IF_FAIL(thiz, 0);
+    RETURN_VAL_IF_FAIL(action, 0);
+
+    do
+    {
+        UpnpDevice *device = NULL;
+        UpnpService *service = NULL;
+        
+        service = UpnpAction_GetParentService(action);
+        if (service == NULL)
+        {
+            break;
+        }
+
+        device = UpnpService_GetParentDevice(service);
+        if (device == NULL)
+        {
+            break;
+        }
+
+        context = (UpnpActionHandlerContext *)TinyMap_GetValue(&thiz->handlers, UpnpDevice_GetDeviceId(device));
+    } while (0);
+
+    return context;
 }

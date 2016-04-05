@@ -612,7 +612,7 @@ uint32_t UpnpDeviceParser_ToXml(UpnpDevice *device, char *xml, uint32_t len)
             "<UDN>%s</UDN>"
             "<iconList>"
             "</iconList>"
-            "<servieList>",
+            "<serviceList>",
             UpnpDevice_GetDeviceType(device),
             UpnpDevice_GetFriendlyName(device),
             UpnpDevice_GetManufacturer(device),
@@ -658,7 +658,7 @@ uint32_t UpnpDeviceParser_ToXml(UpnpDevice *device, char *xml, uint32_t len)
         }
 
         tiny_snprintf(p, unused,
-            "</servieList>"
+            "</serviceList>"
             "</device>"
             "</root>"
             );

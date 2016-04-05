@@ -13,10 +13,12 @@
 */
 
 #include "UpnpActionExecutor.h"
+#include "upnp_define.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
 #include "tiny_str_split.h"
 #include "message/soap/SoapMessage.h"
+#include "message/ActionRequest.h"
 
 #define TAG     "UpnpActionExecutor"
 
@@ -27,16 +29,21 @@ static void OnPost(UpnpHttpConnection *conn, const char *uri, const char *soapAc
     LOG_D(TAG, "OnPost: %s", uri);
 
     UpnpProvider_Lock(thiz->provider);
+
     do
     {
+        char buffer[1024];
         uint32_t count = 0;
         char group[4][128];
         const char *serviceType = NULL;
         const char *actionName = NULL;
 
+        memset(buffer, 0, 1024);
+        strncpy(buffer, soapAction + 1, strlen(soapAction) - 2);
+
         memset(group, 0, 4 * 128);
 
-        count = str_split(soapAction, "#", group, 4);
+        count = str_split(buffer, "#", group, 4);
         if (count != 2)
         {
             UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
@@ -53,23 +60,29 @@ static void OnPost(UpnpHttpConnection *conn, const char *uri, const char *soapAc
             break;
         }
 
-        do
+        if (RET_FAILED(ActionFromRequest(action, content, contentLength)))
         {
-            // Parse SoapMessage
-            TinyRet ret = TINY_RET_OK;
-            SoapMessage * soap = SoapMessage_New();
+            UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
+            break;
+        }
 
-            ret = SoapMessage_Parse(soap, content, contentLength);
-            if (RET_FAILED(ret))
-            {
-                UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
-                break;
-            }
+        UpnpActionHandlerContext * context = UpnpProvider_GetActionHandlerContext(thiz->provider, action);
+        if (context == NULL)
+        {
+            UpnpHttpConnection_SendError(conn, 404, "NOT FOUND");
+            break;
+        }
 
-            // SetArgument for Action
-        } while (0);
+        UpnpCode code = context->handler(action, context->ctx);
+        if (code != UPNP_SUCCESS)
+        {
+            UpnpHttpConnection_SendError(conn, code, "ACTION Execute failed");
+            break;
+        }
 
+        UpnpHttpConnection_SendActionResponse(conn, action);
     } while (0);
+
     UpnpProvider_Unlock(thiz->provider);
 }
 

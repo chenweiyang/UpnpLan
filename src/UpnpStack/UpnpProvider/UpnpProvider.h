@@ -34,6 +34,12 @@ typedef struct _UpnpProvider
     TinyMap       observers;
 } UpnpProvider;
 
+typedef struct _UpnpActionHandlerContext
+{
+    UpnpActionHandler handler;
+    void *ctx;
+} UpnpActionHandlerContext;
+
 UpnpProvider * UpnpProvider_New(void);
 TinyRet UpnpProvider_Construct(UpnpProvider *thiz);
 TinyRet UpnpProvider_Dispose(UpnpProvider *thiz);
@@ -60,6 +66,7 @@ TinyRet UpnpProvider_Remove(UpnpProvider *thiz, const char *deviceId);
 
 uint32_t UpnpProvider_GetDocument(UpnpProvider *thiz, const char *uri, char *content, uint32_t len);
 UpnpAction * UpnpProvider_GetAction(UpnpProvider *thiz, const char *uri, const char *serviceType, const char *actionName);
+UpnpActionHandlerContext * UpnpProvider_GetActionHandlerContext(UpnpProvider *thiz, UpnpAction *action);
 
 
 TINY_END_DECLS

@@ -19,6 +19,7 @@
 #include "UpnpDeviceSummary.h"
 #include "UpnpUri.h"
 #include "UpnpEvent.h"
+#include "UpnpCode.h"
 
 TINY_BEGIN_DECLS
 
@@ -26,7 +27,7 @@ TINY_BEGIN_DECLS
 typedef void(*UpnpDeviceListener)(UpnpDeviceSummary *deviceSummary, bool alive, void *ctx);
 typedef bool(*UpnpDeviceFilter)(UpnpUri *uri, void *ctx);
 typedef void(*UpnpEventListener)(UpnpEvent *event, void *ctx);
-typedef uint32_t(*UpnpActionHandler)(UpnpAction *action, void *ctx);
+typedef UpnpCode (*UpnpActionHandler)(UpnpAction *action, void *ctx);
 
 
 TINY_END_DECLS

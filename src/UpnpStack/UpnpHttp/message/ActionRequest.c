@@ -22,7 +22,7 @@
 #define TAG     "ActionRequest"
 
 static TinyRet ActionToSoapRequest(UpnpAction *action, SoapMessage *soap);
-static  TinyRet SoapRequestToHttpRequest(SoapMessage *soap, HttpMessage *request);
+static TinyRet SoapRequestToHttpRequest(SoapMessage *soap, HttpMessage *request);
 
 TinyRet ActionToRequest(UpnpAction *action, HttpMessage *request)
 {
@@ -198,6 +198,76 @@ static TinyRet SoapRequestToHttpRequest(SoapMessage *soap, HttpMessage *request)
         HttpMessage_AddContentObject(request, data, size);
 
         tiny_free(data);
+    } while (0);
+
+    return ret;
+}
+
+TinyRet ActionFromRequest(UpnpAction *action, const char *content, uint32_t contentLength)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        SoapMessage * soap = SoapMessage_New();
+        if (soap == NULL)
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        do
+        {
+            uint32_t i = 0;
+            uint32_t count = 0;
+            UpnpService * service = UpnpAction_GetParentService(action);
+
+            printf("content: %s\n", content);
+
+            ret = SoapMessage_ParseRequest(soap, content, contentLength);
+            if (RET_FAILED(ret))
+            {
+                break;
+            }
+
+            count = UpnpAction_GetArgumentCount(action);
+            for (i = 0; i < count; i++)
+            {
+                UpnpArgument *argument = UpnpAction_GetArgumentAt(action, i);
+                if (UpnpArgument_GetDirection(argument) == ARG_IN)
+                {
+                    const char *name = UpnpArgument_GetName(argument);
+                    const char *relatedStateVariable = NULL;
+                    UpnpStateVariable *state = NULL;
+                    PropertyList *list = NULL;
+                    const char *value = NULL;
+
+                    list = SoapMessage_GetArgumentList(soap);
+                    value = PropertyList_GetPropertyValue(list, name);
+                    if (value == NULL)
+                    {
+                        ret = TINY_RET_E_UPNP_ARGUMENT_NOT_FOUND;
+                        break;
+                    }
+
+                    relatedStateVariable = UpnpArgument_GetRelatedStateVariable(argument);
+                    state = UpnpService_GetStateVariable(service, relatedStateVariable);
+                    if (state == NULL)
+                    {
+                        ret = TINY_RET_E_UPNP_ARGUMENT_NOT_FOUND;
+                        break;
+                    }
+
+                    ret = DataValue_SetValue(&state->value, value);
+                    if (RET_FAILED(ret))
+                    {
+                        break;
+                    }
+                }
+            }
+        } while (0);
+
+        SoapMessage_Delete(soap);
     } while (0);
 
     return ret;

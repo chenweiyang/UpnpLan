@@ -17,6 +17,7 @@
 
 #include "tiny_base.h"
 #include "TcpConn.h"
+#include "UpnpAction.h"
 
 TINY_BEGIN_DECLS
 
@@ -35,6 +36,7 @@ TinyRet UpnpHttpConnection_SendOk(UpnpHttpConnection *thiz);
 TinyRet UpnpHttpConnection_SendError(UpnpHttpConnection *thiz, int code, const char *status);
 TinyRet UpnpHttpConnection_SendFile(UpnpHttpConnection *thiz, const char *file);
 TinyRet UpnpHttpConnection_SendFileContent(UpnpHttpConnection *thiz, const char *content, uint32_t contentLength);
+TinyRet UpnpHttpConnection_SendActionResponse(UpnpHttpConnection *thiz, UpnpAction *action);
 TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const char *sid, const char *timeout);
 
 

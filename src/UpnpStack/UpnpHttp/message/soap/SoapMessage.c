@@ -25,12 +25,15 @@
 
 static TinyRet SoapMessage_Construct(SoapMessage *thiz);
 static TinyRet SoapMessage_Dispose(SoapMessage *thiz);
-static TinyRet SoapMessage_ParseXml(SoapMessage *thiz, TinyXml *xml);
+static TinyRet SoapMessage_ParseRequestXml(SoapMessage *thiz, TinyXml *xml);
+static TinyRet SoapMessage_ParseResponseXml(SoapMessage *thiz, TinyXml *xml);
 
 static bool is_envelope(SoapMessage *thiz, TinyXmlNode *root);
-static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root);
+static TinyRet load_body_request(SoapMessage *thiz, TinyXmlNode *root);
+static TinyRet load_body_response(SoapMessage *thiz, TinyXmlNode *root);
 static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault);
-static TinyRet get_action_name(SoapMessage *thiz, const char *name);
+static TinyRet get_response_action_name(SoapMessage *thiz, const char *name);
+static TinyRet get_request_action_name(SoapMessage *thiz, const char *name);
 static TinyRet get_action_xmlns(SoapMessage *thiz, TinyXmlNode *response);
 
 
@@ -136,7 +139,7 @@ PropertyList *SoapMessage_GetArgumentList(SoapMessage *thiz)
     return thiz->argumentList;
 }
 
-TinyRet SoapMessage_Parse(SoapMessage *thiz, const char *bytes, uint32_t len)
+TinyRet SoapMessage_ParseRequest(SoapMessage *thiz, const char *bytes, uint32_t len)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -146,7 +149,7 @@ TinyRet SoapMessage_Parse(SoapMessage *thiz, const char *bytes, uint32_t len)
 
     do
     {
-        TinyXml *xml;
+        TinyXml *xml = NULL;
 
         SoapMessage_Dispose(thiz);
         SoapMessage_Construct(thiz);
@@ -168,7 +171,7 @@ TinyRet SoapMessage_Parse(SoapMessage *thiz, const char *bytes, uint32_t len)
                 break;
             }
 
-            ret = SoapMessage_ParseXml(thiz, xml);
+            ret = SoapMessage_ParseRequestXml(thiz, xml);
             if (RET_FAILED(ret))
             {
                 LOG_D(TAG, "SoapMessage_ParseXml failed: %s", tiny_ret_to_str(ret));
@@ -183,9 +186,56 @@ TinyRet SoapMessage_Parse(SoapMessage *thiz, const char *bytes, uint32_t len)
     return ret;
 }
 
-static TinyRet SoapMessage_ParseXml(SoapMessage *thiz, TinyXml *xml)
+TinyRet SoapMessage_ParseResponse(SoapMessage *thiz, const char *bytes, uint32_t len)
 {
-    LOG_TIME_BEGIN(TAG, SoapMessage_ParseXml);
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(bytes, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(len, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        TinyXml *xml = NULL;
+
+        SoapMessage_Dispose(thiz);
+        SoapMessage_Construct(thiz);
+
+        xml = TinyXml_New();
+        if (xml == NULL)
+        {
+            LOG_D(TAG, "Out of memory");
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        do
+        {
+            ret = TinyXml_Parse(xml, bytes, len);
+            if (RET_FAILED(ret))
+            {
+                LOG_D(TAG, "TinyXml_Parse failed: %s", tiny_ret_to_str(ret));
+                break;
+            }
+
+            ret = SoapMessage_ParseResponseXml(thiz, xml);
+            if (RET_FAILED(ret))
+            {
+                LOG_D(TAG, "SoapMessage_ParseXml failed: %s", tiny_ret_to_str(ret));
+                break;
+            }
+        } while (0);
+
+        TinyXml_Delete(xml);
+
+    } while (0);
+
+    return ret;
+}
+
+static TinyRet SoapMessage_ParseRequestXml(SoapMessage *thiz, TinyXml *xml)
+{
+    LOG_TIME_BEGIN(TAG, SoapMessage_ParseRequestXml);
     TinyRet ret = TINY_RET_OK;
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
@@ -208,7 +258,7 @@ static TinyRet SoapMessage_ParseXml(SoapMessage *thiz, TinyXml *xml)
             break;
         }
 
-        ret = load_body(thiz, root);
+        ret = load_body_request(thiz, root);
         if (RET_FAILED(ret))
         {
             break;
@@ -216,7 +266,45 @@ static TinyRet SoapMessage_ParseXml(SoapMessage *thiz, TinyXml *xml)
 
     } while (0);
 
-    LOG_TIME_END(TAG, SoapMessage_ParseXml);
+    LOG_TIME_END(TAG, SoapMessage_ParseRequestXml);
+
+    return ret;
+}
+
+static TinyRet SoapMessage_ParseResponseXml(SoapMessage *thiz, TinyXml *xml)
+{
+    LOG_TIME_BEGIN(TAG, SoapMessage_ParseResponseXml);
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(xml, TINY_RET_E_ARG_NULL);
+
+    LOG_D(TAG, "SoapMessage_ParseXml ...");
+
+    do
+    {
+        TinyXmlNode *root = TinyXml_GetRoot(xml);
+        if (root == NULL)
+        {
+            ret = TINY_RET_E_XML_INVALID;
+            break;
+        }
+
+        if (!is_envelope(thiz, root))
+        {
+            ret = TINY_RET_E_XML_INVALID;
+            break;
+        }
+
+        ret = load_body_response(thiz, root);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+    } while (0);
+
+    LOG_TIME_END(TAG, SoapMessage_ParseResponseXml);
 
     return ret;
 }
@@ -355,6 +443,16 @@ TinyRet SoapMessage_SetActionXmlns(SoapMessage *thiz, const char *actionXmlns)
     return TINY_RET_OK;
 }
 
+TinyRet SoapMessage_SetResponseActionName(SoapMessage *thiz, const char *actionName)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(actionName, TINY_RET_E_ARG_NULL);
+
+    tiny_snprintf(thiz->actionName, ACTION_XMLNS_LEN, "%s%s", actionName, "Response");
+
+    return TINY_RET_OK;
+}
+
 const char * SoapMessage_GetServerURL(SoapMessage *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
@@ -443,7 +541,87 @@ static bool is_envelope(SoapMessage *thiz, TinyXmlNode *root)
     return result;
 }
 
-static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
+static TinyRet load_body_request(SoapMessage *thiz, TinyXmlNode *root)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        TinyXmlNode *body = NULL;
+        TinyXmlNode *request = NULL;
+        uint32_t count = 0;
+        uint32_t i = 0;
+
+        /**
+        * <Body>
+        */
+        body = TinyXmlNode_GetChildByName(root, "Body");
+        if (body == NULL)
+        {
+            ret = TINY_RET_E_NOT_FOUND;
+            break;
+        }
+
+        request = TinyXmlNode_GetChildAt(body, 0);
+        if (request == NULL)
+        {
+            ret = TINY_RET_E_NOT_FOUND;
+            break;
+        }
+
+        /**
+        * Get the action name
+        *
+        * [action]
+        */
+        ret = get_request_action_name(thiz, TinyXmlNode_GetName(request));
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        /**
+        * Get the xmlns
+        * xmlns:m="urn:schemas-upnp-org:service:AVTransport:1" or
+        * xmlns:u="GetDeviceCapabilities"
+        */
+        ret = get_action_xmlns(thiz, request);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        count = TinyXmlNode_GetChildren(request);
+        for (i = 0; i < count; i++)
+        {
+            TinyXmlNode *arg = TinyXmlNode_GetChildAt(request, i);
+            const char *name = TinyXmlNode_GetName(arg);
+            const char *value = TinyXmlNode_GetContent(arg);
+
+            if (name == NULL)
+            {
+                LOG_D(TAG, "has empty name");
+                continue;
+            }
+
+            if (value == NULL)
+            {
+                LOG_D(TAG, "%s has empty value", name);
+                continue;
+            }
+
+            ret = PropertyList_Add(thiz->argumentList, name, value);
+            if (RET_FAILED(ret))
+            {
+                break;
+            }
+        }
+    } while (0);
+
+    return ret;
+}
+
+static TinyRet load_body_response(SoapMessage *thiz, TinyXmlNode *root)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -486,7 +664,7 @@ static TinyRet load_body(SoapMessage *thiz, TinyXmlNode *root)
          *
          * [action name][Response]
          */
-        ret = get_action_name(thiz, TinyXmlNode_GetName(response));
+        ret = get_response_action_name(thiz, TinyXmlNode_GetName(response));
         if (RET_FAILED(ret))
         {
             break;
@@ -624,7 +802,18 @@ static TinyRet load_soap_fault(SoapMessage *thiz, TinyXmlNode *fault)
 
 #define SOAP_ACTION_NAME_LEN    128
 
-static TinyRet get_action_name(SoapMessage *thiz, const char *action_response)
+static TinyRet get_request_action_name(SoapMessage *thiz, const char *action)
+{
+    TinyRet ret = TINY_RET_OK;
+
+    LOG_D(TAG, "get_request_action_name: %s", action);
+
+    SoapMessage_SetActionName(thiz, action);
+
+    return ret;
+}
+
+static TinyRet get_response_action_name(SoapMessage *thiz, const char *action_response)
 {
     TinyRet ret = TINY_RET_OK;
 

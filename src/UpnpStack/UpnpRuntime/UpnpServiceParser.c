@@ -486,7 +486,7 @@ static uint32_t UpnpServiceParser_ActionToXml(UpnpAction *action, char *xml, uin
             memset(relatedStateVariable, 0, 1024);
 
             tiny_snprintf(name, 1024, "<name>%s</name>", UpnpArgument_GetName(arg));
-            tiny_snprintf(name, 1024, "<direction>%s</direction>", UpnpArgumentDirection_ToString(UpnpArgument_GetDirection(arg)));
+            tiny_snprintf(direction, 1024, "<direction>%s</direction>", UpnpArgumentDirection_ToString(UpnpArgument_GetDirection(arg)));
             tiny_snprintf(relatedStateVariable, 1024, "<relatedStateVariable>%s</relatedStateVariable>",
                 UpnpArgument_GetRelatedStateVariable(arg));
 

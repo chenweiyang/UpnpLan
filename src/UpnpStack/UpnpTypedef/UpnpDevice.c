@@ -108,7 +108,7 @@ static void UpnpDevice_Dispose(UpnpDevice *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    TinyList_Delete(&thiz->serviceList);
+    TinyList_Dispose(&thiz->serviceList);
 }
 
 TinyRet UpnpDevice_SetHttpPort(UpnpDevice *thiz, uint16_t port)

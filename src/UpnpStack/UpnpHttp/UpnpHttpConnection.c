@@ -17,6 +17,7 @@
 #include "tiny_log.h"
 #include "HttpMessage.h"
 #include "upnp_define.h"
+#include "message/ActionResponse.h"
 
 #define TAG     "UpnpHttpConnection"
 
@@ -151,6 +152,7 @@ TinyRet UpnpHttpConnection_SendFileContent(UpnpHttpConnection *thiz, const char 
         }
 
         HttpMessage_SetType(response, HTTP_RESPONSE);
+        HttpMessage_SetVersion(response, 1, 1);
         HttpMessage_SetResponse(response, 200, "OK");
         HttpMessage_SetHeaderInteger(response, "Content-Length", contentLength);
 
@@ -168,6 +170,53 @@ TinyRet UpnpHttpConnection_SendFileContent(UpnpHttpConnection *thiz, const char 
         size = 0;
 
         ret = TcpConn_Send(thiz->conn, content, contentLength, UPNP_TIMEOUT);
+    } while (0);
+
+    if (response != NULL)
+    {
+        HttpMessage_Delete(response);
+    }
+
+    return ret;
+}
+
+TinyRet UpnpHttpConnection_SendActionResponse(UpnpHttpConnection *thiz, UpnpAction *action)
+{
+    TinyRet ret = TINY_RET_OK;
+    HttpMessage *response = NULL;
+
+    do
+    {
+        char string[1024 * 20];
+        uint32_t size = 0;
+
+        response = HttpMessage_New();
+        if (response == NULL)
+        {
+            LOG_E(TAG, "HttpMessage_New failed");
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        ret = ActionToResponse(action, response);
+
+        if (RET_FAILED(ret))
+        {
+            UpnpHttpConnection_SendError(thiz, 404, "ACTION Execute failed");
+            break;
+        }
+
+        memset(string, 0, 1024 * 20);
+        size = HttpMessage_ToString(response, string, 1024 * 20);
+        if (size == 0)
+        {
+            UpnpHttpConnection_SendError(thiz, 404, "ACTION Execute failed");
+            LOG_E(TAG, "HttpMessage_ToString failed");
+            ret = TINY_RET_E_HTTP_MSG_INVALID;
+            break;
+        }
+
+        ret = TcpConn_Send(thiz->conn, string, size, UPNP_TIMEOUT);
     } while (0);
 
     if (response != NULL)
@@ -199,6 +248,7 @@ TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const
         }
 
         HttpMessage_SetType(response, HTTP_RESPONSE);
+        HttpMessage_SetVersion(response, 1, 1);
         HttpMessage_SetResponse(response, 200, "OK");
         HttpMessage_SetHeader(response, "SID", sid);
         HttpMessage_SetHeader(response, "TIMEOUT", timeout);

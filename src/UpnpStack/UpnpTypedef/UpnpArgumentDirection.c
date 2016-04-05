@@ -37,8 +37,6 @@ const char * UpnpArgumentDirection_ToString(UpnpArgumentDirection direction)
 {
     const char *string = NULL;
     
-    RETURN_VAL_IF_FAIL(string, NULL);
-
     switch (direction)
     {
     case ARG_IN:

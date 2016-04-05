@@ -22,6 +22,7 @@ TINY_BEGIN_DECLS
 
 
 TinyRet ActionFromResponse(UpnpAction *action, UpnpError *error, HttpMessage *response);
+TinyRet ActionToResponse(UpnpAction *action, HttpMessage *response);
 
 
 TINY_END_DECLS

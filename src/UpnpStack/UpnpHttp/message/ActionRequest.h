@@ -23,6 +23,7 @@ TINY_BEGIN_DECLS
 
 
 TinyRet ActionToRequest(UpnpAction *action, HttpMessage *request);
+TinyRet ActionFromRequest(UpnpAction *action, const char *content, uint32_t contentLength);
 
 
 TINY_END_DECLS

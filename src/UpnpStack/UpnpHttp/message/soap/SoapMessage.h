@@ -31,11 +31,13 @@ void SoapMessage_Delete(SoapMessage *thiz);
 PropertyList *SoapMessage_GetArgumentList(SoapMessage *thiz);
 PropertyList *SoapMessage_GetFault(SoapMessage *thiz);
 
-TinyRet SoapMessage_Parse(SoapMessage *thiz, const char *bytes, uint32_t len);
+TinyRet SoapMessage_ParseRequest(SoapMessage *thiz, const char *bytes, uint32_t len);
+TinyRet SoapMessage_ParseResponse(SoapMessage *thiz, const char *bytes, uint32_t len);
 TinyRet SoapMessage_ToString(SoapMessage *thiz, char *bytes, uint32_t len);
 
 TinyRet SoapMessage_SetServerURL(SoapMessage *thiz, const char *serverURL);
 TinyRet SoapMessage_SetActionName(SoapMessage *thiz, const char *actionName);
+TinyRet SoapMessage_SetResponseActionName(SoapMessage *thiz, const char *actionName);
 TinyRet SoapMessage_SetActionXmlns(SoapMessage *thiz, const char *actionXmlns);
 const char * SoapMessage_GetServerURL(SoapMessage *thiz);
 const char * SoapMessage_GetActionName(SoapMessage *thiz);

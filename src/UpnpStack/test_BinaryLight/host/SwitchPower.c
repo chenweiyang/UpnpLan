@@ -218,7 +218,7 @@ static TinyRet init_stateList(UpnpService *service)
             break;
         }
 
-        ret = UpnpStateVariable_Initialize(_Status, PROPERTY_Status, "string", NULL, "YES");
+        ret = UpnpStateVariable_Initialize(_Status, PROPERTY_Status, "boolean", NULL, "YES");
         if (RET_FAILED(ret))
         {
             break;
@@ -240,7 +240,7 @@ static TinyRet init_stateList(UpnpService *service)
             break;
         }
 
-        ret = UpnpStateVariable_Initialize(_Target, PROPERTY_Target, "string", NULL, "YES");
+        ret = UpnpStateVariable_Initialize(_Target, PROPERTY_Target, "boolean", NULL, "YES");
         if (RET_FAILED(ret))
         {
             break;
@@ -293,6 +293,8 @@ static TinyRet init_actionList(UpnpService *service)
         {
             break;
         }
+
+        UpnpService_AddAction(service, _GetTarget);
     } while (0);
 
     /**
@@ -327,6 +329,8 @@ static TinyRet init_actionList(UpnpService *service)
         {
             break;
         }
+
+        UpnpService_AddAction(service, _SetTarget);
     } while (0);
 
     /**
@@ -362,6 +366,8 @@ static TinyRet init_actionList(UpnpService *service)
         {
             break;
         }
+
+        UpnpService_AddAction(service, _GetStatus);
     } while (false);
 
     return ret;

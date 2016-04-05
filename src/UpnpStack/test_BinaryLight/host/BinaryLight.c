@@ -20,7 +20,7 @@ static const char * _ID_SwitchPower = "urn:upnp-org:serviceId:SwitchPower";
 
 static TinyRet BinaryLight_Construct(BinaryLight *thiz, UpnpDeviceConfig *config, UpnpRuntime *runtime);
 static void BinaryLight_Dispose(BinaryLight *thiz);
-static uint32_t action_handler(UpnpAction *action, void *ctx);
+static UpnpCode action_handler(UpnpAction *action, void *ctx);
 
 struct _BinaryLight
 {
@@ -95,11 +95,13 @@ static void BinaryLight_Dispose(BinaryLight *thiz)
     if (thiz->switchPower != NULL)
     {
         SwitchPower_Delete(thiz->switchPower);
+        thiz->switchPower = NULL;
     }
 
     if (thiz->device != NULL)
     {
         UpnpDevice_Delete(thiz->device);
+        thiz->device = NULL;
     }
 }
 
@@ -139,7 +141,7 @@ TinyRet BinaryLight_Stop(BinaryLight *thiz)
     return UpnpRuntime_Unregister(thiz->runtime, UpnpDevice_GetDeviceId(thiz->device));
 }
 
-static uint32_t action_handler(UpnpAction *action, void *ctx)
+static UpnpCode action_handler(UpnpAction *action, void *ctx)
 {
     BinaryLight *thiz = (BinaryLight *)ctx;
 

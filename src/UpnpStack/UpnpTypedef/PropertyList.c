@@ -149,6 +149,8 @@ TinyRet PropertyList_Add(PropertyList *thiz, const char *name, const char *value
             break;
         }
 
+        strncpy(p->name, name, PROPERTY_NAME_LEN);
+        strncpy(p->value, value, PROPERTY_VALUE_LEN);
 
         ret = PropertyList_AddProperty(thiz, p);
         if (RET_FAILED(ret))
