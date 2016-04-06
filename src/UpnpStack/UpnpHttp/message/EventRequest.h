@@ -22,7 +22,7 @@
 TINY_BEGIN_DECLS
 
 
-TinyRet UpnpEventToRequest(UpnpEvent *action, HttpMessage *request);
+TinyRet UpnpEventToRequest(UpnpEvent *event, HttpMessage *request);
 
 
 TINY_END_DECLS

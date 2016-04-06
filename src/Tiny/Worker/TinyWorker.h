@@ -31,27 +31,27 @@ typedef void(*TinyWorkerJobDeleteListener)(TinyWorker *worker, void *job, void *
 struct _TinyWorker
 {
     bool                            is_running;
-    TinyBlockingQueue                     job_queue;
-    TinyWorkerListener                listener;
+    TinyBlockingQueue               job_queue;
+    TinyWorkerListener              listener;
     void                          * listener_ctx;
-    TinyThread                        thread;
-    TinyWorkerJobDeleteListener       job_delete_listener;
+    TinyThread                      thread;
+    TinyWorkerJobDeleteListener     job_delete_listener;
     void                          * job_delete_listener_ctx;
 };
 
-TinyWorker * ScWorker_New(void);
-TinyRet ScWorker_Construct(TinyWorker *thiz);
-TinyRet ScWorker_Initialize(TinyWorker *thiz, TinyWorkerJobDeleteListener listener, void *ctx);
-TinyRet ScWorker_Dispose(TinyWorker *thiz);
-void ScWorker_Delete(TinyWorker *thiz);
+TinyWorker * TinyWorker_New(void);
+TinyRet TinyWorker_Construct(TinyWorker *thiz);
+TinyRet TinyWorker_Initialize(TinyWorker *thiz, TinyWorkerJobDeleteListener listener, void *ctx);
+TinyRet TinyWorker_Dispose(TinyWorker *thiz);
+void TinyWorker_Delete(TinyWorker *thiz);
 
-const char * ScWorker_GetName(TinyWorker *thiz);
-TinyRet ScWorker_Start(TinyWorker *thiz, const char *name, TinyWorkerListener listener, void *ctx);
-TinyRet ScWorker_Stop(TinyWorker *thiz);
-bool ScWorker_IsStarted(TinyWorker *thiz);
+const char * TinyWorker_GetName(TinyWorker *thiz);
+TinyRet TinyWorker_Start(TinyWorker *thiz, const char *name, TinyWorkerListener listener, void *ctx);
+TinyRet TinyWorker_Stop(TinyWorker *thiz);
+bool TinyWorker_IsStarted(TinyWorker *thiz);
 
-TinyRet ScWorker_PutJob(TinyWorker *thiz, void *job);
-void * ScWorker_GetJob(TinyWorker *thiz);
+TinyRet TinyWorker_PutJob(TinyWorker *thiz, void *job);
+void * TinyWorker_GetJob(TinyWorker *thiz);
 
 
 TINY_END_DECLS

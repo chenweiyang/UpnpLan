@@ -76,35 +76,6 @@ void UpnpStateVariable_Copy(UpnpStateVariable *dst, UpnpStateVariable *src)
     }
 }
 
-#if 0
-TinyRet UpnpStateVariable_Initialize(UpnpStateVariable *thiz, const char *name, DataType *dataType, DataValue *value, bool sendEvents, void *service)
-{
-    TinyRet ret = TINY_RET_OK;
-
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
-    RETURN_VAL_IF_FAIL(name, TINY_RET_E_ARG_NULL);
-
-    do
-    {
-        UpnpStateVariableDefinition_Initialize(&thiz->definition, name, dataType);
-
-        if (value == NULL)
-        {
-            break;
-        }
-
-        if (value->internalType != value->internalType)
-        {
-            break;
-        }
-
-        DataValue_Copy(&thiz->value, value);
-    } while (0);
-
-    return ret;
-}
-#endif
-
 TinyRet UpnpStateVariable_Initialize(UpnpStateVariable *thiz, const char *name, const char *dataType, const char *defaultValue, const char *sendEvents)
 {
     TinyRet ret = TINY_RET_OK;

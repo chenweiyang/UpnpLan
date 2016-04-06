@@ -18,6 +18,7 @@
 #include "tiny_base.h"
 #include "UpnpHttpManager.h"
 #include "UpnpProvider.h"
+#include "TinyWorker.h"
 
 TINY_BEGIN_DECLS
 
@@ -26,12 +27,16 @@ typedef struct _UpnpGenaServer
 {
     UpnpHttpManager *http;
     UpnpProvider *provider;
+    TinyWorker notifyWorker;
 } UpnpGenaServer;
 
 UpnpGenaServer * UpnpGenaServer_New(UpnpHttpManager *http, UpnpProvider *provider);
 TinyRet UpnpGenaServer_Construct(UpnpGenaServer *thiz, UpnpHttpManager *http, UpnpProvider *provider);
 void UpnpGenaServer_Dispose(UpnpGenaServer *thiz);
 void UpnpGenaServer_Delete(UpnpGenaServer *thiz);
+
+TinyRet UpnpGenaServer_Start(UpnpGenaServer *thiz);
+TinyRet UpnpGenaServer_Stop(UpnpGenaServer *thiz);
 
 
 TINY_END_DECLS

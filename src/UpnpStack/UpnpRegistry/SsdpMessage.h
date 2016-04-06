@@ -84,13 +84,13 @@ TINY_BEGIN_DECLS
 */
 typedef struct _SsdpAlive
 {
-    char        host[HEAD_HOST_LEN];
-    char        nt[HEAD_NT_LEN];
-    char        nts[HEAD_NTS_LEN];
-    char        usn[HEAD_USN_LEN];
-    char        cache_control[HEAD_CACHE_CONTROL_LEN];
-    char        location[HEAD_LOCATION_LEN];
-    char        server[HEAD_SERVER_LEN];
+    char        host[HEAD_HOST_LEN + 1];
+    char        nt[HEAD_NT_LEN + 1];
+    char        nts[HEAD_NTS_LEN + 1];
+    char        usn[HEAD_USN_LEN + 1];
+    char        cache_control[HEAD_CACHE_CONTROL_LEN + 1];
+    char        location[HEAD_LOCATION_LEN + 1];
+    char        server[HEAD_SERVER_LEN + 1];
 } SsdpAlive;
 
 /**
@@ -104,10 +104,10 @@ typedef struct _SsdpAlive
 */
 typedef struct _SsdpByebye
 {
-    char        host[HEAD_HOST_LEN];
-    char        nt[HEAD_NT_LEN];
-    char        nts[HEAD_NTS_LEN];
-    char        usn[HEAD_USN_LEN];
+    char        host[HEAD_HOST_LEN + 1];
+    char        nt[HEAD_NT_LEN + 1];
+    char        nts[HEAD_NTS_LEN + 1];
+    char        usn[HEAD_USN_LEN + 1];
 } SsdpByebye;
 
 /**
@@ -122,9 +122,9 @@ typedef struct _SsdpByebye
 */
 typedef struct _SsdpRequest
 {
-    char        host[HEAD_HOST_LEN];
-    char        st[HEAD_ST_LEN];
-    char        man[HEAD_MAN_LEN];
+    char        host[HEAD_HOST_LEN + 1];
+    char        st[HEAD_ST_LEN + 1];
+    char        man[HEAD_MAN_LEN + 1];
     int         mx;
 } SsdpRequest;
 
@@ -141,11 +141,11 @@ typedef struct _SsdpRequest
 */
 typedef struct _SsdpResponse
 {
-    char        cache_control[HEAD_CACHE_CONTROL_LEN];
-    char        location[HEAD_LOCATION_LEN];
-    char        st[HEAD_ST_LEN];
-    char        server[HEAD_SERVER_LEN];
-    char        usn[HEAD_USN_LEN];
+    char        cache_control[HEAD_CACHE_CONTROL_LEN + 1];
+    char        location[HEAD_LOCATION_LEN + 1];
+    char        st[HEAD_ST_LEN + 1];
+    char        server[HEAD_SERVER_LEN + 1];
+    char        usn[HEAD_USN_LEN + 1];
 } SsdpResponse;
 
 typedef enum _SsdpMessageType
@@ -160,7 +160,7 @@ typedef enum _SsdpMessageType
 typedef struct _SsdpMessage
 {
     SsdpMessageType type;
-    char            ip[TINY_IP_LEN];
+    char            ip[TINY_IP_LEN + 1];
     uint16_t        port;
 
     union

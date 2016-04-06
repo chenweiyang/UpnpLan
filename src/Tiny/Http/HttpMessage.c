@@ -568,7 +568,6 @@ void HttpMessage_SetHeaderInteger(HttpMessage * thiz, const char *name, uint32_t
 {
     RETURN_IF_FAIL(thiz);
     RETURN_IF_FAIL(name);
-    RETURN_IF_FAIL(value);
 
     HttpHeader_SetInteger(&thiz->header, name, value);
 }

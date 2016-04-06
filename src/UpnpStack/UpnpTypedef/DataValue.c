@@ -29,7 +29,7 @@ void DataValue_Dispose(DataValue *thiz)
 
     do
     {
-        if (thiz->internalType = INTERNAL_UNDEFINED)
+        if (thiz->internalType == INTERNAL_UNDEFINED)
         {
             break;
         }
@@ -91,7 +91,7 @@ TinyRet DataValue_GetValue(DataValue *thiz, char *value, uint32_t len)
         break;
 
     case INTERNAL_LONG:
-        tiny_snprintf(value, len, "%l", thiz->internalValue.longValue);
+        tiny_snprintf(value, len, "%lld", thiz->internalValue.longValue);
         break;
 
     case INTERNAL_FLOAT:

@@ -12,6 +12,7 @@
 
 #include "UpnpSubscriber.h"
 #include "tiny_memory.h"
+#include "tiny_log.h"
 
 struct _UpnpSubscriber
 {
@@ -74,8 +75,11 @@ void UpnpSubscriber_Delete(UpnpSubscriber *thiz)
 TinyRet UpnpSubscriber_SetCallback(UpnpSubscriber *thiz, const char *callback)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(callback, TINY_RET_E_ARG_NULL);
 
     strncpy(thiz->callback, callback, TINY_URL_LEN);
+
+    LOG_D("debug --> ", "UpnpSubscriber_SetCallback: %s", thiz->callback);
 
     return TINY_RET_OK;
 }
@@ -83,6 +87,8 @@ TinyRet UpnpSubscriber_SetCallback(UpnpSubscriber *thiz, const char *callback)
 const char * UpnpSubscriber_GetCallback(UpnpSubscriber *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    LOG_D("debug ---> ", "UpnpSubscriber_GetCallback: %s", thiz->callback);
 
     return thiz->callback;
 }
@@ -106,8 +112,9 @@ uint32_t UpnpSubscriber_GetTimeout(UpnpSubscriber *thiz)
 TinyRet UpnpSubscriber_SetSid(UpnpSubscriber *thiz, const char *sid)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(sid, TINY_RET_E_ARG_NULL);
 
-    strncpy(thiz->sid, sid, TINY_URL_LEN);
+    strncpy(thiz->sid, sid, UPNP_UUID_LEN);
 
     return TINY_RET_OK;
 }

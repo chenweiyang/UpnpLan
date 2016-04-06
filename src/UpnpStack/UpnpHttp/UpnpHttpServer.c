@@ -17,6 +17,7 @@
 #include "tiny_log.h"
 #include "HttpMessage.h"
 #include "upnp_define.h"
+#include "upnp_timeout_util.h"
 
 #define TAG         "UpnpHttpServer"
 
@@ -455,17 +456,39 @@ static void doSubscribe(UpnpHttpServer *thiz, UpnpHttpConnection *conn, HttpMess
 {
     do
     {
+        uint32_t second = 0;
+        const char * timeout = HttpMessage_GetHeaderValue(request, "TIMEOUT");
+        const char * callback = HttpMessage_GetHeaderValue(request, "CALLBACK");
+        char url[TINY_URL_LEN];
+
+        if (callback == NULL)
+        {
+            UpnpHttpConnection_SendError(conn, 404, "CALLBACK invalid");
+            break;
+        }
+
+        memset(url, 0, TINY_URL_LEN);
+        strncpy(url, callback + 1, strlen(callback) - 2);
+
+        if (RET_FAILED(upnp_timeout_get_second(timeout, &second)))
+        {
+            UpnpHttpConnection_SendError(conn, 404, "TIMEOUT invalid");
+            break;
+        }
+
         if (thiz->OnSubscribe == NULL)
         {
             UpnpHttpConnection_SendError(conn, 404, "FILE NOT FOUND");
             break;
         }
 
+        LOG_D(TAG, "timeout: %s", timeout);
+
         thiz->OnSubscribe(conn,
             HttpMessage_GetUri(request),
-            HttpMessage_GetHeaderValue(request, "CALLBACK"),
+            url,
             HttpMessage_GetHeaderValue(request, "NT"),
-            atoi(HttpMessage_GetHeaderValue(request, "TIMEOUT")),
+            second,
             thiz->OnSubscribeCtx);
     } while (0);
 }

@@ -425,8 +425,6 @@ UpnpCode SwitchPower_OnAction(SwitchPower *thiz, UpnpAction *action)
 
 TinyRet SwitchPower_SendEvents(SwitchPower *thiz)
 {
-    TinyRet ret = TINY_RET_OK;
-
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     return UpnpService_SendEvents(thiz->service);
@@ -438,7 +436,24 @@ TinyRet SwitchPower_SetStatus(SwitchPower *thiz, bool theStatus)
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return ret;  
+    do
+    {
+        UpnpStateVariable * _Status = UpnpService_GetStateVariable(thiz->service, PROPERTY_Status);
+        if (_Status == NULL)
+        {
+            LOG_E(TAG, "invalid: %s NOT FOUND!", PROPERTY_Status);
+            ret = TINY_RET_E_INTERNAL;
+            break;
+        }
+
+        if (_Status->value.internalValue.boolValue != theStatus)
+        {
+            _Status->value.internalValue.boolValue = theStatus;
+            _Status->isChanged = true;
+        }
+    } while (0);
+
+    return ret;
 }
 
 TinyRet SwitchPower_SetTarget(SwitchPower *thiz, bool theTarget)
@@ -447,7 +462,24 @@ TinyRet SwitchPower_SetTarget(SwitchPower *thiz, bool theTarget)
 
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
-    return ret;  
+    do
+    {
+        UpnpStateVariable * _Target = UpnpService_GetStateVariable(thiz->service, PROPERTY_Target);
+        if (_Target == NULL)
+        {
+            LOG_E(TAG, "invalid: %s NOT FOUND!", PROPERTY_Target);
+            ret = TINY_RET_E_INTERNAL;
+            break;
+        }
+
+        if (_Target->value.internalValue.boolValue != theTarget)
+        {
+            _Target->value.internalValue.boolValue = theTarget;
+            _Target->isChanged = true;
+        }
+    } while (0);
+
+    return ret;
 }
 
 static UpnpCode handle_GetTarget(SwitchPower *thiz, UpnpAction *action)

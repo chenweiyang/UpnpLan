@@ -168,20 +168,37 @@ void UpnpService_SetChangedListener(UpnpService *thiz, UpnpServiceChangedListene
 
 TinyRet UpnpService_SendEvents(UpnpService *thiz)
 {
+    TinyRet ret = TINY_RET_OK;
+
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     do
     {
+        boolean isChanged = false;
+        int i = 0;
+
         if (thiz->changedListener == NULL)
         {
             break;
         }
 
-        // TODO ...
+        for (i = 0; i < TinyList_GetCount(&thiz->stateVariableTable); ++i)
+        {
+            UpnpStateVariable *v = (UpnpStateVariable *)TinyList_GetAt(&thiz->stateVariableTable, i);
+            if (v->sendEvents && v->isChanged)
+            {
+                isChanged = true;
+                break;
+            }
+        }
 
+        if (isChanged)
+        {
+            thiz->changedListener(thiz, thiz->changedCtx);
+        }
     } while (0);
 
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    return ret;
 }
 
 TinyRet UpnpService_SetServiceType(UpnpService *thiz, const char *serviceType)

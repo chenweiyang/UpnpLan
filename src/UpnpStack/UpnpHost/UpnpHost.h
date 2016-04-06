@@ -39,6 +39,8 @@ TinyRet UpnpHost_Construct(UpnpHost *thiz, UpnpHttpManager *http, UpnpProvider *
 void UpnpHost_Dispose(UpnpHost *thiz);
 void UpnpHost_Delete(UpnpHost *thiz);
 
+TinyRet UpnpHost_Start(UpnpHost *thiz);
+TinyRet UpnpHost_Stop(UpnpHost *thiz);
 
 
 TINY_END_DECLS

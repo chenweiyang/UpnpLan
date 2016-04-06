@@ -368,10 +368,11 @@ TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *dev
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         uint16_t port = UpnpDevice_GetHttpPort(device);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::upnp:rootdevice", deviceId);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::upnp:rootdevice", deviceId);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_ALIVE;
@@ -382,6 +383,7 @@ TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *dev
         strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
         strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
+        thiz->v.alive.usn[HEAD_USN_LEN] = '\0';
         strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
     } while (0);
 
@@ -425,10 +427,11 @@ TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device,
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         const char *deviceType = UpnpDevice_GetDeviceType(device);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::%s", deviceId, deviceType);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_ALIVE;
@@ -439,6 +442,7 @@ TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device,
         strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
         strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
+        thiz->v.alive.usn[HEAD_USN_LEN] = '\0';
         strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
     } while (0);
 
@@ -457,10 +461,11 @@ TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *servi
         UpnpDevice *device = (UpnpDevice *) UpnpService_GetParentDevice(service);
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         const char *serviceType = UpnpService_GetServiceType(service);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::%s", deviceId, serviceType);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::%s", deviceId, serviceType);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_ALIVE;
@@ -471,6 +476,7 @@ TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *servi
         strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
         strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
+        thiz->v.alive.usn[HEAD_USN_LEN] = '\0';
         strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
     } while (0);
 
@@ -487,10 +493,11 @@ TinyRet SsdpMessage_ConstructByebye_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *de
     do
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::upnp:rootdevice", deviceId);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::upnp:rootdevice", deviceId);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_BYEBYE;
@@ -499,6 +506,7 @@ TinyRet SsdpMessage_ConstructByebye_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *de
         strncpy(thiz->v.byebye.nt, "upnp:rootdevice", HEAD_NT_LEN);
         strncpy(thiz->v.byebye.nts, NTS_BYEBYE, HEAD_NTS_LEN);
         strncpy(thiz->v.byebye.usn, usn, HEAD_USN_LEN);
+        thiz->v.byebye.usn[HEAD_USN_LEN] = '\0';
     } while (0);
 
     return ret;
@@ -538,10 +546,11 @@ TinyRet SsdpMessage_ConstructByebye_DEVICE(SsdpMessage *thiz, UpnpDevice *device
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         const char *deviceType = UpnpDevice_GetDeviceType(device);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::%s", deviceId, deviceType);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_BYEBYE;
@@ -550,6 +559,7 @@ TinyRet SsdpMessage_ConstructByebye_DEVICE(SsdpMessage *thiz, UpnpDevice *device
         strncpy(thiz->v.byebye.nt, deviceType, HEAD_NT_LEN);
         strncpy(thiz->v.byebye.nts, NTS_BYEBYE, HEAD_NTS_LEN);
         strncpy(thiz->v.byebye.usn, usn, HEAD_USN_LEN);
+        thiz->v.byebye.usn[HEAD_USN_LEN] = '\0';
     } while (0);
 
     return ret;
@@ -567,10 +577,11 @@ TinyRet SsdpMessage_ConstructByebye_SERVICE(SsdpMessage *thiz, UpnpService *serv
         UpnpDevice *device = (UpnpDevice *)UpnpService_GetParentDevice(service);
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         const char *serviceType = UpnpService_GetServiceType(service);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::%s", deviceId, serviceType);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::%s", deviceId, serviceType);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_BYEBYE;
@@ -579,6 +590,7 @@ TinyRet SsdpMessage_ConstructByebye_SERVICE(SsdpMessage *thiz, UpnpService *serv
         strncpy(thiz->v.byebye.nt, serviceType, HEAD_NT_LEN);
         strncpy(thiz->v.byebye.nts, NTS_BYEBYE, HEAD_NTS_LEN);
         strncpy(thiz->v.byebye.usn, usn, HEAD_USN_LEN);
+        thiz->v.byebye.usn[HEAD_USN_LEN] = '\0';
     } while (0);
 
     return ret;
@@ -616,10 +628,11 @@ TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         uint16_t port = UpnpDevice_GetHttpPort(device);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::upnp:rootdevice", deviceId);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::upnp:rootdevice", deviceId);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
@@ -630,6 +643,7 @@ TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *
         strncpy(thiz->v.response.st, "upnp:rootdevice", HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        thiz->v.response.usn[HEAD_USN_LEN] = '\0';
         strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
     } while (0);
 
@@ -648,10 +662,11 @@ TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice 
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         const char *deviceType = UpnpDevice_GetDeviceType(device);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::%s", deviceId, deviceType);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
@@ -662,6 +677,7 @@ TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice 
         strncpy(thiz->v.response.st, deviceType, HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        thiz->v.response.usn[HEAD_USN_LEN] = '\0';
         strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
     } while (0);
 
@@ -679,10 +695,11 @@ TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *devi
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         const char *deviceType = UpnpDevice_GetDeviceType(device);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::%s", deviceId, deviceType);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::%s", deviceId, deviceType);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
@@ -693,6 +710,7 @@ TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *devi
         strncpy(thiz->v.response.st, deviceType, HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        thiz->v.response.usn[HEAD_USN_LEN] = '\0';
         strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
     } while (0);
 
@@ -711,10 +729,11 @@ TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *se
         UpnpDevice *device = (UpnpDevice *)UpnpService_GetParentDevice(service);
         const char *deviceId = UpnpDevice_GetDeviceId(device);
         const char *serviceType = UpnpService_GetServiceType(service);
-        char usn[256];
+        char usn[HEAD_USN_LEN + 1];
 
-        memset(usn, 0, 256);
-        tiny_snprintf(usn, 256, "%s::%s", deviceId, serviceType);
+        memset(usn, 0, HEAD_USN_LEN + 1);
+        tiny_snprintf(usn, HEAD_USN_LEN, "%s::%s", deviceId, serviceType);
+        usn[HEAD_USN_LEN] = '\0';
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
@@ -725,6 +744,7 @@ TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *se
         strncpy(thiz->v.response.st, serviceType, HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
+        thiz->v.response.usn[HEAD_USN_LEN] = '\0';
         strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
     } while (0);
 

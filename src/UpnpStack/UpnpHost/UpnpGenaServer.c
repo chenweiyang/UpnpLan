@@ -19,6 +19,26 @@
 
 #define TAG     "UpnpGenaServer"
 
+static void OnNotifyJobDelete(TinyWorker *worker, void *job, void *ctx)
+{
+    UpnpEvent * e = (UpnpEvent *)job;
+    UpnpEvent_Delete(e);
+}
+
+static bool DoNotify(TinyWorker *worker, void *job, void *ctx)
+{
+    UpnpGenaServer *thiz = (UpnpGenaServer *)ctx;
+    UpnpEvent * event = (UpnpEvent *)job;
+
+    if (UpnpEvent_GetArgumentCount(event) > 0)
+    {
+        UpnpHttpClient_Notify(&thiz->http->client, event);
+    }
+
+    UpnpEvent_Delete(event);
+
+    return true;
+}
 
 static void OnSubscribe(UpnpHttpConnection *conn, const char *uri, const char *callback, const char *nt, uint32_t timeout, void *ctx)
 {
@@ -110,13 +130,8 @@ static void OnSubscribe(UpnpHttpConnection *conn, const char *uri, const char *c
                     UpnpEvent_SetArgumentValue(event, v->definition.name, value);
                 }
             }
-            
-            if (UpnpEvent_GetArgumentCount(event) > 0)
-            {
-                UpnpHttpClient_Notify(&thiz->http->client, event);
-            }
 
-            UpnpEvent_Delete(event);
+            TinyWorker_PutJob(&thiz->notifyWorker, event);
         } while (0);
 
     } while (0);
@@ -177,7 +192,7 @@ static void OnServiceChanged(UpnpService *service, void *ctx)
             LOG_E(TAG, "UpnpEvent_New failed");
             break;
         }
-        
+
         UpnpEvent_SetConnection(event, "Close");
         UpnpEvent_SetNt(event, "upnp:event");
         UpnpEvent_SetNts(event, "upnp:propchange");
@@ -217,12 +232,14 @@ static void OnServiceChanged(UpnpService *service, void *ctx)
             count = UpnpService_GetSubscriberCount(service);
             for (i = 0; i < count; ++i)
             {
+                UpnpEvent *job = NULL;
                 UpnpSubscriber *s = (UpnpSubscriber *)UpnpService_GetSubscriberAt(service, i);
-
                 UpnpEvent_SetCallback(event, UpnpSubscriber_GetCallback(s));
                 UpnpEvent_SetSid(event, UpnpSubscriber_GetSid(s));
 
-                UpnpHttpClient_Notify(&thiz->http->client, event);
+                job = UpnpEvent_New();
+                UpnpEvent_Copy(job, event);
+                TinyWorker_PutJob(&thiz->notifyWorker, job);
             }
         }
 
@@ -282,6 +299,20 @@ TinyRet UpnpGenaServer_Construct(UpnpGenaServer *thiz, UpnpHttpManager *http, Up
             break;
         }
 
+        ret = TinyWorker_Construct(&thiz->notifyWorker);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "TinyWorker_Construct: failed");
+            break;
+        }
+
+        ret = TinyWorker_Initialize(&thiz->notifyWorker, OnNotifyJobDelete, thiz);
+        if (RET_FAILED(ret))
+        {
+            LOG_E(TAG, "TinyWorker_Initialize: failed");
+            break;
+        }
+
         /** 
          * monitor provider
          */
@@ -330,6 +361,8 @@ void UpnpGenaServer_Dispose(UpnpGenaServer *thiz)
         LOG_E(TAG, "UpnpHttpServer_UnregisterUnsubscriberHandler: failed");
     }
 
+    TinyWorker_Dispose(&thiz->notifyWorker);
+
     thiz->http = NULL;
     thiz->provider = NULL;
 }
@@ -340,4 +373,18 @@ void UpnpGenaServer_Delete(UpnpGenaServer *thiz)
 
     UpnpGenaServer_Dispose(thiz);
     tiny_free(thiz);
+}
+
+TinyRet UpnpGenaServer_Start(UpnpGenaServer *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TinyWorker_Start(&thiz->notifyWorker, "Notifier", DoNotify, thiz);
+}
+
+TinyRet UpnpGenaServer_Stop(UpnpGenaServer *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return TinyWorker_Stop(&thiz->notifyWorker);
 }

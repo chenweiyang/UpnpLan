@@ -19,7 +19,7 @@
 #define TAG     "TinyWorker"
 static void worker_loop(void *param);
 
-TinyWorker * ScWorker_New(void)
+TinyWorker * TinyWorker_New(void)
 {
     TinyWorker *thiz = NULL;
 
@@ -33,10 +33,10 @@ TinyWorker * ScWorker_New(void)
             break;
         }
 
-        ret = ScWorker_Construct(thiz);
+        ret = TinyWorker_Construct(thiz);
         if (RET_FAILED(ret))
         {
-            ScWorker_Delete(thiz);
+            TinyWorker_Delete(thiz);
             thiz = NULL;
             break;
         }
@@ -46,7 +46,7 @@ TinyWorker * ScWorker_New(void)
     return thiz;
 }
 
-TinyRet ScWorker_Construct(TinyWorker *thiz)
+TinyRet TinyWorker_Construct(TinyWorker *thiz)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -77,7 +77,7 @@ TinyRet ScWorker_Construct(TinyWorker *thiz)
     return ret;
 }
 
-TinyRet ScWorker_Initialize(TinyWorker *thiz, TinyWorkerJobDeleteListener listener, void *ctx)
+TinyRet TinyWorker_Initialize(TinyWorker *thiz, TinyWorkerJobDeleteListener listener, void *ctx)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(listener, TINY_RET_E_ARG_NULL);
@@ -88,13 +88,13 @@ TinyRet ScWorker_Initialize(TinyWorker *thiz, TinyWorkerJobDeleteListener listen
     return TINY_RET_OK;
 }
 
-TinyRet ScWorker_Dispose(TinyWorker *thiz)
+TinyRet TinyWorker_Dispose(TinyWorker *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     if (thiz->is_running)
     {
-        ScWorker_Stop(thiz);
+        TinyWorker_Stop(thiz);
     }
 
     while (true)
@@ -121,22 +121,22 @@ TinyRet ScWorker_Dispose(TinyWorker *thiz)
     return TINY_RET_OK;
 }
 
-void ScWorker_Delete(TinyWorker *thiz)
+void TinyWorker_Delete(TinyWorker *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    ScWorker_Dispose(thiz);
+    TinyWorker_Dispose(thiz);
     tiny_free(thiz);
 }
 
-const char * ScWorker_GetName(TinyWorker *thiz)
+const char * TinyWorker_GetName(TinyWorker *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     return TinyThread_GetName(&thiz->thread);
 }
 
-TinyRet ScWorker_Start(TinyWorker *thiz, const char *name,  TinyWorkerListener listener, void *ctx)
+TinyRet TinyWorker_Start(TinyWorker *thiz, const char *name,  TinyWorkerListener listener, void *ctx)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -170,7 +170,7 @@ TinyRet ScWorker_Start(TinyWorker *thiz, const char *name,  TinyWorkerListener l
     return ret;
 }
 
-TinyRet ScWorker_Stop(TinyWorker *thiz)
+TinyRet TinyWorker_Stop(TinyWorker *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
@@ -189,13 +189,13 @@ TinyRet ScWorker_Stop(TinyWorker *thiz)
     return TINY_RET_E_STOPPED;
 }
 
-bool ScWorker_IsStarted(TinyWorker *thiz)
+bool TinyWorker_IsStarted(TinyWorker *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, false);
     return thiz->is_running;
 }
 
-TinyRet ScWorker_PutJob(TinyWorker *thiz, void *job)
+TinyRet TinyWorker_PutJob(TinyWorker *thiz, void *job)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(job, TINY_RET_E_ARG_NULL);
@@ -204,7 +204,7 @@ TinyRet ScWorker_PutJob(TinyWorker *thiz, void *job)
     return TINY_RET_OK;
 }
 
-void * ScWorker_GetJob(TinyWorker *thiz)
+void * TinyWorker_GetJob(TinyWorker *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
 

@@ -448,7 +448,7 @@ TinyRet SoapMessage_SetResponseActionName(SoapMessage *thiz, const char *actionN
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(actionName, TINY_RET_E_ARG_NULL);
 
-    tiny_snprintf(thiz->actionName, ACTION_XMLNS_LEN, "%s%s", actionName, "Response");
+    tiny_snprintf(thiz->actionName, ACTION_NAME_LEN, "%s%s", actionName, "Response");
 
     return TINY_RET_OK;
 }

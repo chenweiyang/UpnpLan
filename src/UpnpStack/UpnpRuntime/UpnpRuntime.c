@@ -167,6 +167,13 @@ TinyRet UpnpRuntime_Start(UpnpRuntime *thiz)
             break;
         }
 
+        ret = UpnpHost_Start(&thiz->host);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpHost_Start failed");
+            break;
+        }
+
         ret = UpnpRegistry_Start(&thiz->registry);
         if (RET_FAILED(ret))
         {
@@ -190,6 +197,13 @@ TinyRet UpnpRuntime_Stop(UpnpRuntime *thiz)
         if (RET_FAILED(ret))
         {
             LOG_D(TAG, "UpnpRegistry_Stop failed");
+            break;
+        }
+
+        ret = UpnpHost_Stop(&thiz->host);
+        if (RET_FAILED(ret))
+        {
+            LOG_D(TAG, "UpnpHost_Stop failed");
             break;
         }
 

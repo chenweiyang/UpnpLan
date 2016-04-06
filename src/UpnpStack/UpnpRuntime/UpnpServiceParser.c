@@ -511,17 +511,17 @@ static uint32_t UpnpServiceParser_StateToXml(UpnpStateVariable *state, char *xml
 
     do
     {
-        char buf[1024];
+        char buf[1024 + 1];
 
-        memset(buf, 0, 1024);
+        memset(buf, 0, 1024 + 1);
         tiny_snprintf(buf, 1024, "<stateVariable sendEvents=\"%s\">", DataType_BooleanToString(state->sendEvents));
         strcat(xml, buf);
 
-        memset(buf, 0, 1024);
+        memset(buf, 0, 1024 + 1);
         tiny_snprintf(buf, 1024, "<name>%s</name>", state->definition.name);
         strcat(xml, buf);
 
-        memset(buf, 0, 1024);
+        memset(buf, 0, 1024 + 1);
         tiny_snprintf(buf, 1024, "<dataType>%s</dataType>", state->definition.dataType.name);
         strcat(xml, buf);
 

@@ -101,6 +101,25 @@ void UpnpEvent_Delete(UpnpEvent *thiz)
     tiny_free(thiz);
 }
 
+TinyRet UpnpEvent_Copy(UpnpEvent *dst, UpnpEvent *src)
+{
+    RETURN_VAL_IF_FAIL(dst, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(src, TINY_RET_E_ARG_NULL);
+
+    if (dst != src)
+    {
+        strncpy(dst->callback, src->callback, TINY_URL_LEN);
+        strncpy(dst->connection, src->connection, CONNECTION_LEN);
+        strncpy(dst->nt, src->nt, NT_LEN);
+        strncpy(dst->nts, src->nts, NTS_LEN);
+        strncpy(dst->sid, src->sid, SID_LEN);
+        strncpy(dst->seq, src->seq, SEQ_LEN);
+        PropertyList_Copy(dst->argumentList, src->argumentList);
+    }
+
+    return TINY_RET_OK;
+}
+
 TinyRet UpnpEvent_SetCallback(UpnpEvent *thiz, const char *callback)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
@@ -283,9 +302,71 @@ TinyRet UpnpEvent_Parse(UpnpEvent *thiz, const char *nt, const char *nts, const 
     return ret;
 }
 
-TinyRet UpnpEvent_ToString(UpnpEvent *thiz, char *bytes, uint32_t len)
+/*
+<?xml version="1.0"?>
+<e:propertyset xmlns:e="urn:schemas-upnp-org:event-1-0">
+<e:property>
+<LastChange xmlns:dt="urn:schemas-microsoft-com:datatypes" dt:dt="string">
+&lt;Event xmlns="urn:schemas-upnp-org:metadata-1-0/RCS/"&gt;&lt;
+InstanceID val="0"&gt;&lt;Mute channel="Master" val="0"/&gt;&lt;
+Volume channel="Master" val="60"/&gt;&lt;
+PresetNameList val="FactoryDefaults"/&gt;&lt;/
+InstanceID&gt;&lt;/Event&gt;
+</LastChange>
+</e:property>
+</e:propertyset>
+*/
+uint32_t UpnpEvent_ToString(UpnpEvent *thiz, char *bytes, uint32_t len)
 {
-    return TINY_RET_E_NOT_IMPLEMENTED;
+    uint32_t unused = len;
+    const char *head = "<?xml version=\"1.0\"?>"
+        "<e:propertyset xmlns:e=\"urn:schemas-upnp-org:event-1-0\">"
+        "<e:property>";
+    const char *tail = "</e:property></e:propertyset>";
+
+    do
+    {
+        uint32_t i = 0;
+        uint32_t count = 0;
+
+        if (unused < strlen(head))
+        {
+            break;
+        }
+
+        strcat(bytes, head);
+        unused -= strlen(head);
+
+        count = PropertyList_GetSize(thiz->argumentList);
+        for (i = 0; i < count; ++i)
+        {
+#define EVENT_MAX_VALUE (1024 * 20)
+            char buf[EVENT_MAX_VALUE];
+
+            Property *p = (Property *)PropertyList_GetPropertyAt(thiz->argumentList, i);
+
+            memset(buf, 0, EVENT_MAX_VALUE);
+            tiny_snprintf(buf, EVENT_MAX_VALUE, "<%s>%s</%s>", p->name, p->value, p->name);
+
+            if (unused < strlen(buf))
+            {
+                break;
+            }
+
+            strcat(bytes, buf);
+            unused -= strlen(buf);
+        }
+
+        if (unused < strlen(tail))
+        {
+            break;
+        }
+
+        strcat(bytes, tail);
+        unused -= strlen(tail);
+    } while (0);
+
+    return strlen(bytes);
 }
 
 static TinyRet load_content(UpnpEvent *thiz, const char *bytes, uint32_t len)

@@ -90,3 +90,17 @@ void UpnpHost_Delete(UpnpHost *thiz)
     UpnpHost_Dispose(thiz);
     tiny_free(thiz);
 }
+
+TinyRet UpnpHost_Start(UpnpHost *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return UpnpGenaServer_Start(&thiz->genaServer);
+}
+
+TinyRet UpnpHost_Stop(UpnpHost *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+
+    return UpnpGenaServer_Stop(&thiz->genaServer);
+}

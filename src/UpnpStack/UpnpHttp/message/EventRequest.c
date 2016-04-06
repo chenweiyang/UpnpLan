@@ -14,7 +14,33 @@
 
 #include "EventRequest.h"
 
-TinyRet UpnpEventToRequest(UpnpEvent *action, HttpMessage *request)
+TinyRet UpnpEventToRequest(UpnpEvent *event, HttpMessage *request)
 {
-    return TINY_RET_OK;
+    TinyRet ret = TINY_RET_OK;
+
+    do
+    {
+        char data[1024 * 4];
+        uint32_t size = 0;
+
+        memset(data, 0, 1024 * 4);
+        size = UpnpEvent_ToString(event, data, 1024 * 4);
+        if (size == 0)
+        {
+            ret = TINY_RET_E_ARG_INVALID;
+            break;
+        }
+
+        HttpMessage_SetRequest(request, "NOTIFY", UpnpEvent_GetCallback(event));
+        HttpMessage_SetHeader(request, "Content-Type", "text/xml;charset=\"utf-8\"");
+        HttpMessage_SetHeader(request, "nt", UpnpEvent_GetNt(event));
+        HttpMessage_SetHeader(request, "nts", UpnpEvent_GetNts(event));
+        HttpMessage_SetHeader(request, "sid", UpnpEvent_GetSid(event));
+        HttpMessage_SetHeader(request, "seq", UpnpEvent_GetSeq(event));
+        HttpMessage_SetHeaderInteger(request, "Content-Length", size);
+        HttpMessage_SetContentSize(request, size);
+        HttpMessage_AddContentObject(request, data, size);
+    } while (0);
+
+    return ret;
 }

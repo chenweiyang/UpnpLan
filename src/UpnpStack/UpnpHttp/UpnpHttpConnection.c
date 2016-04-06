@@ -18,6 +18,7 @@
 #include "HttpMessage.h"
 #include "upnp_define.h"
 #include "message/ActionResponse.h"
+#include "upnp_timeout_util.h"
 
 #define TAG     "UpnpHttpConnection"
 
@@ -227,7 +228,7 @@ TinyRet UpnpHttpConnection_SendActionResponse(UpnpHttpConnection *thiz, UpnpActi
     return ret;
 }
 
-TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const char *sid, uint32_t timeout)
+TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const char *sid, uint32_t second)
 {
     TinyRet ret = TINY_RET_OK;
     HttpMessage *response = NULL;
@@ -236,6 +237,7 @@ TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const
 
     do
     {
+        char timeout[128];
         char *bytes = NULL;
         uint32_t size = 0;
 
@@ -247,11 +249,19 @@ TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const
             break;
         }
 
+        memset(timeout, 0, 128);
+        if (RET_FAILED(upnp_timeout_to_string(second, timeout, 128)))
+        {
+            LOG_E(TAG, "upnp_timeout_to_string failed");
+            ret = TINY_RET_E_ARG_INVALID;
+            break;
+        }
+
         HttpMessage_SetType(response, HTTP_RESPONSE);
         HttpMessage_SetVersion(response, 1, 1);
         HttpMessage_SetResponse(response, 200, "OK");
         HttpMessage_SetHeader(response, "SID", sid);
-        HttpMessage_SetHeaderInteger(response, "TIMEOUT", timeout);
+        HttpMessage_SetHeader(response, "TIMEOUT", timeout);
 
         ret = HttpMessage_ToBytes(response, &bytes, &size);
         if (RET_FAILED(ret))
