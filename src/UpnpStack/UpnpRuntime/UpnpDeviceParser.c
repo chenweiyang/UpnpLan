@@ -651,7 +651,7 @@ uint32_t UpnpDeviceParser_ToXml(UpnpDevice *device, char *xml, uint32_t len)
                 ctrl,
                 event);
 
-            tiny_snprintf(p, unused, ss);
+            tiny_snprintf(p, unused, "%s", ss);
 
             p += strlen(ss);
             unused -= strlen(ss);

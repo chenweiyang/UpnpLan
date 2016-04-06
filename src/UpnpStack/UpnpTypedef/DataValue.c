@@ -91,7 +91,11 @@ TinyRet DataValue_GetValue(DataValue *thiz, char *value, uint32_t len)
         break;
 
     case INTERNAL_LONG:
+#ifdef _WIN32
         tiny_snprintf(value, len, "%lld", thiz->internalValue.longValue);
+#else
+        tiny_snprintf(value, len, "%ld", thiz->internalValue.longValue);
+#endif
         break;
 
     case INTERNAL_FLOAT:

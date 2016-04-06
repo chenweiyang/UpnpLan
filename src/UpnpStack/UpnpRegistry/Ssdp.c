@@ -214,7 +214,7 @@ static TinyRet Ssdp_Send(Ssdp *thiz, const char *bytes, uint32_t len, int fd, co
             break;
         }
 
-        LOG_D(TAG, bytes);
+        //LOG_D(TAG, bytes);
 
         tiny_udp_write(fd, ip, port, bytes, len);
     } while (0);

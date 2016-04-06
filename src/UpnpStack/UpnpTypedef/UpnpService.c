@@ -174,7 +174,7 @@ TinyRet UpnpService_SendEvents(UpnpService *thiz)
 
     do
     {
-        boolean isChanged = false;
+        bool isChanged = false;
         int i = 0;
 
         if (thiz->changedListener == NULL)
