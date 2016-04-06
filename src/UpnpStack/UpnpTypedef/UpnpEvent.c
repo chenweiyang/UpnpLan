@@ -30,6 +30,7 @@ static TinyRet load_propertyset(UpnpEvent *thiz, TinyXmlNode *root);
 
 struct _UpnpEvent
 {
+    char callback[TINY_URL_LEN];
     char connection[CONNECTION_LEN];
     char nt[NT_LEN];
     char nts[NTS_LEN];
@@ -100,6 +101,16 @@ void UpnpEvent_Delete(UpnpEvent *thiz)
     tiny_free(thiz);
 }
 
+TinyRet UpnpEvent_SetCallback(UpnpEvent *thiz, const char *callback)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(callback, TINY_RET_E_ARG_NULL);
+
+    strncpy(thiz->callback, callback, TINY_URL_LEN);
+
+    return TINY_RET_OK;
+}
+
 TinyRet UpnpEvent_SetConnection(UpnpEvent *thiz, const char *connection)
 {
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
@@ -150,6 +161,13 @@ TinyRet UpnpEvent_SetSeq(UpnpEvent *thiz, const char *seq)
     return TINY_RET_OK;
 }
 
+const char * UpnpEvent_GetCallback(UpnpEvent *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return thiz->callback;
+}
+
 const char * UpnpEvent_GetConnection(UpnpEvent *thiz)
 {
     RETURN_VAL_IF_FAIL(thiz, NULL);
@@ -183,6 +201,13 @@ const char * UpnpEvent_GetSeq(UpnpEvent *thiz)
     RETURN_VAL_IF_FAIL(thiz, NULL);
 
     return thiz->seq;
+}
+
+uint32_t UpnpEvent_GetArgumentCount(UpnpEvent *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return PropertyList_GetSize(thiz->argumentList);
 }
 
 TinyRet UpnpEvent_SetArgumentValue(UpnpEvent *thiz, const char *argumentName, const char *value)

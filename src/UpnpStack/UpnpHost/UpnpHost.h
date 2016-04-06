@@ -20,7 +20,7 @@
 #include "UpnpProvider.h"
 #include "UpnpActionExecutor.h"
 #include "UpnpDocumentGetter.h"
-#include "UpnpEventPublisher.h"
+#include "UpnpGenaServer.h"
 
 TINY_BEGIN_DECLS
 
@@ -31,7 +31,7 @@ typedef struct _UpnpHost
     UpnpProvider *provider;
     UpnpActionExecutor actionExecutor;
     UpnpDocumentGetter documentGetter;
-    UpnpEventPublisher eventPublisher;
+    UpnpGenaServer genaServer;
 } UpnpHost;
 
 UpnpHost * UpnpHost_New(UpnpHttpManager *http, UpnpProvider *provider);

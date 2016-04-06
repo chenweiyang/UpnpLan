@@ -29,6 +29,12 @@ static void UpnpStateVariableDeleteListener(void * data, void *ctx)
     UpnpStateVariable_Delete(v);
 }
 
+static void SubscriberDeleteListener(void * data, void *ctx)
+{
+    UpnpSubscriber * s = (UpnpSubscriber *)data;
+    UpnpSubscriber_Delete(s);
+}
+
 #define SERVICE_TYPE_LEN    128
 #define SERVICE_ID_LEN      128
 
@@ -46,6 +52,8 @@ struct _UpnpService
     TinyList stateVariableTable;
     UpnpServiceChangedListener changedListener;
     void * changedCtx;
+
+    TinyList subscriberList;
 };
 
 UpnpService * UpnpService_New(void)
@@ -112,6 +120,15 @@ static TinyRet UpnpService_Construct(UpnpService *thiz)
         }
 
         TinyList_SetDeleteListener(&thiz->stateVariableTable, UpnpStateVariableDeleteListener, thiz);
+
+        ret = TinyList_Construct(&thiz->subscriberList);
+        if (RET_FAILED(ret))
+        {
+            ret = TINY_RET_E_NEW;
+            break;
+        }
+
+        TinyList_SetDeleteListener(&thiz->subscriberList, SubscriberDeleteListener, thiz);
     } while (0);
 
     return ret;
@@ -121,6 +138,7 @@ static void UpnpService_Dispose(UpnpService *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
+    TinyList_Dispose(&thiz->subscriberList);
     TinyList_Dispose(&thiz->stateVariableTable);
     TinyList_Dispose(&thiz->actionList);
 }
@@ -354,6 +372,72 @@ UpnpStateVariable * UpnpService_GetStateVariable(UpnpService *thiz, const char *
         if (STR_EQUAL(state->definition.name, stateName))
         {
             return state;
+        }
+    }
+
+    return NULL;
+}
+
+TinyRet UpnpService_AddSubscriber(UpnpService *thiz, UpnpSubscriber *subscriber)
+{
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(subscriber, TINY_RET_E_ARG_NULL);
+
+    return TinyList_AddTail(&thiz->subscriberList, subscriber);
+}
+
+TinyRet UpnpService_RemoveSubscriber(UpnpService *thiz, const char *sid)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(sid, TINY_RET_E_ARG_NULL);
+
+    count = TinyList_GetCount(&thiz->subscriberList);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpSubscriber *s = (UpnpSubscriber *)TinyList_GetAt(&thiz->subscriberList, i);
+        if (STR_EQUAL(UpnpSubscriber_GetSid(s), sid))
+        {
+            return TinyList_RemoveAt(&thiz->subscriberList, i);
+        }
+    }
+
+    return TINY_RET_E_NOT_FOUND;
+}
+
+uint32_t UpnpService_GetSubscriberCount(UpnpService *thiz)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+
+    return TinyList_GetCount(&thiz->subscriberList);
+}
+
+UpnpSubscriber * UpnpService_GetSubscriberAt(UpnpService *thiz, uint32_t index)
+{
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+
+    return (UpnpSubscriber *)TinyList_GetAt(&thiz->subscriberList, index);
+}
+
+UpnpSubscriber * UpnpService_GetSubscriber(UpnpService *thiz, const char *callback)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(callback, NULL);
+
+    count = TinyList_GetCount(&thiz->subscriberList);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpSubscriber *s = (UpnpSubscriber *)TinyList_GetAt(&thiz->subscriberList, i);
+        if (STR_EQUAL(UpnpSubscriber_GetCallback(s), callback))
+        {
+            return s;
         }
     }
 

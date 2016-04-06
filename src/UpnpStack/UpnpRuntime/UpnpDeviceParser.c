@@ -92,7 +92,7 @@ TinyRet UpnpDeviceParser_Parse(const char *url, UpnpDevice *device, uint32_t tim
 
     do
     {
-        ret = UpnpDevice_SetURLBase(device, url);
+        ret = UpnpDeviceParser_SetURLBase(device, url);
         if (RET_FAILED(ret))
         {
             LOG_D(TAG, "UpnpDevice_SetUrlBase failed: %s", tiny_ret_to_str(ret));

@@ -27,17 +27,20 @@ UPNP_API TinyRet UpnpEvent_Construct(UpnpEvent *thiz);
 UPNP_API void UpnpEvent_Dispose(UpnpEvent *thiz);
 UPNP_API void UpnpEvent_Delete(UpnpEvent *thiz);
 
+UPNP_API TinyRet UpnpEvent_SetCallback(UpnpEvent *thiz, const char *callback);
 UPNP_API TinyRet UpnpEvent_SetConnection(UpnpEvent *thiz, const char *connection);
 UPNP_API TinyRet UpnpEvent_SetNt(UpnpEvent *thiz, const char *nt);
 UPNP_API TinyRet UpnpEvent_SetNts(UpnpEvent *thiz, const char *nts);
 UPNP_API TinyRet UpnpEvent_SetSid(UpnpEvent *thiz, const char *sid);
 UPNP_API TinyRet UpnpEvent_SetSeq(UpnpEvent *thiz, const char *seq);
+UPNP_API const char * UpnpEvent_GetCallback(UpnpEvent *thiz);
 UPNP_API const char * UpnpEvent_GetConnection(UpnpEvent *thiz);
 UPNP_API const char * UpnpEvent_GetNt(UpnpEvent *thiz);
 UPNP_API const char * UpnpEvent_GetNts(UpnpEvent *thiz);
 UPNP_API const char * UpnpEvent_GetSid(UpnpEvent *thiz);
 UPNP_API const char * UpnpEvent_GetSeq(UpnpEvent *thiz);
 
+UPNP_API uint32_t UpnpEvent_GetArgumentCount(UpnpEvent *thiz);
 UPNP_API TinyRet UpnpEvent_SetArgumentValue(UpnpEvent *thiz, const char *argumentName, const char *value);
 UPNP_API const char * UpnpEvent_GetArgumentValue(UpnpEvent *thiz, const char *argumentName);
 

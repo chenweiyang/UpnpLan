@@ -465,7 +465,7 @@ static void doSubscribe(UpnpHttpServer *thiz, UpnpHttpConnection *conn, HttpMess
             HttpMessage_GetUri(request),
             HttpMessage_GetHeaderValue(request, "CALLBACK"),
             HttpMessage_GetHeaderValue(request, "NT"),
-            HttpMessage_GetHeaderValue(request, "TIMEOUT"),
+            atoi(HttpMessage_GetHeaderValue(request, "TIMEOUT")),
             thiz->OnSubscribeCtx);
     } while (0);
 }

@@ -36,7 +36,7 @@ void UpnpHttpClient_Dispose(UpnpHttpClient *thiz);
 void UpnpHttpClient_Delete(UpnpHttpClient *thiz);
 
 TinyRet UpnpHttpClient_Post(UpnpHttpClient *thiz, UpnpAction *action, UpnpError *error, uint32_t timeout);
-TinyRet UpnpHttpClient_Notify(UpnpHttpClient *thiz, HttpMessage *request, HttpMessage *response, uint32_t timeout);
+TinyRet UpnpHttpClient_Notify(UpnpHttpClient *thiz, UpnpEvent *event);
 TinyRet UpnpHttpClient_Subscribe(UpnpHttpClient *thiz, UpnpSubscription *subscription, UpnpError *error, uint32_t timeout);
 TinyRet UpnpHttpClient_Unsubscribe(UpnpHttpClient *thiz, UpnpSubscription *subscription, UpnpError *error, uint32_t timeout);
 

@@ -227,7 +227,7 @@ TinyRet UpnpHttpConnection_SendActionResponse(UpnpHttpConnection *thiz, UpnpActi
     return ret;
 }
 
-TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const char *sid, const char *timeout)
+TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const char *sid, uint32_t timeout)
 {
     TinyRet ret = TINY_RET_OK;
     HttpMessage *response = NULL;
@@ -251,7 +251,7 @@ TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const
         HttpMessage_SetVersion(response, 1, 1);
         HttpMessage_SetResponse(response, 200, "OK");
         HttpMessage_SetHeader(response, "SID", sid);
-        HttpMessage_SetHeader(response, "TIMEOUT", timeout);
+        HttpMessage_SetHeaderInteger(response, "TIMEOUT", timeout);
 
         ret = HttpMessage_ToBytes(response, &bytes, &size);
         if (RET_FAILED(ret))

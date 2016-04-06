@@ -37,7 +37,7 @@ TinyRet UpnpHttpConnection_SendError(UpnpHttpConnection *thiz, int code, const c
 TinyRet UpnpHttpConnection_SendFile(UpnpHttpConnection *thiz, const char *file);
 TinyRet UpnpHttpConnection_SendFileContent(UpnpHttpConnection *thiz, const char *content, uint32_t contentLength);
 TinyRet UpnpHttpConnection_SendActionResponse(UpnpHttpConnection *thiz, UpnpAction *action);
-TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const char *sid, const char *timeout);
+TinyRet UpnpHttpConnection_SendSubscribeResponse(UpnpHttpConnection *thiz, const char *sid, uint32_t timeout);
 
 
 TINY_END_DECLS

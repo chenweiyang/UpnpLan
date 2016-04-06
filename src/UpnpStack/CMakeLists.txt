@@ -61,6 +61,7 @@ SET(UpnpTypedef_Header
     UpnpTypedef/UpnpUri.h
     UpnpTypedef/UpnpUsn.h
     UpnpTypedef/UpnpEvent.h
+    UpnpTypedef/UpnpSubscriber.h
     )
 
 SET(UpnpTypedef_Source
@@ -80,6 +81,7 @@ SET(UpnpTypedef_Source
     UpnpTypedef/UpnpUri.c
     UpnpTypedef/UpnpUsn.c
     UpnpTypedef/UpnpEvent.c
+    UpnpTypedef/UpnpSubscriber.c
     )
 
 SOURCE_GROUP(UpnpTypedef\\headers        FILES     ${UpnpTypedef_Header})
@@ -96,6 +98,7 @@ SET(UpnpHttp_Header
     UpnpHttp/message/ServiceSubResponse.h
     UpnpHttp/message/ServiceUnsubRequest.h
     UpnpHttp/message/ServiceUnsubResponse.h
+    UpnpHttp/message/EventRequest.h
     UpnpHttp/UpnpHttpManager.h
     UpnpHttp/UpnpHttpClient.h
     UpnpHttp/UpnpHttpConnection.h
@@ -110,6 +113,7 @@ SET(UpnpHttp_Source
     UpnpHttp/message/ServiceSubResponse.c
     UpnpHttp/message/ServiceUnsubRequest.c
     UpnpHttp/message/ServiceUnsubResponse.c
+    UpnpHttp/message/EventRequest.c
     UpnpHttp/UpnpHttpManager.c
     UpnpHttp/UpnpHttpClient.c
     UpnpHttp/UpnpHttpConnection.c
@@ -167,13 +171,13 @@ SOURCE_GROUP(UpnpRegistry\\sources          FILES     ${UpnpRegistry_Source})
 # UpnpCtrlPoint
 #-----------------------
 SET(UpnpCtrlPoint_Header
-    UpnpCtrlPoint/UpnpSubscriber.h
+    UpnpCtrlPoint/UpnpGenaClient.h
     UpnpCtrlPoint/UpnpSubscription.h
     UpnpCtrlPoint/UpnpActionInvoker.h
     )
 
 SET(UpnpCtrlPoint_Source
-    UpnpCtrlPoint/UpnpSubscriber.c
+    UpnpCtrlPoint/UpnpGenaClient.c
     UpnpCtrlPoint/UpnpSubscription.c
     UpnpCtrlPoint/UpnpActionInvoker.c
     )
@@ -188,14 +192,14 @@ SET(UpnpHost_Header
     UpnpHost/UpnpHost.h
     UpnpHost/UpnpActionExecutor.h
     UpnpHost/UpnpDocumentGetter.h
-    UpnpHost/UpnpEventPublisher.h
+    UpnpHost/UpnpGenaServer.h
     )
 
 SET(UpnpHost_Source
     UpnpHost/UpnpHost.c
     UpnpHost/UpnpActionExecutor.c
     UpnpHost/UpnpDocumentGetter.c
-    UpnpHost/UpnpEventPublisher.c
+    UpnpHost/UpnpGenaServer.c
     )
 
 SOURCE_GROUP(UpnpHost\\headers               FILES     ${UpnpHost_Header})

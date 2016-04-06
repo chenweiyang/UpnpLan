@@ -544,3 +544,31 @@ UpnpActionHandlerContext * UpnpProvider_GetActionHandlerContext(UpnpProvider *th
 
     return context;
 }
+
+UpnpService * UpnpProvider_GetService(UpnpProvider *thiz, const char *eventSubURL)
+{
+    RETURN_VAL_IF_FAIL(thiz, 0);
+    RETURN_VAL_IF_FAIL(eventSubURL, 0);
+
+    do
+    {
+        uint32_t i = 0;
+        uint32_t count = TinyMap_GetCount(&thiz->devices);
+
+        for (i = 0; i < count; i++)
+        {
+            UpnpDevice *device = NULL;
+            UpnpService *service = NULL;
+
+            device = (UpnpDevice *)TinyMap_GetValueAt(&thiz->devices, i);
+
+            service = UpnpDevice_GetServiceByEventSubURL(device, eventSubURL);
+            if (service != NULL)
+            {
+                return service;
+            }
+        }
+    } while (0);
+
+    return NULL;
+}

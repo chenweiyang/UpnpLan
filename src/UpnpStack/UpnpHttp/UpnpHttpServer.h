@@ -47,7 +47,7 @@ typedef void(*UpnpSubscribeHandler)(UpnpHttpConnection *conn,
     const char *uri,
     const char *callback,
     const char *nt,
-    const char *timeout,
+    uint32_t timeout,
     void *ctx);
 
 typedef void(*UpnpUnsubscribeHandler)(UpnpHttpConnection *conn,

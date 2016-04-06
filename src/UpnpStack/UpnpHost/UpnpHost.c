@@ -18,7 +18,6 @@
 
 #define TAG     "UpnpHost"
 
-
 UpnpHost * UpnpHost_New(UpnpHttpManager *http, UpnpProvider *provider)
 {
     UpnpHost *thiz = NULL;
@@ -69,7 +68,7 @@ TinyRet UpnpHost_Construct(UpnpHost *thiz, UpnpHttpManager *http, UpnpProvider *
             break;
         }
 
-        ret = UpnpEventPublisher_Construct(&thiz->eventPublisher, http, provider);
+        ret = UpnpGenaServer_Construct(&thiz->genaServer, http, provider);
     } while (0);
 
     return ret;
@@ -79,7 +78,7 @@ void UpnpHost_Dispose(UpnpHost *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
-    UpnpEventPublisher_Dispose(&thiz->eventPublisher);
+    UpnpGenaServer_Dispose(&thiz->genaServer);
     UpnpActionExecutor_Dispose(&thiz->actionExecutor);
     UpnpDocumentGetter_Dispose(&thiz->documentGetter);
 }

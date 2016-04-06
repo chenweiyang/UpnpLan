@@ -26,7 +26,7 @@ static void ServiceDeleteListener(void * data, void *ctx)
 #define FriendlyName_LEN        128
 #define DeviceType_LEN          128
 #define Manufacturer_LEN        128
-#define ModelName               128
+#define ModelName_LEN           128
 #define ModelNumber_LEN         128
 #define SerialNumber_LEN        128
 
@@ -40,7 +40,7 @@ struct _UpnpDevice
     char deviceType[DeviceType_LEN];
     char manufacturer[Manufacturer_LEN];
     char manufacturerURL[TINY_URL_LEN];
-    char modelName[ModelName];
+    char modelName[ModelName_LEN];
     char modelNumber[ModelNumber_LEN];
     char modelURL[TINY_URL_LEN];
     char serialNumber[SerialNumber_LEN];
@@ -185,7 +185,7 @@ TinyRet UpnpDevice_SetManufacturerURL(UpnpDevice *thiz, const char *manufacturer
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(manufacturerURL, TINY_RET_E_ARG_NULL);
 
-    strncpy(thiz->manufacturerURL, manufacturerURL, Manufacturer_LEN);
+    strncpy(thiz->manufacturerURL, manufacturerURL, TINY_URL_LEN);
 
     return TINY_RET_OK;
 }
@@ -195,7 +195,7 @@ TinyRet UpnpDevice_SetModelName(UpnpDevice *thiz, const char *modelName)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(modelName, TINY_RET_E_ARG_NULL);
 
-    strncpy(thiz->modelName, modelName, Manufacturer_LEN);
+    strncpy(thiz->modelName, modelName, ModelName_LEN);
 
     return TINY_RET_OK;
 }
@@ -205,7 +205,7 @@ TinyRet UpnpDevice_SetModelNumber(UpnpDevice *thiz, const char *modelNumber)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(modelNumber, TINY_RET_E_ARG_NULL);
 
-    strncpy(thiz->modelNumber, modelNumber, Manufacturer_LEN);
+    strncpy(thiz->modelNumber, modelNumber, ModelNumber_LEN);
 
     return TINY_RET_OK;
 }
@@ -215,7 +215,7 @@ TinyRet UpnpDevice_SetModelURL(UpnpDevice *thiz, const char *modelURL)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(modelURL, TINY_RET_E_ARG_NULL);
 
-    strncpy(thiz->modelURL, modelURL, Manufacturer_LEN);
+    strncpy(thiz->modelURL, modelURL, TINY_URL_LEN);
 
     return TINY_RET_OK;
 }
@@ -225,7 +225,7 @@ TinyRet UpnpDevice_SetSerialNumber(UpnpDevice *thiz, const char *serialNumber)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(serialNumber, TINY_RET_E_ARG_NULL);
 
-    strncpy(thiz->serialNumber, serialNumber, Manufacturer_LEN);
+    strncpy(thiz->serialNumber, serialNumber, SerialNumber_LEN);
 
     return TINY_RET_OK;
 }
@@ -235,7 +235,7 @@ TinyRet UpnpDevice_SetURLBase(UpnpDevice *thiz, const char *URLBase)
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(URLBase, TINY_RET_E_ARG_NULL);
 
-    strncpy(thiz->URLBase, URLBase, Manufacturer_LEN);
+    strncpy(thiz->URLBase, URLBase, TINY_URL_LEN);
 
     return TINY_RET_OK;
 }
@@ -389,6 +389,28 @@ UpnpService * UpnpDevice_GetServiceByControlURL(UpnpDevice *thiz, const char *co
     {
         UpnpService *service = TinyList_GetAt(&thiz->serviceList, i);
         if (STR_EQUAL(UpnpService_GetControlURL(service), controlURL))
+        {
+            return service;
+        }
+    }
+
+    return NULL;
+}
+
+UpnpService * UpnpDevice_GetServiceByEventSubURL(UpnpDevice *thiz, const char *eventSubURL)
+{
+    uint32_t i = 0;
+    uint32_t count = 0;
+
+    RETURN_VAL_IF_FAIL(thiz, NULL);
+    RETURN_VAL_IF_FAIL(eventSubURL, NULL);
+
+    count = TinyList_GetCount(&thiz->serviceList);
+
+    for (i = 0; i < count; ++i)
+    {
+        UpnpService *service = TinyList_GetAt(&thiz->serviceList, i);
+        if (STR_EQUAL(UpnpService_GetEventSubURL(service), eventSubURL))
         {
             return service;
         }

@@ -23,6 +23,7 @@
 #include "message/ServiceSubResponse.h"
 #include "message/ServiceUnsubRequest.h"
 #include "message/ServiceUnsubResponse.h"
+#include "message/EventRequest.h"
 
 #define TAG     "UpnpHttpClient"
 
@@ -159,11 +160,75 @@ TinyRet UpnpHttpClient_Post(UpnpHttpClient *thiz, UpnpAction *action, UpnpError 
     return ret;
 }
 
-TinyRet UpnpHttpClient_Notify(UpnpHttpClient *thiz, HttpMessage *request, HttpMessage *response, uint32_t timeout)
+TinyRet UpnpHttpClient_Notify(UpnpHttpClient *thiz, UpnpEvent *event)
 {
-    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    LOG_TIME_BEGIN(TAG, UpnpHttpClient_Notify);
 
-    return TINY_RET_OK;
+    TinyRet ret = TINY_RET_OK;
+
+    RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
+    RETURN_VAL_IF_FAIL(event, TINY_RET_E_ARG_NULL);
+
+    do
+    {
+        HttpMessage request;
+        HttpMessage response;
+
+        ret = HttpMessage_Construct(&request);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
+
+        ret = HttpMessage_Construct(&response);
+        if (RET_FAILED(ret))
+        {
+            HttpMessage_Dispose(&request);
+            break;
+        }
+
+        do
+        {
+            /**
+             * UpnpEvent -> HttpReqeust
+             */
+            ret = UpnpEventToRequest(event, &request);
+            if (RET_FAILED(ret))
+            {
+                break;
+            }
+
+            //
+            // 2016.3.24
+            // 每次HTTP请求都重新开始连接，暂时先这么做。
+            // 理想的做法是建立一个连接池，能复用长连接的尽量复用，加速方法调用的速度。
+            //
+            HttpClient_Shutdown(thiz->client);
+
+            ret = HttpClient_Execute(thiz->client, &request, &response, UPNP_TIMEOUT);
+            if (RET_FAILED(ret))
+            {
+                LOG_D(TAG, "HttpClient_Execute failed: %s", tiny_ret_to_str(ret));
+                break;
+            }
+
+            if (HttpMessage_GetStatusCode(&response) != HTTP_STATUS_OK)
+            {
+                LOG_D(TAG, "HttpClient_Execute failed: %d %s",
+                    HttpMessage_GetStatusCode(&response),
+                    HttpMessage_GetStatus(&response));
+                ret = TINY_RET_E_UPNP_NOTIFY_FAILED;
+                break;
+            }
+        } while (0);
+
+        HttpMessage_Dispose(&request);
+        HttpMessage_Dispose(&response);
+    } while (0);
+
+    LOG_TIME_END(TAG, UpnpHttpClient_Notify);
+
+    return ret;
 }
 
 TinyRet UpnpHttpClient_Subscribe(UpnpHttpClient *thiz, UpnpSubscription *subscription, UpnpError *error, uint32_t timeout)

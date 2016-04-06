@@ -58,7 +58,8 @@ UPNP_API TinyRet UpnpDevice_AddService(UpnpDevice *thiz, UpnpService *service);
 UPNP_API uint32_t UpnpDevice_GetServiceCount(UpnpDevice *thiz);
 UPNP_API UpnpService * UpnpDevice_GetServiceAt(UpnpDevice *thiz, uint32_t index);
 UPNP_API UpnpService * UpnpDevice_GetService(UpnpDevice *thiz, const char *serviceId);
-UPNP_API UpnpService * UpnpDevice_GetServiceByControlURL(UpnpDevice *device, const char *controlURL);
+UPNP_API UpnpService * UpnpDevice_GetServiceByControlURL(UpnpDevice *thiz, const char *controlURL);
+UPNP_API UpnpService * UpnpDevice_GetServiceByEventSubURL(UpnpDevice *thiz, const char *eventSubURL);
 
 
 TINY_END_DECLS

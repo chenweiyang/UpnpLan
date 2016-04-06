@@ -21,7 +21,7 @@
 #include "UpnpHttpManager.h"
 #include "UpnpRegistry.h"
 #include "UpnpActionInvoker.h"
-#include "UpnpSubscriber.h"
+#include "UpnpGenaClient.h"
 #include "UpnpSubscription.h"
 #include "UpnpProvider.h"
 #include "UpnpHost.h"
@@ -39,7 +39,7 @@ struct _UpnpRuntime
     UpnpHttpManager         http;
     UpnpProvider            provider;
     UpnpHost                host;
-    UpnpSubscriber          subscriber;
+    UpnpGenaClient          genaClient;
     UpnpActionInvoker       invoker;
     UpnpRegistry            registry;
     UpnpDeviceListener      deviceListener;
@@ -114,7 +114,7 @@ static TinyRet UpnpRuntime_Construct(UpnpRuntime *thiz)
             break;
         }
 
-        ret = UpnpSubscriber_Construct(&thiz->subscriber, &thiz->http);
+        ret = UpnpGenaClient_Construct(&thiz->genaClient, &thiz->http);
         if (RET_FAILED(ret))
         {
             LOG_E(TAG, "UpnpSubscriber_Construct failed");
@@ -137,7 +137,7 @@ static void UpnpRuntime_Dispose(UpnpRuntime *thiz)
     RETURN_IF_FAIL(thiz);
 
     UpnpRegistry_Dispose(&thiz->registry);
-    UpnpSubscriber_Dispose(&thiz->subscriber);
+    UpnpGenaClient_Dispose(&thiz->genaClient);
     UpnpActionInvoker_Dispose(&thiz->invoker);
     UpnpHost_Dispose(&thiz->host);
     UpnpProvider_Dispose(&thiz->provider);
@@ -240,7 +240,7 @@ TinyRet UpnpRuntime_Subscribe(UpnpRuntime *thiz, UpnpService *service, uint32_t 
     RETURN_VAL_IF_FAIL(listener, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
 
-    return UpnpSubscriber_Subscribe(&thiz->subscriber, service, timeout, listener, ctx, error);
+    return UpnpGenaClient_Subscribe(&thiz->genaClient, service, timeout, listener, ctx, error);
 }
 
 TinyRet UpnpRuntime_Unsubscribe(UpnpRuntime *thiz, UpnpService *service, UpnpError *error)
@@ -249,7 +249,7 @@ TinyRet UpnpRuntime_Unsubscribe(UpnpRuntime *thiz, UpnpService *service, UpnpErr
     RETURN_VAL_IF_FAIL(service, TINY_RET_E_ARG_NULL);
     RETURN_VAL_IF_FAIL(error, TINY_RET_E_ARG_NULL);
 
-    return UpnpSubscriber_Unsubscribe(&thiz->subscriber, service, error);
+    return UpnpGenaClient_Unsubscribe(&thiz->genaClient, service, error);
 }
 
 TinyRet UpnpRuntime_Register(UpnpRuntime *thiz, UpnpDevice *device, UpnpActionHandler handler, void *ctx)

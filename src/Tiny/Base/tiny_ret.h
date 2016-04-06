@@ -133,6 +133,7 @@ const char * tiny_ret_to_str(TinyRet ret);
 #define CODE_UPNP_INVOKE_FAILED             37
 #define CODE_UPNP_SUBSCRIBE_FAILED          38
 #define CODE_UPNP_UNSUBSCRIBE_FAILED        39
+#define CODE_UPNP_NOTIFY_FAILED             40
 
 /* Return the error level */
 #define ERR_LEVEL(r)                        (((uint64_t)(r) & 0x7FFFFFFFFFFFFFFF) >> 61)
@@ -185,6 +186,8 @@ const char * tiny_ret_to_str(TinyRet ret);
 #define TINY_RET_E_UPNP_INVOKE_FAILED         MAKE_RET(SV_ERR, EL_GENERAL, CODE_UPNP_INVOKE_FAILED)
 #define TINY_RET_E_UPNP_SUBSCRIBE_FAILED      MAKE_RET(SV_ERR, EL_GENERAL, CODE_UPNP_SUBSCRIBE_FAILED)
 #define TINY_RET_E_UPNP_UNSUBSCRIBE_FAILED    MAKE_RET(SV_ERR, EL_GENERAL, CODE_UPNP_UNSUBSCRIBE_FAILED)
+#define TINY_RET_E_UPNP_NOTIFY_FAILED         MAKE_RET(SV_ERR, EL_GENERAL, CODE_UPNP_NOTIFY_FAILED)
+
 
 TINY_END_DECLS
 

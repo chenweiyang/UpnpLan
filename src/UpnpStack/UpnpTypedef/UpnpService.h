@@ -17,6 +17,7 @@
 #include "upnp_api.h"
 #include "UpnpAction.h"
 #include "UpnpStateVariable.h"
+#include "UpnpSubscriber.h"
 
 TINY_BEGIN_DECLS
 
@@ -53,10 +54,17 @@ UPNP_API uint32_t UpnpService_GetActionCount(UpnpService *thiz);
 UPNP_API UpnpAction * UpnpService_GetActionAt(UpnpService *thiz, uint32_t index);
 UPNP_API UpnpAction * UpnpService_GetAction(UpnpService *thiz, const char *actionName);
 
-UPNP_API TinyRet UpnpService_AddStateVariable(UpnpService *thiz, UpnpStateVariable *UpnpStateVariable);
+UPNP_API TinyRet UpnpService_AddStateVariable(UpnpService *thiz, UpnpStateVariable *stateVariable);
 UPNP_API uint32_t UpnpService_GetStateVariableCount(UpnpService *thiz);
 UPNP_API UpnpStateVariable * UpnpService_GetStateVariableAt(UpnpService *thiz, uint32_t index);
 UPNP_API UpnpStateVariable * UpnpService_GetStateVariable(UpnpService *thiz, const char *stateName);
+
+UPNP_API TinyRet UpnpService_AddSubscriber(UpnpService *thiz, UpnpSubscriber *subscriber);
+UPNP_API TinyRet UpnpService_RemoveSubscriber(UpnpService *thiz, const char *sid);
+UPNP_API uint32_t UpnpService_GetSubscriberCount(UpnpService *thiz);
+UPNP_API UpnpSubscriber * UpnpService_GetSubscriberAt(UpnpService *thiz, uint32_t index);
+UPNP_API UpnpSubscriber * UpnpService_GetSubscriber(UpnpService *thiz, const char *callback);
+
 
 
 TINY_END_DECLS

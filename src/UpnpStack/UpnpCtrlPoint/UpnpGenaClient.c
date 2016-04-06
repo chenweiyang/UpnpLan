@@ -4,7 +4,7 @@
 * @author jxfengzi@gmail.com
 * @date   2013-7-9
 *
-* @file   UpnpSubscriber.c
+* @file   UpnpGenaClient.c
 *
 * @remark
 *      set tabstop=4
@@ -13,7 +13,7 @@
 */
 
 
-#include "UpnpSubscriber.h"
+#include "UpnpGenaClient.h"
 #include "tiny_memory.h"
 #include "tiny_log.h"
 #include "TinyXml.h"
@@ -22,7 +22,7 @@
 #include "UpnpDevice.h"
 
 
-#define TAG                 "UpnpSubscriber"
+#define TAG                 "UpnpGenaClient"
 
 static void item_delete_listener(void * data, void *ctx);
 static void notify_handler(UpnpHttpConnection *conn,
@@ -35,21 +35,21 @@ static void notify_handler(UpnpHttpConnection *conn,
     uint32_t contentLength,
     void *ctx);
 
-UpnpSubscriber * UpnpSubscriber_New(UpnpHttpManager *http)
+UpnpGenaClient * UpnpGenaClient_New(UpnpHttpManager *http)
 {
-    UpnpSubscriber *thiz = NULL;
+    UpnpGenaClient *thiz = NULL;
 
     do
     {
-        thiz = (UpnpSubscriber *)tiny_malloc(sizeof(UpnpSubscriber));
+        thiz = (UpnpGenaClient *)tiny_malloc(sizeof(UpnpGenaClient));
         if (thiz == NULL)
         {
             break;
         }
 
-        if (RET_FAILED(UpnpSubscriber_Construct(thiz, http)))
+        if (RET_FAILED(UpnpGenaClient_Construct(thiz, http)))
         {
-            UpnpSubscriber_Delete(thiz);
+            UpnpGenaClient_Delete(thiz);
             thiz = NULL;
             break;
         }
@@ -58,7 +58,7 @@ UpnpSubscriber * UpnpSubscriber_New(UpnpHttpManager *http)
     return thiz;
 }
 
-TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz, UpnpHttpManager *http)
+TinyRet UpnpGenaClient_Construct(UpnpGenaClient *thiz, UpnpHttpManager *http)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -66,7 +66,7 @@ TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz, UpnpHttpManager *http)
 
     do
     {
-        memset(thiz, 0, sizeof(UpnpSubscriber));
+        memset(thiz, 0, sizeof(UpnpGenaClient));
 
         ret = TinyMap_Construct(&thiz->map);
         if (RET_FAILED(ret))
@@ -97,7 +97,7 @@ TinyRet UpnpSubscriber_Construct(UpnpSubscriber *thiz, UpnpHttpManager *http)
     return ret;
 }
 
-void UpnpSubscriber_Dispose(UpnpSubscriber *thiz)
+void UpnpGenaClient_Dispose(UpnpGenaClient *thiz)
 {
     RETURN_IF_FAIL(thiz);
 
@@ -108,10 +108,10 @@ void UpnpSubscriber_Dispose(UpnpSubscriber *thiz)
     TinyMap_Dispose(&thiz->map);
 }
 
-void UpnpSubscriber_Delete(UpnpSubscriber *thiz)
+void UpnpGenaClient_Delete(UpnpGenaClient *thiz)
 {
     RETURN_IF_FAIL(thiz);
-    UpnpSubscriber_Dispose(thiz);
+    UpnpGenaClient_Dispose(thiz);
     tiny_free(thiz);
 }
 
@@ -131,7 +131,7 @@ static void notify_handler(UpnpHttpConnection *conn,
     uint32_t contentLength,
     void *ctx)
 {
-    UpnpSubscriber *thiz = (UpnpSubscriber *)ctx;
+    UpnpGenaClient *thiz = (UpnpGenaClient *)ctx;
         
     LOG_D(TAG, "notify_handler");
 
@@ -179,7 +179,7 @@ static void notify_handler(UpnpHttpConnection *conn,
     TinyMutex_Unlock(&thiz->mutex);
 }
 
-TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz, 
+TinyRet UpnpGenaClient_Subscribe(UpnpGenaClient *thiz, 
     UpnpService *service,
     uint32_t timeout,
     UpnpEventListener listener,
@@ -255,7 +255,7 @@ TinyRet UpnpSubscriber_Subscribe(UpnpSubscriber *thiz,
     return ret;
 }
 
-TinyRet UpnpSubscriber_Unsubscribe(UpnpSubscriber *thiz, UpnpService *service, UpnpError *error)
+TinyRet UpnpGenaClient_Unsubscribe(UpnpGenaClient *thiz, UpnpService *service, UpnpError *error)
 {
     TinyRet ret = TINY_RET_OK;
 

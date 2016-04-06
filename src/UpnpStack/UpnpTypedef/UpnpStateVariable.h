@@ -25,6 +25,7 @@ typedef struct _UpnpStateVariable
 {
     void *service;
     bool sendEvents;
+    bool isChanged;
     UpnpStateVariableDefinition definition;
     DataValue value;
 } UpnpStateVariable;
