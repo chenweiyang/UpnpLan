@@ -236,11 +236,12 @@ TinyRet Ssdp_SendMessage(Ssdp *thiz, SsdpMessage *message)
     {
         char string[SSDP_MSG_MAX_LEN];
         uint32_t len = 0;
+        uint32_t i = 0;
 
         switch (message->type)
         {
         case SSDP_ALIVE:
-            for (uint32_t i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
+            for (i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
             {
                 TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
                 char location[TINY_URL_LEN];
@@ -268,7 +269,7 @@ TinyRet Ssdp_SendMessage(Ssdp *thiz, SsdpMessage *message)
             len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
             if (len > 0)
             {
-                for (uint32_t i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
+                for (i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
                 {
                     TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
                     ret = Ssdp_Send(thiz, string, len, s->fd, UPNP_GROUP, UPNP_PORT);
@@ -290,7 +291,7 @@ TinyRet Ssdp_SendMessage(Ssdp *thiz, SsdpMessage *message)
             len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
             if (len > 0)
             {
-                for (uint32_t i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
+                for (i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
                 {
                     TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
                     if (STR_EQUAL(s->ip, message->local.ip))
