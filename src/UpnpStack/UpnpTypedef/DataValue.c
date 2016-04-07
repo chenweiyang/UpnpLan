@@ -91,7 +91,7 @@ TinyRet DataValue_GetValue(DataValue *thiz, char *value, uint32_t len)
         break;
 
     case INTERNAL_LONG:
-#ifdef _WIN32
+#if (defined _WIN32) || (defined __MAC_OSX__)
         tiny_snprintf(value, len, "%lld", thiz->internalValue.longValue);
 #else
         tiny_snprintf(value, len, "%ld", thiz->internalValue.longValue);
