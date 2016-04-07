@@ -91,6 +91,8 @@ typedef struct _SsdpAlive
     char        cache_control[HEAD_CACHE_CONTROL_LEN + 1];
     char        location[HEAD_LOCATION_LEN + 1];
     char        server[HEAD_SERVER_LEN + 1];
+    char        ex_uri[TINY_URI_LEN];
+    uint16_t    ex_port;
 } SsdpAlive;
 
 /**
@@ -146,6 +148,8 @@ typedef struct _SsdpResponse
     char        st[HEAD_ST_LEN + 1];
     char        server[HEAD_SERVER_LEN + 1];
     char        usn[HEAD_USN_LEN + 1];
+    char        ex_uri[TINY_URI_LEN];
+    uint16_t    ex_port;
 } SsdpResponse;
 
 typedef enum _SsdpMessageType
@@ -160,8 +164,17 @@ typedef enum _SsdpMessageType
 typedef struct _SsdpMessage
 {
     SsdpMessageType type;
-    char            ip[TINY_IP_LEN + 1];
-    uint16_t        port;
+
+    struct
+    {
+        char            ip[TINY_IP_LEN + 1];
+        uint16_t        port;
+    } remote;
+
+    struct
+    {
+        char            ip[TINY_IP_LEN + 1];
+    } local;
 
     union
     {
@@ -172,21 +185,21 @@ typedef struct _SsdpMessage
     } v;
 } SsdpMessage;
 
-TinyRet SsdpMessage_Construct(SsdpMessage *message, const char *ip, uint16_t port, const char *buf, uint32_t len);
-TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location);
-TinyRet SsdpMessage_ConstructAlive_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location);
-TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location);
-TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location);
+TinyRet SsdpMessage_Construct(SsdpMessage *thiz, const char *localIp, const char *remoteIp, uint16_t remotePort, const char *buf, uint32_t len);
+TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t port);
+TinyRet SsdpMessage_ConstructAlive_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t port);
+TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t port);
+TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *uri, uint16_t port);
 TinyRet SsdpMessage_ConstructByebye_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device);
 TinyRet SsdpMessage_ConstructByebye_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device);
 TinyRet SsdpMessage_ConstructByebye_DEVICE(SsdpMessage *thiz, UpnpDevice *device);
 TinyRet SsdpMessage_ConstructByebye_SERVICE(SsdpMessage *thiz, UpnpService *service);
 
 TinyRet SsdpMessage_ConstructRequest(SsdpMessage *thiz, const char *target);
-TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port);
-TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port);
-TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port);
-TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location, const char *ip, uint16_t port);
+TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port);
+TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port);
+TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port);
+TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port);
 
 void SsdpMessage_Dispose(SsdpMessage *thiz);
 

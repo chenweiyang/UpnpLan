@@ -24,7 +24,7 @@
 static void UpnpRegistry_MessageHandler(SsdpMessage *message, void *ctx);
 static void UpnpRegistry_OnAlive(UpnpRegistry *thiz, SsdpAlive *alive, const char *ip);
 static void UpnpRegistry_OnByebye(UpnpRegistry *thiz, SsdpByebye *byebye, const char *ip);
-static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, const char *ip, uint16_t port);
+static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, const char *localIp, const char *ip, uint16_t port);
 static void UpnpRegistry_OnResponse(UpnpRegistry *thiz, SsdpResponse *response, const char *ip);
 
 /**
@@ -234,19 +234,19 @@ static void UpnpRegistry_MessageHandler(SsdpMessage *message, void *ctx)
     switch (message->type)
     {
     case SSDP_ALIVE:
-        UpnpRegistry_OnAlive(thiz, &message->v.alive, message->ip);
+        UpnpRegistry_OnAlive(thiz, &message->v.alive, message->remote.ip);
         break;
 
     case SSDP_BYEBYE:
-        UpnpRegistry_OnByebye(thiz, &message->v.byebye, message->ip);
+        UpnpRegistry_OnByebye(thiz, &message->v.byebye, message->remote.ip);
         break;
 
     case SSDP_MSEARCH_REQUEST:
-        UpnpRegistry_OnRequest(thiz, &message->v.request, message->ip, message->port);
+        UpnpRegistry_OnRequest(thiz, &message->v.request, message->local.ip, message->remote.ip, message->remote.port);
         break;
 
     case SSDP_MSEARCH_RESPONSE:
-        UpnpRegistry_OnResponse(thiz, &message->v.response, message->ip);
+        UpnpRegistry_OnResponse(thiz, &message->v.response, message->remote.ip);
         break;
 
     default:
@@ -331,8 +331,9 @@ typedef struct _OnRequestContext
 {
     UpnpRegistry *registry;
     SsdpRequest *request;
-    const char *ip;
-    uint16_t port;
+    const char *localIp;
+    const char *remoteIp;
+    uint16_t remotePort;
 } OnRequestContext;
 
 static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
@@ -351,15 +352,18 @@ static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
             const char *uri = UpnpDevice_GetURI(device);
             uint32_t count = UpnpDevice_GetServiceCount(device);
             uint32_t i = 0;
+
+#if 0
             char location[TINY_URL_LEN];
 
             memset(location, 0, TINY_URL_LEN);
             tiny_snprintf(location, TINY_URL_LEN, "http://%s:%d%s", "10.0.1.8", port, uri);
+#endif
 
             /**
              * root
              */
-            if (RET_FAILED(SsdpMessage_ConstructResponse_ROOTDEVICE(&message, device, location, c->ip, c->port)))
+            if (RET_FAILED(SsdpMessage_ConstructResponse_ROOTDEVICE(&message, device, uri, port, c->localIp, c->remoteIp, c->remotePort)))
             {
                 break;
             }
@@ -369,7 +373,7 @@ static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
             /**
              * device uuid
              */
-            if (RET_FAILED(SsdpMessage_ConstructResponse_DEVICE_UUID(&message, device, location, c->ip, c->port)))
+            if (RET_FAILED(SsdpMessage_ConstructResponse_DEVICE_UUID(&message, device, uri, port, c->localIp, c->remoteIp, c->remotePort)))
             {
                 break;
             }
@@ -379,7 +383,7 @@ static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
             /**
              * device
              */
-            if (RET_FAILED(SsdpMessage_ConstructResponse_DEVICE(&message, device, location, c->ip, c->port)))
+            if (RET_FAILED(SsdpMessage_ConstructResponse_DEVICE(&message, device, uri, port, c->localIp, c->remoteIp, c->remotePort)))
             {
                 break;
             }
@@ -392,7 +396,7 @@ static void OnRequestDeviceVisit(UpnpDevice *device, void *ctx)
             for (i = 0; i < count; ++i)
             {
                 UpnpService *service = UpnpDevice_GetServiceAt(device, i);
-                if (RET_FAILED(SsdpMessage_ConstructResponse_SERVICE(&message, service, location, c->ip, c->port)))
+                if (RET_FAILED(SsdpMessage_ConstructResponse_SERVICE(&message, service, uri, port, c->localIp, c->remoteIp, c->remotePort)))
                 {
                     break;
                 }
@@ -415,7 +419,7 @@ static bool deviceIsMatched(UpnpDevice *device, const char *st)
     return false;
 }
 
-static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, const char *ip, uint16_t port)
+static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, const char *localIp, const char *remoteIp, uint16_t remotePort)
 {
     LOG_D(TAG, "OnRequest");
 
@@ -424,8 +428,9 @@ static void UpnpRegistry_OnRequest(UpnpRegistry *thiz, SsdpRequest *request, con
         OnRequestContext ctx;
         ctx.registry = thiz;
         ctx.request = request;
-        ctx.ip = ip;
-        ctx.port = port;
+        ctx.localIp = localIp;
+        ctx.remoteIp = remoteIp;
+        ctx.remotePort = remotePort;
 
         UpnpProvider_Foreach(thiz->provider, request->st, OnRequestDeviceVisit, &ctx);
     }
@@ -485,15 +490,18 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
         const char *uri = UpnpDevice_GetURI(device);
         uint32_t count = UpnpDevice_GetServiceCount(device);
         uint32_t i = 0;
+
+#if 0
         char location[TINY_URL_LEN];
 
         memset(location, 0, TINY_URL_LEN);
         tiny_snprintf(location, TINY_URL_LEN, "http://%s:%d%s", "10.0.1.8", port, uri);
+#endif
 
         /**
          * root
          */
-        if (RET_FAILED(SsdpMessage_ConstructAlive_ROOTDEVICE(&message, device, location)))
+        if (RET_FAILED(SsdpMessage_ConstructAlive_ROOTDEVICE(&message, device, uri, port)))
         {
             break;
         }
@@ -503,7 +511,7 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
         /**
          * device uuid
          */
-        if (RET_FAILED(SsdpMessage_ConstructAlive_DEVICE_UUID(&message, device, location)))
+        if (RET_FAILED(SsdpMessage_ConstructAlive_DEVICE_UUID(&message, device, uri, port)))
         {
             break;
         }
@@ -513,7 +521,7 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
         /**
          * device
          */
-        if (RET_FAILED(SsdpMessage_ConstructAlive_DEVICE(&message, device, location)))
+        if (RET_FAILED(SsdpMessage_ConstructAlive_DEVICE(&message, device, uri, port)))
         {
             break;
         }
@@ -526,7 +534,7 @@ static void OnDeviceAdded(UpnpDevice *device, void *ctx)
         for (i = 0; i < count; ++i)
         {
             UpnpService *service = UpnpDevice_GetServiceAt(device, i);
-            if (RET_FAILED(SsdpMessage_ConstructAlive_SERVICE(&message, service, location)))
+            if (RET_FAILED(SsdpMessage_ConstructAlive_SERVICE(&message, service, uri, port)))
             {
                 break;
             }

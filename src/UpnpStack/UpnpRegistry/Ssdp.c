@@ -25,7 +25,7 @@ static TinyRet Ssdp_CloseSockets(Ssdp *thiz);
 static void Ssdp_Loop(void *param);
 static TinyRet Ssdp_PreSelect(Ssdp *thiz, uint32_t *timeout);
 static bool Ssdp_SelectOnce(Ssdp *thiz, uint32_t timeout);
-static void Ssdp_ProcessMessage(Ssdp *thiz, const char *buf, size_t len, const char *ip, uint16_t port);
+static void Ssdp_ProcessMessage(Ssdp *thiz, const char *localIp, const char *buf, size_t len, const char *ip, uint16_t port);
 
 Ssdp * Ssdp_New(void)
 {
@@ -63,10 +63,15 @@ TinyRet Ssdp_Construct(Ssdp *thiz)
     {
         memset(thiz, 0, sizeof(Ssdp));
         thiz->running = false;
-        thiz->group_fd = 0;
         thiz->search_fd = 0;
         thiz->handler = NULL;
         thiz->ctx = NULL;
+
+        ret = TinyMulticast_Construct(&thiz->multicast);
+        if (RET_FAILED(ret))
+        {
+            break;
+        }
 
         ret = TinyThread_Construct(&thiz->thread);
         if (RET_FAILED(ret))
@@ -105,6 +110,7 @@ void Ssdp_Dispose(Ssdp *thiz)
     TinySocketIpc_Dispose(&thiz->ipc);
     TinySelector_Dispose(&thiz->selector);
     TinyThread_Dispose(&thiz->thread);
+    TinyMulticast_Dispose(&thiz->multicast);
 }
 
 void Ssdp_Delete(Ssdp *thiz)
@@ -231,28 +237,69 @@ TinyRet Ssdp_SendMessage(Ssdp *thiz, SsdpMessage *message)
         char string[SSDP_MSG_MAX_LEN];
         uint32_t len = 0;
 
-        memset(string, 0, SSDP_MSG_MAX_LEN);
-
-        len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
-        if (len == 0)
-        {
-            ret = TINY_RET_E_INTERNAL;
-            break;
-        }
-
         switch (message->type)
         {
         case SSDP_ALIVE:
+            for (uint32_t i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
+            {
+                TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
+                char location[TINY_URL_LEN];
+
+                memset(location, 0, TINY_URL_LEN);
+                tiny_snprintf(location, TINY_URL_LEN, "http://%s:%d%s", s->ip, message->v.alive.ex_port, message->v.alive.ex_uri);
+                LOG_D(TAG, "location: %s", location);
+                strncpy(message->v.alive.location, location, HEAD_LOCATION_LEN);
+
+                memset(string, 0, SSDP_MSG_MAX_LEN);
+
+                len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
+                if (len == 0)
+                {
+                    ret = TINY_RET_E_INTERNAL;
+                    break;
+                }
+
+                ret = Ssdp_Send(thiz, string, len, s->fd, UPNP_GROUP, UPNP_PORT);
+            }
+            break;
+
         case SSDP_BYEBYE:
-            ret = Ssdp_Send(thiz, string, len, thiz->group_fd, UPNP_GROUP, UPNP_PORT);
+            memset(string, 0, SSDP_MSG_MAX_LEN);
+            len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
+            if (len > 0)
+            {
+                for (uint32_t i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
+                {
+                    TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
+                    ret = Ssdp_Send(thiz, string, len, s->fd, UPNP_GROUP, UPNP_PORT);
+                }
+            }
             break;
 
         case SSDP_MSEARCH_REQUEST:
-            ret = Ssdp_Send(thiz, string, len, thiz->search_fd, UPNP_GROUP, UPNP_PORT);
+            memset(string, 0, SSDP_MSG_MAX_LEN);
+            len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
+            if (len > 0)
+            {
+                ret = Ssdp_Send(thiz, string, len, thiz->search_fd, UPNP_GROUP, UPNP_PORT);
+            }
             break;
 
         case SSDP_MSEARCH_RESPONSE:
-            ret = Ssdp_Send(thiz, string, len, thiz->group_fd, message->ip, message->port);
+            memset(string, 0, SSDP_MSG_MAX_LEN);
+            len = SsdpMessage_ToString(message, string, SSDP_MSG_MAX_LEN);
+            if (len > 0)
+            {
+                for (uint32_t i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
+                {
+                    TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
+                    if (STR_EQUAL(s->ip, message->local.ip))
+                    {
+                        ret = Ssdp_Send(thiz, string, len, s->fd, message->remote.ip, message->remote.port);
+                        break;
+                    }
+                }
+            }
             break;
 
         default:
@@ -269,10 +316,10 @@ static TinyRet Ssdp_OpenSockets(Ssdp *thiz)
 
     do
     {
-        ret = tiny_udp_multicast_open(&thiz->group_fd, UPNP_GROUP, UPNP_PORT, false);
+        ret = TinyMulticast_Open(&thiz->multicast, UPNP_GROUP, UPNP_PORT, false);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "tiny_udp_multicast_open failed : %s", tiny_ret_to_str(ret));
+            LOG_D(TAG, "TinyMulticast_Open failed : %s", tiny_ret_to_str(ret));
             break;
         }
 
@@ -300,10 +347,10 @@ static TinyRet Ssdp_CloseSockets(Ssdp *thiz)
             break;
         }
 
-        ret = tiny_udp_multicast_close(thiz->group_fd);
+        ret = TinyMulticast_Close(&thiz->multicast);
         if (RET_FAILED(ret))
         {
-            LOG_D(TAG, "tiny_udp_multicast_open failed : %s", tiny_ret_to_str(ret));
+            LOG_D(TAG, "TinyMulticast_Close failed : %s", tiny_ret_to_str(ret));
             break;
         }
     } while (0);
@@ -335,10 +382,17 @@ static void Ssdp_Loop(void *param)
 
 static TinyRet Ssdp_PreSelect(Ssdp *thiz, uint32_t *timeout)
 {
+    uint32_t i = 0;
     RETURN_VAL_IF_FAIL(thiz, TINY_RET_E_ARG_NULL);
 
     TinySelector_Reset(&thiz->selector);
-    TinySelector_Register(&thiz->selector, thiz->group_fd, SELECTOR_OP_READ);
+
+    for (i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
+    {
+        TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
+        TinySelector_Register(&thiz->selector, s->fd, SELECTOR_OP_READ);
+    }
+
     TinySelector_Register(&thiz->selector, thiz->search_fd, SELECTOR_OP_READ);
     TinySelector_Register(&thiz->selector, TinySocketIpc_GetFd(&thiz->ipc), SELECTOR_OP_READ);
 
@@ -354,7 +408,9 @@ static bool Ssdp_SelectOnce(Ssdp *thiz, uint32_t timeout)
 
     do
     {
+        uint32_t i = 0;
         int fd = 0;
+        const char *localIp = NULL;
         TinySelectorRet result = SELECTOR_RET_OK;
 
         result = TinySelector_RunOnce(&thiz->selector, timeout);
@@ -387,17 +443,27 @@ static bool Ssdp_SelectOnce(Ssdp *thiz, uint32_t timeout)
             }
         }
 
-        if (TinySelector_IsReadable(&thiz->selector, thiz->group_fd))
+        for (i = 0; i < TinyMulticast_GetCount(&thiz->multicast); ++i)
         {
-            fd = thiz->group_fd;
+            TinyMulticastSocket *s = (TinyMulticastSocket *)TinyMulticast_GetSocketAt(&thiz->multicast, i);
+            if (TinySelector_IsReadable(&thiz->selector, s->fd))
+            {
+                fd = s->fd;
+                localIp = s->ip;
+                break;
+            }
         }
-        else if (TinySelector_IsReadable(&thiz->selector, thiz->search_fd))
+
+        if (fd == 0)
         {
-            fd = thiz->search_fd;
-        }
-        else
-        {
-            break;
+            if (TinySelector_IsReadable(&thiz->selector, thiz->search_fd))
+            {
+                fd = thiz->search_fd;
+            }
+            else
+            {
+                break;
+            }
         }
 
         if (fd > 0)
@@ -418,18 +484,18 @@ static bool Ssdp_SelectOnce(Ssdp *thiz, uint32_t timeout)
             printf("%s\n", buf);
 #endif
 
-            Ssdp_ProcessMessage(thiz, buf, bytes_read, ip, port);
+            Ssdp_ProcessMessage(thiz, localIp, buf, bytes_read, ip, port);
         }
     } while (0);
 
     return select_result;
 }
 
-static void Ssdp_ProcessMessage(Ssdp *thiz, const char *buf, size_t len, const char *ip, uint16_t port)
+static void Ssdp_ProcessMessage(Ssdp *thiz, const char *localIp, const char *buf, size_t len, const char *ip, uint16_t port)
 {
     SsdpMessage message;
 
-    if (RET_FAILED(SsdpMessage_Construct(&message, ip, port, buf, len)))
+    if (RET_FAILED(SsdpMessage_Construct(&message, localIp, ip, port, buf, len)))
     {
         return;
     }

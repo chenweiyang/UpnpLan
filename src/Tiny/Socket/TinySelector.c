@@ -24,16 +24,13 @@ TinySelector * TinySelector_New(void)
 
     do
     {
-        TinyRet ret = TINY_RET_OK;
-
         thiz = (TinySelector *)tiny_malloc(sizeof(TinySelector));
         if (thiz == NULL)
         {
             break;
         }
 
-        ret = TinySelector_Construct(thiz);
-        if (RET_FAILED(ret))
+        if (RET_FAILED(TinySelector_Construct(thiz)))
         {
             TinySelector_Delete(thiz);
             thiz = NULL;

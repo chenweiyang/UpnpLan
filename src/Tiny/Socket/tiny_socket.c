@@ -32,7 +32,7 @@
 
 #define TAG "tiny_socket"
 
-static TinyRet udp_join_multicast_group(int fd, const char *group, uint16_t port);
+
 static TinyRet udp_join_multicast_group_with_all_ip(int fd, const char *group);
 static TinyRet udp_join_multicast_group_with_ip(int fd, const char *group, unsigned long ip);
 static TinyRet udp_leave_multicast_group(int fd);
@@ -786,6 +786,8 @@ TinyRet tiny_udp_unicast_open(int *fd, uint16_t port, bool block)
     return TINY_RET_OK;
 }
 
+#if 0
+
 TinyRet tiny_udp_multicast_open(int *fd, const char *group, uint16_t port, bool block)
 {
     TinyRet ret = TINY_RET_OK;
@@ -807,7 +809,7 @@ TinyRet tiny_udp_multicast_open(int *fd, const char *group, uint16_t port, bool 
             break;
         }
 
-        ret = udp_join_multicast_group(*fd, group, port);
+        ret = tiny_join_multicast_group(*fd, group, port);
         if (RET_FAILED(ret))
         {
             break;
@@ -826,6 +828,7 @@ TinyRet tiny_udp_multicast_open(int *fd, const char *group, uint16_t port, bool 
 
     return ret;
 }
+#endif
 
 TinyRet tiny_udp_unicast_close(int fd)
 {
@@ -839,6 +842,7 @@ TinyRet tiny_udp_unicast_close(int fd)
     return TINY_RET_OK;
 }
 
+#if 0
 TinyRet tiny_udp_multicast_close(int fd)
 {
     udp_leave_multicast_group(fd);
@@ -852,6 +856,7 @@ TinyRet tiny_udp_multicast_close(int fd)
 
     return TINY_RET_OK;
 }
+#endif
 
 TinyRet tiny_udp_waiting_for_read(int fd, uint32_t timeout)
 {
@@ -917,14 +922,15 @@ int tiny_udp_write(int fd, const char *ip, uint16_t port, const char *buf, uint3
 }
 
 #ifdef _WIN32
-static TinyRet udp_join_multicast_group(int fd, const char *group, uint16_t port)
+TinyRet tiny_join_multicast_group(int fd, unsigned long ip, const char *group, uint16_t port)
 {
+    struct ip_mreq ipMreqV4;
     struct sockaddr_in addr;
-    int rc = NO_ERROR;
+    int ret = NO_ERROR;
     char loop = 1;
 
-    rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
-    if (rc == SOCKET_ERROR)
+    ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &loop, sizeof(loop));
+    if (ret == SOCKET_ERROR)
     {
         DWORD e = GetLastError();
         LOG_D(TAG, "setsockopt: %d", e);
@@ -936,8 +942,8 @@ static TinyRet udp_join_multicast_group(int fd, const char *group, uint16_t port
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(port);
 
-    rc = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
-    if (rc == SOCKET_ERROR)
+    ret = bind(fd, (struct sockaddr *)&addr, sizeof(addr));
+    if (ret == SOCKET_ERROR)
     {
         DWORD e = GetLastError();
         LOG_D(TAG, "bind: %d", e);
@@ -945,18 +951,34 @@ static TinyRet udp_join_multicast_group(int fd, const char *group, uint16_t port
     }
 
     loop = 1;
-    rc = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
-    if (rc == SOCKET_ERROR)
+    ret = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
+    if (ret == SOCKET_ERROR)
     {
         DWORD e = GetLastError();
         LOG_D(TAG, "setsockopt: %d", e);
         return TINY_RET_E_SOCKET_SETSOCKOPT;
     }
 
-    return udp_join_multicast_group_with_all_ip(fd, group);
+    // Setup the v4 option values and ip_mreq structure
+    memset(&ipMreqV4, 0, sizeof(struct ip_mreq));
+    ipMreqV4.imr_multiaddr.s_addr = inet_addr(group);
+    //ipMreqV4.imr_interface.s_addr = htonl(ip);
+    ipMreqV4.imr_interface.s_addr = ip;
+
+    // Join the group
+    ret = setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char *)&ipMreqV4, sizeof(ipMreqV4));
+    if (ret == SOCKET_ERROR)
+    {
+        // !!! bug£¬ 10065 = A socket operation was attempted to an unreachable host.
+        DWORD e = GetLastError();
+        LOG_E(TAG, "setsockopt: %d", e);
+        return TINY_RET_E_SOCKET_SETSOCKOPT;
+    }
+
+    return TINY_RET_OK;
 }
 #else // Linux | unix
-static TinyRet udp_join_multicast_group(int fd, const char *group, uint16_t port)
+TinyRet tiny_join_multicast_group(int fd, unsigned long ip, const char *group, uint16_t port)
 {
     struct sockaddr_in addr;
     int ret = 0;
@@ -989,10 +1011,23 @@ static TinyRet udp_join_multicast_group(int fd, const char *group, uint16_t port
         LOG_D(TAG, "setsockopt: %s", strerror(errno));
         return TINY_RET_E_SOCKET_SETSOCKOPT;
     }
+    
+    // Join the group
+    ret = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF, (char *)&ip, sizeof(ip));
+    if (ret < 0)
+    {
+        LOG_E(TAG, "setsockopt: %s", strerror(errno));
+        return TINY_RET_E_SOCKET_SETSOCKOPT;
+    }
 
-    return udp_join_multicast_group_with_all_ip(fd, group);
+    return TINY_RET_OK;
 }
 #endif // _WIN32
+
+TinyRet tiny_leave_multicast_group(int fd)
+{
+    return udp_leave_multicast_group(fd);
+}
 
 #ifdef _WIN32
 static TinyRet udp_join_multicast_group_with_all_ip(int fd, const char *group)

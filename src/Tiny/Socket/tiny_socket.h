@@ -60,9 +60,14 @@ int tiny_tcp_read(int fd, char *buf, uint32_t len);
 int tiny_tcp_write(int fd, const char *buf, uint32_t len);
 
 TinyRet tiny_udp_unicast_open(int *fd, uint16_t port, bool block);
-TinyRet tiny_udp_multicast_open(int *fd, const char *group, uint16_t port, bool block);
 TinyRet tiny_udp_unicast_close(int fd);
-TinyRet tiny_udp_multicast_close(int fd);
+
+//TinyRet tiny_udp_multicast_open(int *fd, const char *group, uint16_t port, bool block);
+//TinyRet tiny_udp_multicast_close(int fd);
+
+TinyRet tiny_join_multicast_group(int fd, unsigned long ip, const char *group, uint16_t port);
+TinyRet tiny_leave_multicast_group(int fd);
+
 TinyRet tiny_udp_waiting_for_read(int fd, uint32_t timeout);
 TinyRet tiny_udp_waiting_for_write(int fd, uint32_t timeout);
 int tiny_udp_read(int fd, char *buf, uint32_t buf_len, char *ip, uint32_t ip_len, uint16_t *port);

@@ -17,6 +17,7 @@
 #include "TinyThread.h"
 #include "TinySelector.h"
 #include "TinySocketIpc.h"
+#include "TinyMulticast.h"
 #include "SsdpMessage.h"
 
 TINY_BEGIN_DECLS
@@ -30,7 +31,7 @@ typedef struct _Ssdp
     TinySelector                selector;
     TinySocketIpc               ipc;
     bool                        running;
-    int                         group_fd;
+    TinyMulticast               multicast;
     int                         search_fd;
     SsdpMessageHandler          handler;
     void                      * ctx;

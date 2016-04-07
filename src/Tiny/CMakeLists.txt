@@ -73,6 +73,22 @@ SOURCE_GROUP(TinySocket\\headers            FILES       ${Socket_Header})
 SOURCE_GROUP(TinySocket\\sources            FILES       ${Socket_Source})
 
 #-----------------------
+# Muliticast
+#-----------------------
+SET(Multicast_Header
+    Multicast/TinyMulticast.h
+    Multicast/TinyMulticastSocket.h
+    )
+
+SET(Multicast_Source
+    Multicast/TinyMulticast.c
+    Multicast/TinyMulticastSocket.c
+    )
+
+SOURCE_GROUP(TinyMulticast\\headers         FILES       ${Multicast_Header})
+SOURCE_GROUP(TinyMulticast\\sources         FILES       ${Multicast_Source})
+
+#-----------------------
 # Thread
 #-----------------------
 SET(Thread_Header
@@ -89,8 +105,8 @@ SET(Thread_Source
     Thread/TinyThread.c
     )
 
-SOURCE_GROUP(TinyThread\\headers            FILES   ${Thread_Header})
-SOURCE_GROUP(TinyThread\\sources            FILES   ${Thread_Source})
+SOURCE_GROUP(TinyThread\\headers            FILES       ${Thread_Header})
+SOURCE_GROUP(TinyThread\\sources            FILES       ${Thread_Source})
 
 #-----------------------
 # Timer
@@ -269,6 +285,8 @@ SET(SRC
     ${Memory_Source}
     ${Socket_Header}
     ${Socket_Source}
+    ${Multicast_Header}
+    ${Multicast_Source}
     ${String_Header}
     ${String_Source}
     ${Tcp_Header}

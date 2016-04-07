@@ -277,7 +277,7 @@ static TinyRet ssdp_parse_response(HttpMessage *message, SsdpResponse *response)
     return ret;
 }
 
-TinyRet SsdpMessage_Construct(SsdpMessage *thiz, const char *ip, uint16_t port, const char *buf, uint32_t len)
+TinyRet SsdpMessage_Construct(SsdpMessage *thiz, const char *localIp, const char *remoteIp, uint16_t remotePort, const char *buf, uint32_t len)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -304,8 +304,13 @@ TinyRet SsdpMessage_Construct(SsdpMessage *thiz, const char *ip, uint16_t port, 
             break;
         }
 
-        strncpy(thiz->ip, ip, TINY_IP_LEN);
-        thiz->port = port;
+        if (localIp != NULL)
+        {
+            strncpy(thiz->local.ip, localIp, TINY_IP_LEN);
+        }
+
+        strncpy(thiz->remote.ip, remoteIp, TINY_IP_LEN);
+        thiz->remote.port = remotePort;
 
         switch (HttpMessage_GetType(&msg))
         {
@@ -357,7 +362,7 @@ TinyRet SsdpMessage_Construct(SsdpMessage *thiz, const char *ip, uint16_t port, 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location)
+TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -384,13 +389,15 @@ TinyRet SsdpMessage_ConstructAlive_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *dev
         strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
         thiz->v.alive.usn[HEAD_USN_LEN] = '\0';
-        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.alive.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.alive.ex_port = port;
     } while (0);
 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location)
+TinyRet SsdpMessage_ConstructAlive_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -410,13 +417,15 @@ TinyRet SsdpMessage_ConstructAlive_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *de
         strncpy(thiz->v.alive.nts, NTS_ALIVE, HEAD_NTS_LEN);
         strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.alive.usn, deviceId, HEAD_USN_LEN);
-        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.alive.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.alive.ex_port = port;
     } while (0);
 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location)
+TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -443,13 +452,15 @@ TinyRet SsdpMessage_ConstructAlive_DEVICE(SsdpMessage *thiz, UpnpDevice *device,
         strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
         thiz->v.alive.usn[HEAD_USN_LEN] = '\0';
-        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.alive.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.alive.ex_port = port;
     } while (0);
 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location)
+TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *uri, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -477,7 +488,9 @@ TinyRet SsdpMessage_ConstructAlive_SERVICE(SsdpMessage *thiz, UpnpService *servi
         strncpy(thiz->v.alive.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.alive.usn, usn, HEAD_USN_LEN);
         thiz->v.alive.usn[HEAD_USN_LEN] = '\0';
-        strncpy(thiz->v.alive.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.alive.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.alive.ex_port = port;
     } while (0);
 
     return ret;
@@ -617,7 +630,7 @@ TinyRet SsdpMessage_ConstructRequest(SsdpMessage *thiz, const char *target)
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port)
+TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -627,7 +640,6 @@ TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *
     do
     {
         const char *deviceId = UpnpDevice_GetDeviceId(device);
-        uint16_t port = UpnpDevice_GetHttpPort(device);
         char usn[HEAD_USN_LEN + 1];
 
         memset(usn, 0, HEAD_USN_LEN + 1);
@@ -636,22 +648,24 @@ TinyRet SsdpMessage_ConstructResponse_ROOTDEVICE(SsdpMessage *thiz, UpnpDevice *
 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
-
-        thiz->port = port;
-        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        
+        strncpy(thiz->local.ip, localIp, TINY_IP_LEN);
+        thiz->remote.port = port;
+        strncpy(thiz->remote.ip, ip, TINY_IP_LEN);
         strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
         strncpy(thiz->v.response.st, "upnp:rootdevice", HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
         thiz->v.response.usn[HEAD_USN_LEN] = '\0';
-        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.response.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.response.ex_port = ex_port;
     } while (0);
 
     return ret;
-
 }
 
-TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port)
+TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -671,20 +685,23 @@ TinyRet SsdpMessage_ConstructResponse_DEVICE_UUID(SsdpMessage *thiz, UpnpDevice 
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
 
-        thiz->port = port;
-        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        strncpy(thiz->local.ip, localIp, TINY_IP_LEN);
+        thiz->remote.port = port;
+        strncpy(thiz->remote.ip, ip, TINY_IP_LEN);
         strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
         strncpy(thiz->v.response.st, deviceType, HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
         thiz->v.response.usn[HEAD_USN_LEN] = '\0';
-        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.response.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.response.ex_port = ex_port;
     } while (0);
 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *location, const char *ip, uint16_t port)
+TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *device, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -704,20 +721,23 @@ TinyRet SsdpMessage_ConstructResponse_DEVICE(SsdpMessage *thiz, UpnpDevice *devi
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
 
-        thiz->port = port;
-        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        strncpy(thiz->local.ip, localIp, TINY_IP_LEN);
+        thiz->remote.port = port;
+        strncpy(thiz->remote.ip, ip, TINY_IP_LEN);
         strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
         strncpy(thiz->v.response.st, deviceType, HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
         thiz->v.response.usn[HEAD_USN_LEN] = '\0';
-        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.response.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.response.ex_port = ex_port;
     } while (0);
 
     return ret;
 }
 
-TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *location, const char *ip, uint16_t port)
+TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *service, const char *uri, uint16_t ex_port, const char *localIp, const char *ip, uint16_t port)
 {
     TinyRet ret = TINY_RET_OK;
 
@@ -738,14 +758,17 @@ TinyRet SsdpMessage_ConstructResponse_SERVICE(SsdpMessage *thiz, UpnpService *se
         memset(thiz, 0, sizeof(SsdpMessage));
         thiz->type = SSDP_MSEARCH_RESPONSE;
 
-        thiz->port = port;
-        strncpy(thiz->ip, ip, TINY_IP_LEN);
+        strncpy(thiz->local.ip, localIp, TINY_IP_LEN);
+        thiz->remote.port = port;
+        strncpy(thiz->remote.ip, ip, TINY_IP_LEN);
         strncpy(thiz->v.response.cache_control, "max-age=1800", HEAD_CACHE_CONTROL_LEN);
         strncpy(thiz->v.response.st, serviceType, HEAD_NT_LEN);
         strncpy(thiz->v.response.server, "UpnpLan/0.1 UPnP/1.0", HEAD_SERVER_LEN);
         strncpy(thiz->v.response.usn, usn, HEAD_USN_LEN);
         thiz->v.response.usn[HEAD_USN_LEN] = '\0';
-        strncpy(thiz->v.response.location, location, HEAD_LOCATION_LEN);
+
+        strncpy(thiz->v.response.ex_uri, uri, TINY_URI_LEN);
+        thiz->v.response.ex_port = ex_port;
     } while (0);
 
     return ret;
