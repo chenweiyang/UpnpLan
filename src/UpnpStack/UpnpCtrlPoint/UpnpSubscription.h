@@ -17,11 +17,10 @@
 #include "upnp_define.h"
 #include "UpnpEvent.h"
 #include "UpnpService.h"
+#include "UpnpListener.h"
 
 TINY_BEGIN_DECLS
 
-
-typedef void(*UpnpEventListener)(UpnpEvent *event, void *ctx);
 
 typedef struct _UpnpSubscription
 {
